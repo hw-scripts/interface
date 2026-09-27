@@ -24,11 +24,15 @@
         fetch: window.fetch
         //#endregion
     };
+
+    let resolveUserStorage;
     //#region AJAX overriding
+    const userStorageReady = new Promise(resolve => {
+        resolveUserStorage = resolve;
+    });
     function logAJAX(data) {
         const key = `ajax:${Date.now()}`;
         const value = JSON.stringify(data);
-
         while (true) {
             try {
                 sessionStorage.setItem(key, value);
@@ -36,7 +40,6 @@
             } catch (error) {
                 if (error.name !== 'QuotaExceededError')
                     throw error;
-
                 const keys = Object.keys(sessionStorage)
                     .filter(key => key.startsWith('ajax:'))
                     .sort();
@@ -250,26 +253,31 @@
                 throw new TypeError('Path must contain string or number keys');
         }
     }
-
-    const memoryStorage = new MemoryStorage();
     //#endregion
+    const memoryStorage = new MemoryStorage();
 
-    let userStorage = null; // new UserStorage(id)
+    const userStorage = await userStorageReady;
     //#region userStorage
     class UserStorage {
         constructor(userId) {
             this.prefix = `${manifest.name}:${userId ?? 'default'}:`;
         }
-
         getItem(key) {
             return localStorage.getItem(this.prefix + key);
         }
-
         setItem(key, value) {
             localStorage.setItem(this.prefix + key, value);
         }
-
         removeItem(key) {
+            localStorage.removeItem(this.prefix + key);
+        }
+        get(key) {
+            return localStorage.getItem(this.prefix + key);
+        }
+        set(key, value) {
+            localStorage.setItem(this.prefix + key, value);
+        }
+        remove(key) {
             localStorage.removeItem(this.prefix + key);
         }
     }
@@ -498,7 +506,7 @@
     </ul>
 </nav>
 `;
-    logo.afterTemplate(buttonTemplate, 
+    logo.afterTemplate(buttonTemplate,
         (code, callback) => eval(code));
 
     // Interface message
