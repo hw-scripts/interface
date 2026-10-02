@@ -1,0 +1,2167 @@
+{
+    "SKIP_FIGHTS":  {
+                        "en":  "Skip battles",
+                        "uk":  "Пропуск боїв",
+                        "ru":  "Пропуск боёв"
+                    },
+    "SKIP_FIGHTS_TITLE":  {
+                              "en":  "Skip battles in Outland and the EoT, auto-pass in the tower and campaign",
+                              "uk":  "Пропуск битв у Запределі та на арені Стихій, автопропуск у вежі і кампанії",
+                              "ru":  "Пропуск боев в Запределье и арене Стихий, автопропуск в башне и кампании"
+                          },
+    "ENDLESS_CARDS":  {
+                          "en":  "Infinite cards",
+                          "uk":  "Нескінченні карти",
+                          "ru":  "Бесконечные карты"
+                      },
+    "ENDLESS_CARDS_TITLE":  {
+                                "en":  "Disable Divination Cards wasting",
+                                "uk":  "Вимкнути витрату карт передбень",
+                                "ru":  "Отключить трату карт предсказаний"
+                            },
+    "AUTO_EXPEDITION":  {
+                            "en":  "Auto Expedition",
+                            "uk":  "Авто Експедиції",
+                            "ru":  "Авто Экспедиции"
+                        },
+    "AUTO_EXPEDITION_TITLE":  {
+                                  "en":  "Auto-sending expeditions",
+                                  "uk":  "Автозапуск експедицій",
+                                  "ru":  "Автоотправка экспедиций"
+                              },
+    "CANCEL_FIGHT":  {
+                         "en":  "Cancel battle",
+                         "uk":  "Скасувати бій",
+                         "ru":  "Отмена боя"
+                     },
+    "CANCEL_FIGHT_TITLE":  {
+                               "en":  "Ability to cancel manual combat on GW, CoW and Asgard",
+                               "uk":  "Можливість скасувати ручний бій на ВГ, СМ та в Асгарді",
+                               "ru":  "Возможность отмены ручного боя на ВГ, СМ и в Асгарде"
+                           },
+    "GIFTS":  {
+                  "en":  "Gifts",
+                  "uk":  "Подарунки",
+                  "ru":  "Подарки"
+              },
+    "GIFTS_TITLE":  {
+                        "en":  "Collect gifts automatically",
+                        "uk":  "Збирати подарунки автоматично",
+                        "ru":  "Собирать подарки автоматически"
+                    },
+    "BATTLE_RECALCULATION":  {
+                                 "en":  "Battle recalculation",
+                                 "uk":  "Перерахунок бою",
+                                 "ru":  "Перерасчет боя"
+                             },
+    "BATTLE_RECALCULATION_TITLE":  {
+                                       "en":  "Preliminary calculation of the battle",
+                                       "uk":  "Попередній розрахунок бою",
+                                       "ru":  "Предварительный расчет боя"
+                                   },
+    "QUANTITY_CONTROL":  {
+                             "en":  "Quantity control",
+                             "uk":  "Контроль кількості",
+                             "ru":  "Контроль количества"
+                         },
+    "QUANTITY_CONTROL_TITLE":  {
+                                   "en":  "Ability to specify the number of opened «lootboxes»",
+                                   "uk":  "Можливість вказати кількість відкриваємих «лутбоксів»",
+                                   "ru":  "Возможность указывать количество открываемых «лутбоксов»"
+                               },
+    "REPEAT_CAMPAIGN":  {
+                            "en":  "Repeat battles in the campaign",
+                            "uk":  "Повтори боїв в кампанії",
+                            "ru":  "Повторы боёв в кампании"
+                        },
+    "REPEAT_CAMPAIGN_TITLE":  {
+                                  "en":  "Auto-repeat battles in the campaign",
+                                  "uk":  "Автоповтор боїв у кампанії",
+                                  "ru":  "Автоповтор боев в кампании"
+                              },
+    "DISABLE_DONAT":  {
+                          "en":  "Disable donation",
+                          "uk":  "Вимкнути донат",
+                          "ru":  "Отключить донат"
+                      },
+    "DISABLE_DONAT_TITLE":  {
+                                "en":  "Removes all donation requests\u003cbr /\u003eMay block some necessary functions",
+                                "uk":  "Видаляє всі запити на донат\u003cbr /\u003eМоже блокувати деякі необхідні функції",
+                                "ru":  "Удаляет все запросы на донат\u003cbr /\u003eМожет заблокировать некоторые необходимые функции"
+                            },
+    "DAILY_QUESTS":  {
+                         "en":  "Quests",
+                         "uk":  "Квести",
+                         "ru":  "Квесты"
+                     },
+    "DAILY_QUESTS_TITLE":  {
+                               "en":  "Complete quests at the start",
+                               "uk":  "Виконувати квести на старті",
+                               "ru":  "Выполнять квесты на старте"
+                           },
+    "AUTO_QUIZ":  {
+                      "en":  "Auto Quiz",
+                      "uk":  "Авто Вікторина",
+                      "ru":  "Авто Викторина"
+                  },
+    "AUTO_QUIZ_TITLE":  {
+                            "en":  "Automatically obtaining correct answers to quiz questions",
+                            "uk":  "Автоматичне отримання правильних відповідей на запитання вікторини",
+                            "ru":  "Автоматическое получение правильных ответов на вопросы викторины"
+                        },
+    "SECRET_WEALTH_CHECKBOX":  {
+                                   "en":  "Automatic purchase in the store «Secret Wealth» when entering the game",
+                                   "uk":  "Автоматична покупка в магазині «Таємне багатство» при вході в гру",
+                                   "ru":  "Автоматическая покупка в магазине «Тайное Богатство» при заходе в игру"
+                               },
+    "HIDE_SERVERS":  {
+                         "en":  "Collapse servers",
+                         "uk":  "Згорнути сервери",
+                         "ru":  "Свернуть сервера"
+                     },
+    "HIDE_SERVERS_TITLE":  {
+                               "en":  "Hide unused servers",
+                               "uk":  "Приховати невикористовувані сервери",
+                               "ru":  "Скрывать неиспользуемые сервера"
+                           },
+    "HOW_MUCH_TITANITE":  {
+                              "en":  "How much titanite to farm",
+                              "uk":  "Скільки титаніту фармити",
+                              "ru":  "Сколько фармим титанита"
+                          },
+    "COMBAT_SPEED":  {
+                         "en":  "Combat Speed Multiplier",
+                         "uk":  "Множник Прискорення Бою",
+                         "ru":  "Множитель Ускорения Боя"
+                     },
+    "NUMBER_OF_TEST":  {
+                           "en":  "Number of test fights",
+                           "uk":  "Кількість тестових боїв",
+                           "ru":  "Количество тестовых боев"
+                       },
+    "NUMBER_OF_AUTO_BATTLE":  {
+                                  "en":  "Number of auto-battle attempts",
+                                  "uk":  "Кількість спроб автобою",
+                                  "ru":  "Количество попыток автобоев"
+                              },
+    "RUN_SCRIPT":  {
+                       "en":  "Run the script",
+                       "uk":  "Запустити скрипт",
+                       "ru":  "Запустить скрипт"
+                   },
+    "AUTOPILOT":  {
+                      "en":  "Autopilot",
+                      "uk":  "Автопілот",
+                      "ru":  "Автопилот"
+                  },
+    "AUTOPILOT_SETTINGS":  {
+                               "en":  "Autopilot settings",
+                               "uk":  "Налаштування автопілота",
+                               "ru":  "Настройки автопилота"
+                           },
+    "TO_DO_EVERYTHING":  {
+                             "en":  "Do everything",
+                             "uk":  "Зробити все",
+                             "ru":  "Сделать все"
+                         },
+    "TO_DO_EVERYTHING_TITLE":  {
+                                   "en":  "Perform a series of selected actions",
+                                   "uk":  "Виконати низку вибраних дій",
+                                   "ru":  "Выполните ряд выбранных действий"
+                               },
+    "OUTLAND":  {
+                    "en":  "Outland",
+                    "uk":  "Outland",
+                    "ru":  "Запределье"
+                },
+    "OUTLAND_TITLE":  {
+                          "en":  "Collect Outland",
+                          "uk":  "Зібрати Запреділ",
+                          "ru":  "Собрать Запределье"
+                      },
+    "TITAN_ARENA":  {
+                        "en":  "Tournament of the Elements",
+                        "uk":  "Турнір Стихій",
+                        "ru":  "Турнир Стихий"
+                    },
+    "TITAN_ARENA_TITLE":  {
+                              "en":  "Autorun the Tournament of the Elements",
+                              "uk":  "Автопрохід Турніру Стихій",
+                              "ru":  "Автопрохождение Турнира Стихий"
+                          },
+    "DUNGEON":  {
+                    "en":  "Dungeon",
+                    "uk":  "Підземелля",
+                    "ru":  "Подземелье"
+                },
+    "DUNGEON_TITLE":  {
+                          "en":  "Dungeon auto-run",
+                          "uk":  "Автопрохід підземелля",
+                          "ru":  "Автопрохождение подземелья"
+                      },
+    "SEER":  {
+                 "en":  "Seer",
+                 "uk":  "Провидець",
+                 "ru":  "Провидец"
+             },
+    "SEER_TITLE":  {
+                       "en":  "Roll the Seer",
+                       "uk":  "Покрутити Провидця",
+                       "ru":  "Покрутить Провидца"
+                   },
+    "TOWER":  {
+                  "en":  "Tower",
+                  "uk":  "Башта",
+                  "ru":  "Башня"
+              },
+    "TOWER_TITLE":  {
+                        "en":  "Pass the tower",
+                        "uk":  "Автопрохід башти",
+                        "ru":  "Автопрохождение башни"
+                    },
+    "EXPEDITIONS":  {
+                        "en":  "Expeditions",
+                        "uk":  "Експедиції",
+                        "ru":  "Экспедиции"
+                    },
+    "EXPEDITIONS_TITLE":  {
+                              "en":  "Sending and collecting expeditions",
+                              "uk":  "Відправлення та збір експедицій",
+                              "ru":  "Отправка и сбор экспедиций"
+                          },
+    "SYNC":  {
+                 "en":  "Sync",
+                 "uk":  "Синхронізувати",
+                 "ru":  "Синхронизация"
+             },
+    "SYNC_TITLE":  {
+                       "en":  "Partial game data synchronization without reloading the page\u003cbr /\u003eNot everything will change",
+                       "uk":  "Часткова синхронізація даних гри без перезавантаження сторінки\u003cbr /\u003eЗміниться не все",
+                       "ru":  "Частичная синхронизация игровых данных без перезагрузки страницы\u003cbr /\u003eИзменится не всё"
+                   },
+    "GEAR_FARM":  {
+                      "en":  "Gear Farm",
+                      "uk":  "Фарм спорядження",
+                      "ru":  "Фарм экипировки"
+                  },
+    "HERO_TRAINING":  {
+                          "en":  "Hero Training",
+                          "uk":  "Прокачка героїв",
+                          "ru":  "Прокачка героев"
+                      },
+    "HERO_TRAINING_TITLE":  {
+                                "en":  "Levels and skills heroes by gear farming priority",
+                                "uk":  "Підвищує рівні та вміння героїв за пріоритетом фарму спорядження",
+                                "ru":  "Повышает уровни и умения героев по приоритету фарма экипировки"
+                            },
+    "HERO_TRAINING_PLAN":  {
+                               "en":  "Enter the level limit. 0 means your current account level",
+                               "uk":  "Вкажіть ліміт рівня. 0 означає поточний рівень акаунта",
+                               "ru":  "Введите лимит уровня. 0 означает текущий уровень аккаунта"
+                           },
+    "HERO_TRAINING_PROGRESS":  {
+                                   "en":  "Training {hero}: level {level}/{limit}",
+                                   "uk":  "Прокачка {hero}: рівень {level}/{limit}",
+                                   "ru":  "Прокачка {hero}: уровень {level}/{limit}"
+                               },
+    "HERO_TRAINING_DONE":  {
+                               "en":  "Hero training completed",
+                               "uk":  "Прокачку героїв завершено",
+                               "ru":  "Прокачка героев завершена"
+                           },
+    "GEAR_FARM_TITLE":  {
+                            "en":  "Farms missing gear components for a selected hero using campaign raids only",
+                            "uk":  "Фармить відсутні компоненти спорядження вибраного героя лише рейдами кампанії",
+                            "ru":  "Фармит недостающие компоненты экипировки выбранного героя только рейдами кампании"
+                        },
+    "GEAR_FARM_PRIORITY":  {
+                               "en":  "Gear Farming Priority",
+                               "uk":  "Пріоритет фарму спорядження",
+                               "ru":  "Приоритет фарма экипировки"
+                           },
+    "GEAR_FARM_PRIORITY_TITLE":  {
+                                     "en":  "Choose heroes and their gear farming priority",
+                                     "uk":  "Виберіть героїв та їхній порядок фарму спорядження",
+                                     "ru":  "Выберите героев и их порядок фарма экипировки"
+                                 },
+    "GEAR_FARM_AUTO_EQUIP_TITLE":  {
+                                       "en":  "Automatically equip crafted gear and promote the hero when the rank is complete",
+                                       "uk":  "Автоматично вдягати зібране спорядження та підвищувати ранг героя після заповнення всіх слотів",
+                                       "ru":  "Автоматически надевать собранную экипировку и повышать ранг героя после заполнения всех слотов"
+                                   },
+    "BTN_SAVE":  {
+                     "en":  "Save",
+                     "uk":  "Зберегти",
+                     "ru":  "Сохранить"
+                 },
+    "BTN_CLEAR":  {
+                      "en":  "Clear",
+                      "uk":  "Очистити",
+                      "ru":  "Очистить"
+                  },
+    "GEAR_FARM_ALL_EQUIPPED":  {
+                                   "en":  "All available heroes have their current gear equipped",
+                                   "uk":  "Усі доступні герої вже мають спорядження поточного рангу",
+                                   "ru":  "У всех доступных героев экипировка текущего ранга уже надета"
+                               },
+    "GEAR_FARM_SELECT_HERO":  {
+                                  "en":  "Choose a hero for gear farming",
+                                  "uk":  "Виберіть героя для фарму спорядження",
+                                  "ru":  "Выберите героя для фарма экипировки"
+                              },
+    "GEAR_FARM_NO_MISSIONS":  {
+                                  "en":  "No completed three-star missions with the required gear components were found",
+                                  "uk":  "Не знайдено пройдених на три зірки місій з потрібними компонентами спорядження",
+                                  "ru":  "Не найдены пройденные на три звезды миссии с нужными компонентами экипировки"
+                              },
+    "GEAR_FARM_NORMAL_MODE":  {
+                                  "en":  "VIP 0: missions will be completed in normal battle mode, without raids",
+                                  "uk":  "VIP 0: місії буде пройдено у звичайному бойовому режимі, без рейдів",
+                                  "ru":  "VIP 0: миссии будут пройдены в обычном боевом режиме, без рейдов"
+                              },
+    "GEAR_FARM_NORMAL_PROGRESS":  {
+                                      "en":  "Gear farm: {runs} normal mission run(s), energy {stamina}/{limit}",
+                                      "uk":  "Фарм спорядження: звичайних проходжень {runs}, енергія {stamina}/{limit}",
+                                      "ru":  "Фарм экипировки: обычных прохождений {runs}, энергия {stamina}/{limit}"
+                                  },
+    "GEAR_FARM_NOT_ENOUGH_ENERGY":  {
+                                        "en":  "The energy limit is too low for a mission run",
+                                        "uk":  "Ліміт енергії замалий для проходження місії",
+                                        "ru":  "Лимит энергии слишком мал для прохождения миссии"
+                                    },
+    "GEAR_FARM_PLAN":  {
+                           "en":  "{hero}: {slots} empty gear slots. Enter the maximum energy to spend",
+                           "uk":  "{hero}: порожніх комірок спорядження: {slots}. Вкажіть максимальну кількість енергії для витрат",
+                           "ru":  "{hero}: пустых ячеек экипировки: {slots}. Укажите максимум энергии для расхода"
+                       },
+    "GEAR_FARM_MISSION":  {
+                              "en":  "{mission}: {times} raid(s), {stamina} energy",
+                              "uk":  "{mission}: рейдів {times}, енергії {stamina}",
+                              "ru":  "{mission}: рейдов {times}, энергии {stamina}"
+                          },
+    "GEAR_FARM_UNAVAILABLE":  {
+                                  "en":  "Components without an available mission: {count}",
+                                  "uk":  "Компонентів без доступної місії: {count}",
+                                  "ru":  "Компонентов без доступной миссии: {count}"
+                              },
+    "GEAR_FARM_PROGRESS":  {
+                               "en":  "Gear farm: {mission}, raid {done}/{total}, energy {stamina}/{limit}",
+                               "uk":  "Фарм спорядження: {mission}, рейд {done}/{total}, енергія {stamina}/{limit}",
+                               "ru":  "Фарм экипировки: {mission}, рейд {done}/{total}, энергия {stamina}/{limit}"
+                           },
+    "GEAR_FARM_DONE":  {
+                           "en":  "Gear farm completed: {raids} run(s), {stamina} energy spent, {crafted} item(s) crafted",
+                           "uk":  "Фарм спорядження завершено: проходів {raids}, витрачено енергії {stamina}, створено предметів {crafted}",
+                           "ru":  "Фарм экипировки завершён: проходов {raids}, потрачено энергии {stamina}, создано предметов {crafted}"
+                       },
+    "GEAR_FARM_STOPPED":  {
+                              "en":  "Gear farm stopped: {raids} run(s), {stamina} energy spent",
+                              "uk":  "Фарм спорядження зупинено: проходів {raids}, витрачено енергії {stamina}",
+                              "ru":  "Фарм экипировки остановлен: проходов {raids}, потрачено энергии {stamina}"
+                          },
+    "GEAR_FARM_STOPPING":  {
+                               "en":  "Stopping...",
+                               "uk":  "Зупиняюсь...",
+                               "ru":  "Останавливаюсь..."
+                           },
+    "GEAR_FARM_CRAFTING":  {
+                               "en":  "Crafting {item} x{amount}",
+                               "uk":  "Створення: {item} x{amount}",
+                               "ru":  "Создание: {item} x{amount}"
+                           },
+    "GEAR_FARM_ERROR":  {
+                            "en":  "Gear farming stopped because the game returned an error",
+                            "uk":  "Фарм спорядження зупинено: гра повернула помилку",
+                            "ru":  "Фарм экипировки остановлен: игра вернула ошибку"
+                        },
+    "OASLO_TOOL":  {
+                       "en":  "Upgrading heroes in idle mode",
+                       "uk":  "Покращення героїв у режимі очікування",
+                       "ru":  "Улучшение героев в режиме ожидания"
+                   },
+    "OASLO_TOOL_TITLE":  {
+                             "en":  "Open Hero Wars oaslo Tool in the current browser session",
+                             "uk":  "Відкрити інструмент oaslo у поточному сеансі браузера",
+                             "ru":  "Открыть oaslo Tool в текущей сессии браузера"
+                         },
+    "ARCHDEMON":  {
+                      "en":  "Archdemon",
+                      "uk":  "Архідемон",
+                      "ru":  "Архидемон"
+                  },
+    "ARCHDEMON_TITLE":  {
+                            "en":  "We kill and gather :)",
+                            "uk":  "Ми вбиваємо і збираємо :)",
+                            "ru":  "Мы убиваем и собираем :)"
+                        },
+    "ESTER_EGGS":  {
+                       "en":  "Easter eggs",
+                       "uk":  "Писанки",
+                       "ru":  "Пасхалки"
+                   },
+    "ESTER_EGGS_TITLE":  {
+                             "en":  "Collect all Easter eggs or rewards",
+                             "uk":  "Зібрати усі пасхалки або нагороди",
+                             "ru":  "Собрать все пасхалки или награды"
+                         },
+    "REWARDS":  {
+                    "en":  "Rewards",
+                    "uk":  "Нагороди",
+                    "ru":  "Награды"
+                },
+    "REWARDS_TITLE":  {
+                          "en":  "Collect all quest rewards",
+                          "uk":  "Зібрати усі нагороди за квести",
+                          "ru":  "Собрать все награды за задания"
+                      },
+    "MAIL":  {
+                 "en":  "Mail",
+                 "uk":  "Пошта",
+                 "ru":  "Почта"
+             },
+    "MAIL_TITLE":  {
+                       "en":  "Collect all mail, except letters with energy and charges of the portal",
+                       "uk":  "Зберіть всю пошту, крім листів з енергією та зборами порталу",
+                       "ru":  "Собрать всю почту, кроме писем с энергией и зарядами портала"
+                   },
+    "MINIONS":  {
+                    "en":  "Minions",
+                    "uk":  "Міньйони",
+                    "ru":  "Прислужники"
+                },
+    "MINIONS_TITLE":  {
+                          "en":  "Attack minions by saved packs",
+                          "uk":  "Атакує міньйонів збереженими пакетами",
+                          "ru":  "Атакует прислужников сохраннеными пачками"
+                      },
+    "ADVENTURE":  {
+                      "en":  "Adventures",
+                      "uk":  "Пригоди",
+                      "ru":  "Приключения"
+                  },
+    "ADVENTURE_TITLE":  {
+                            "en":  "Passes the adventure along the specified route",
+                            "uk":  "Проходить пригоду за вказаним маршрутом",
+                            "ru":  "Проходит приключение по указанному маршруту"
+                        },
+    "STORM":  {
+                  "en":  "Storm",
+                  "uk":  "Буря",
+                  "ru":  "Буря"
+              },
+    "STORM_TITLE":  {
+                        "en":  "Passes the Storm along the specified route",
+                        "uk":  "Проходить Шторм за вказаним маршрутом",
+                        "ru":  "Проходит бурю по указанному маршруту"
+                    },
+    "SANCTUARY":  {
+                      "en":  "Sanctuary",
+                      "uk":  "Святилище",
+                      "ru":  "Святилище"
+                  },
+    "SANCTUARY_TITLE":  {
+                            "en":  "Fast travel to Sanctuary",
+                            "uk":  "Швидка подорож до Sanctuary",
+                            "ru":  "Быстрый переход к Святилищу"
+                        },
+    "GUILD_WAR":  {
+                      "en":  "Guild War",
+                      "uk":  "Війна Гільдій",
+                      "ru":  "Война Гильдий"
+                  },
+    "GUILD_WAR_TITLE":  {
+                            "en":  "Fast travel to Guild War",
+                            "uk":  "Швидка подорож до Війни Гільдій",
+                            "ru":  "Быстрый переход к Войне гильдий"
+                        },
+    "SECRET_WEALTH":  {
+                          "en":  "Secret Wealth",
+                          "uk":  "Таємне багатство",
+                          "ru":  "Тайное богатство"
+                      },
+    "SECRET_WEALTH_TITLE":  {
+                                "en":  "Buy something in the store \"Secret Wealth\"",
+                                "uk":  "Купити щось в магазині \"Таємне багатство\"",
+                                "ru":  "Купить что-то в магазине \"Тайное богатство\""
+                            },
+    "GIFTS_SENT":  {
+                       "en":  "Gifts sent!",
+                       "uk":  "Подарунки надіслано!",
+                       "ru":  "Подарки отправлены!"
+                   },
+    "DO_YOU_WANT":  {
+                        "en":  "Do you really want to do this?",
+                        "uk":  "Ви дійсно хочете це зробити?",
+                        "ru":  "Вы действительно хотите это сделать?"
+                    },
+    "BTN_RUN":  {
+                    "en":  "Run",
+                    "uk":  "Діяти",
+                    "ru":  "Запускай"
+                },
+    "BTN_CANCEL":  {
+                       "en":  "Cancel",
+                       "uk":  "Скасувати",
+                       "ru":  "Отмена"
+                   },
+    "BTN_ACCEPT":  {
+                       "en":  "Accept",
+                       "uk":  "Прийняти",
+                       "ru":  "Принять"
+                   },
+    "BTN_OK":  {
+                   "en":  "OK",
+                   "uk":  "OK",
+                   "ru":  "Ок"
+               },
+    "MSG_HAVE_BEEN_DEFEATED":  {
+                                   "en":  "You have been defeated!",
+                                   "uk":  "Ви зазнали поразки!",
+                                   "ru":  "Вы потерпели поражение!"
+                               },
+    "BTN_AUTO":  {
+                     "en":  "Auto",
+                     "uk":  "Авто",
+                     "ru":  "Авто"
+                 },
+    "MSG_YOU_APPLIED":  {
+                            "en":  "You applied",
+                            "uk":  "Ви набили",
+                            "ru":  "Вы нанесли"
+                        },
+    "MSG_DAMAGE":  {
+                       "en":  "damage",
+                       "uk":  "пошкодження",
+                       "ru":  "урона"
+                   },
+    "MSG_CANCEL_AND_STAT":  {
+                                "en":  "Auto (F5) and show statistic",
+                                "uk":  "Авто (F5) і показати статистику",
+                                "ru":  "Авто (F5) и показать Статистику"
+                            },
+    "MSG_REPEAT_MISSION":  {
+                               "en":  "Repeat the mission?",
+                               "uk":  "Повторити місію?",
+                               "ru":  "Повторить миссию?"
+                           },
+    "BTN_REPEAT":  {
+                       "en":  "Repeat",
+                       "uk":  "Повторити",
+                       "ru":  "Повторить"
+                   },
+    "BTN_NO":  {
+                   "en":  "No",
+                   "uk":  "Ні",
+                   "ru":  "Нет"
+               },
+    "MSG_SPECIFY_QUANT":  {
+                              "en":  "Specify Quantity:",
+                              "uk":  "Вкажіть кількість:",
+                              "ru":  "Указать количество:"
+                          },
+    "BTN_OPEN":  {
+                     "en":  "Open",
+                     "uk":  "Відкрити",
+                     "ru":  "Открыть"
+                 },
+    "QUESTION_COPY":  {
+                          "en":  "Question copied to clipboard",
+                          "uk":  "Питання скопійовано в буфер обміну",
+                          "ru":  "Вопрос скопирован в буфер обмена"
+                      },
+    "ANSWER_KNOWN":  {
+                         "en":  "The answer is known",
+                         "uk":  "Відповідь відома",
+                         "ru":  "Ответ известен"
+                     },
+    "ANSWER_NOT_KNOWN":  {
+                             "en":  "ATTENTION THE ANSWER IS NOT KNOWN",
+                             "uk":  "УВАГА ВІДПОВІДЬ НЕ ВІДОМА",
+                             "ru":  "ВНИМАНИЕ ОТВЕТ НЕ ИЗВЕСТЕН"
+                         },
+    "BEING_RECALC":  {
+                         "en":  "The battle is being recalculated",
+                         "uk":  "Проводиться перерахунок бою",
+                         "ru":  "Идет прерасчет боя"
+                     },
+    "THIS_TIME":  {
+                      "en":  "This time",
+                      "uk":  "Цього разу",
+                      "ru":  "На этот раз"
+                  },
+    "VICTORY":  {
+                    "en":  "\u003cspan style=\"color:green;\"\u003eVICTORY\u003c/span\u003e",
+                    "uk":  "\u003cspan style=\"color:green;\"\u003eПЕРЕМОГА\u003c/span\u003e",
+                    "ru":  "\u003cspan style=\"color:green;\"\u003eПОБЕДА\u003c/span\u003e"
+                },
+    "DEFEAT":  {
+                   "en":  "\u003cspan style=\"color:red;\"\u003eDEFEAT\u003c/span\u003e",
+                   "uk":  "\u003cspan style=\"color:red;\"\u003eПОРАЗКА\u003c/span\u003e",
+                   "ru":  "\u003cspan style=\"color:red;\"\u003eПОРАЖЕНИЕ\u003c/span\u003e"
+               },
+    "CHANCE_TO_WIN":  {
+                          "en":  "Chance to win \u003cspan style=\"color: yellow;\"\u003ebased on pre-calculation\u003c/span\u003e",
+                          "uk":  "Шанс виграти \u003cspan style=\"color: yellow;\"\u003eна основі попереднього розрахунку\u003c/span\u003e",
+                          "ru":  "Шансы на победу \u003cspan style=\"color:yellow;\"\u003eна основе прерасчета\u003c/span\u003e"
+                      },
+    "OPEN_DOLLS":  {
+                       "en":  "nesting dolls recursively",
+                       "uk":  "матрьошки рекурсивно",
+                       "ru":  "матрешек рекурсивно"
+                   },
+    "SENT_QUESTION":  {
+                          "en":  "Question sent",
+                          "uk":  "Питання надіслано",
+                          "ru":  "Вопрос отправлен"
+                      },
+    "SETTINGS":  {
+                     "en":  "Settings",
+                     "uk":  "Налаштування",
+                     "ru":  "Настройки"
+                 },
+    "MSG_BAN_ATTENTION":  {
+                              "en":  "\u003cp style=\"color:red;\"\u003eUsing this feature may result in a ban.\u003c/p\u003e Continue?",
+                              "uk":  "\u003cp style=\"color:red;\"\u003eВикористання цієї функції може призвести до блокування.\u003c/p\u003e Продовжити?",
+                              "ru":  "\u003cp style=\"color:red;\"\u003eИспользование этой функции может привести к бану.\u003c/p\u003e Продолжить?"
+                          },
+    "BTN_YES_I_AGREE":  {
+                            "en":  "Yes, I understand the risks!",
+                            "uk":  "Так, я розумію ризики!",
+                            "ru":  "Да, я беру на себя все риски!"
+                        },
+    "BTN_NO_I_AM_AGAINST":  {
+                                "en":  "No, I refuse it!",
+                                "uk":  "Ні, я відмовляюся!",
+                                "ru":  "Нет, я отказываюсь от этого!"
+                            },
+    "VALUES":  {
+                   "en":  "Values",
+                   "uk":  "Значення",
+                   "ru":  "Значения"
+               },
+    "EXPEDITIONS_SENT":  {
+                             "en":  "Expeditions:\u003cbr\u003eCollected: {countGet}\u003cbr\u003eSent: {countSend}",
+                             "uk":  "Експедиції:\u003cbr\u003eЗібрано: {countGet}\u003cbr\u003eНадіслано: {countSend}",
+                             "ru":  "Экспедиции:\u003cbr\u003eСобрано: {countGet}\u003cbr\u003eОтправлено: {countSend}"
+                         },
+    "EXPEDITIONS_NOTHING":  {
+                                "en":  "Nothing to collect/send",
+                                "uk":  "Нема що збирати/надсилати",
+                                "ru":  "Нечего собирать/отправлять"
+                            },
+    "EXPEDITIONS_NOTTIME":  {
+                                "en":  "It is not time for expeditions",
+                                "uk":  "Ще не час для експедицій",
+                                "ru":  "Не время для экспедиций"
+                            },
+    "TITANIT":  {
+                    "en":  "Titanit",
+                    "uk":  "Титаніт",
+                    "ru":  "Титанит"
+                },
+    "COMPLETED":  {
+                      "en":  "completed",
+                      "uk":  "завершено",
+                      "ru":  "завершено"
+                  },
+    "FLOOR":  {
+                  "en":  "Floor",
+                  "uk":  "Поверх",
+                  "ru":  "Этаж"
+              },
+    "LEVEL":  {
+                  "en":  "Level",
+                  "uk":  "Рівень",
+                  "ru":  "Уровень"
+              },
+    "BATTLES":  {
+                    "en":  "battles",
+                    "uk":  "битви",
+                    "ru":  "бои"
+                },
+    "EVENT":  {
+                  "en":  "Event",
+                  "uk":  "Подія",
+                  "ru":  "Эвент"
+              },
+    "NOT_AVAILABLE":  {
+                          "en":  "not available",
+                          "uk":  "недоступний",
+                          "ru":  "недоступен"
+                      },
+    "NO_HEROES":  {
+                      "en":  "No heroes",
+                      "uk":  "Немає героїв",
+                      "ru":  "Нет героев"
+                  },
+    "DAMAGE_AMOUNT":  {
+                          "en":  "Total combat damage",
+                          "uk":  "Розмір збитку",
+                          "ru":  "Общий боевой урон"
+                      },
+    "NOTHING_TO_COLLECT":  {
+                               "en":  "Nothing to collect",
+                               "uk":  "Нічого збирати",
+                               "ru":  "Нечего собирать"
+                           },
+    "COLLECTED":  {
+                      "en":  "Collected",
+                      "uk":  "Зібрано",
+                      "ru":  "Собрано"
+                  },
+    "REWARD":  {
+                   "en":  "rewards",
+                   "uk":  "нагород",
+                   "ru":  "наград"
+               },
+    "REMAINING_ATTEMPTS":  {
+                               "en":  "Remaining attempts",
+                               "uk":  "Залишилось спроб",
+                               "ru":  "Осталось попыток"
+                           },
+    "BATTLES_CANCELED":  {
+                             "en":  "Battles canceled",
+                             "uk":  "Боїв скасовано",
+                             "ru":  "Битв отменено"
+                         },
+    "MINION_RAID":  {
+                        "en":  "Minion Raid",
+                        "uk":  "Рейд міньйонів",
+                        "ru":  "Рейд прислужников"
+                    },
+    "STOPPED":  {
+                    "en":  "Stopped",
+                    "uk":  "Зупинино",
+                    "ru":  "Остановлено"
+                },
+    "REPETITIONS":  {
+                        "en":  "Repetitions",
+                        "uk":  "Повторений",
+                        "ru":  "Повторений"
+                    },
+    "MISSIONS_PASSED":  {
+                            "en":  "Missions passed",
+                            "uk":  "Місій пройдено",
+                            "ru":  "Миссий пройдено"
+                        },
+    "STOP":  {
+                 "en":  "stop",
+                 "uk":  "зупинити",
+                 "ru":  "остановить"
+             },
+    "TOTAL_OPEN":  {
+                       "en":  "Total open",
+                       "uk":  "Всього відкрито",
+                       "ru":  "Всего открыто"
+                   },
+    "OPEN":  {
+                 "en":  "Open",
+                 "uk":  "Відкрито",
+                 "ru":  "Открыто"
+             },
+    "ROUND_STAT":  {
+                       "en":  "Damage statistics for ",
+                       "uk":  "Статистика збитків за",
+                       "ru":  "Статистика урона за"
+                   },
+    "BATTLE":  {
+                   "en":  "battles",
+                   "uk":  "битв",
+                   "ru":  "боев"
+               },
+    "MINIMUM":  {
+                    "en":  "Minimum",
+                    "uk":  "Мінімальний",
+                    "ru":  "Минимальный"
+                },
+    "MAXIMUM":  {
+                    "en":  "Maximum",
+                    "uk":  "Максимальний",
+                    "ru":  "Максимальный"
+                },
+    "AVERAGE":  {
+                    "en":  "Average",
+                    "uk":  "Середній",
+                    "ru":  "Средний"
+                },
+    "NOT_THIS_TIME":  {
+                          "en":  "Not this time",
+                          "uk":  "Не цього разу",
+                          "ru":  "Не в этот раз"
+                      },
+    "RETRY_LIMIT_EXCEEDED":  {
+                                 "en":  "Retry limit exceeded",
+                                 "uk":  "Перевищено ліміт спроб",
+                                 "ru":  "Превышен лимит попыток"
+                             },
+    "SUCCESS":  {
+                    "en":  "Success",
+                    "uk":  "Успіх",
+                    "ru":  "Успех"
+                },
+    "RECEIVED":  {
+                     "en":  "Received",
+                     "uk":  "Отримано",
+                     "ru":  "Получено"
+                 },
+    "LETTERS":  {
+                    "en":  "letters",
+                    "uk":  "листів",
+                    "ru":  "писем"
+                },
+    "PORTALS":  {
+                    "en":  "portals",
+                    "uk":  "порталів",
+                    "ru":  "порталов"
+                },
+    "ATTEMPTS":  {
+                     "en":  "attempts",
+                     "uk":  "спроб",
+                     "ru":  "попыток"
+                 },
+    "QUEST_10001":  {
+                        "en":  "Upgrade the skills of heroes 3 times",
+                        "uk":  "Покращ навички героїв 3 рази",
+                        "ru":  "Улучши умения героев 3 раза"
+                    },
+    "QUEST_10002":  {
+                        "en":  "Complete 10 missions",
+                        "uk":  "Виконай 10 місій",
+                        "ru":  "Пройди 10 миссий"
+                    },
+    "QUEST_10003":  {
+                        "en":  "Complete 3 heroic missions",
+                        "uk":  "Виконай 3 героїчні місії",
+                        "ru":  "Пройди 3 героические миссии"
+                    },
+    "QUEST_10004":  {
+                        "en":  "Fight 3 times in the Arena or Grand Arena",
+                        "uk":  "Бийся 3 рази на Арені або Гранд Арені",
+                        "ru":  "Сразись 3 раза на Арене или Гранд Арене"
+                    },
+    "QUEST_10006":  {
+                        "en":  "Use the exchange of emeralds 1 time",
+                        "uk":  "Використуй обмін смарагдів 1 раз",
+                        "ru":  "Используй обмен изумрудов 1 раз"
+                    },
+    "QUEST_10007":  {
+                        "en":  "Perform 1 summon in the Soul Atrium",
+                        "uk":  "Виконай 1 виклик в Атріумі Душ",
+                        "ru":  "Соверши 1 призыв в Атриуме Душ"
+                    },
+    "QUEST_10016":  {
+                        "en":  "Send gifts to guildmates",
+                        "uk":  "Надсилай подарунки членам гільдії",
+                        "ru":  "Отправь подарки согильдийцам"
+                    },
+    "QUEST_10018":  {
+                        "en":  "Use an experience potion",
+                        "uk":  "Використовуй зілля досвіду",
+                        "ru":  "Используй зелье опыта"
+                    },
+    "QUEST_10019":  {
+                        "en":  "Open 1 chest in the Tower",
+                        "uk":  "Відкрий 1 скриню у Башті",
+                        "ru":  "Открой 1 сундук в Башне"
+                    },
+    "QUEST_10020":  {
+                        "en":  "Open 3 chests in Outland",
+                        "uk":  "Відкрийте 3 скрині в Запреділі",
+                        "ru":  "Открой 3 сундука в Запределье"
+                    },
+    "QUEST_10021":  {
+                        "en":  "Collect 150 Titanite in the Guild Dungeon",
+                        "uk":  "Збери 150 Титаніта у Підземеллі Гільдії",
+                        "ru":  "Собери 150 Титанита в Подземелье Гильдии"
+                    },
+    "QUEST_10023":  {
+                        "en":  "Upgrade Gift of the Elements by 1 level",
+                        "uk":  "Покращ Дар Стихій на 1 рівень",
+                        "ru":  "Прокачай Дар Стихий на 1 уровень"
+                    },
+    "QUEST_10024":  {
+                        "en":  "Level up any artifact once",
+                        "uk":  "Підвищ рівень будь-якого артефакту один раз",
+                        "ru":  "Повысь уровень любого артефакта один раз"
+                    },
+    "QUEST_10025":  {
+                        "en":  "Start Expedition",
+                        "uk":  "Почни Експедицію",
+                        "ru":  "Начни Экспедицию"
+                    },
+    "QUEST_10026":  {
+                        "en":  "Start 4 Expeditions",
+                        "uk":  "Почни 4 Експедиції",
+                        "ru":  "Начни 4 Экспедиции"
+                    },
+    "QUEST_10027":  {
+                        "en":  "Win 1 battle of the Tournament of Elements",
+                        "uk":  "Виграйте 1 битву Турніру Стихій",
+                        "ru":  "Победи в 1 бою Турнира Стихий"
+                    },
+    "QUEST_10028":  {
+                        "en":  "Level up any titan artifact",
+                        "uk":  "Підвищ рівень будь-якого артефакту титанів",
+                        "ru":  "Повысь уровень любого артефакта титанов"
+                    },
+    "QUEST_10029":  {
+                        "en":  "Unlock the Orb of Titan Artifacts",
+                        "uk":  "Відкрий Сферу Артефактів Титанів",
+                        "ru":  "Открой Сферу Артефактов Титанов"
+                    },
+    "QUEST_10030":  {
+                        "en":  "Upgrade any Skin of any hero 1 time",
+                        "uk":  "Оновіть будь-який скін будь-якого героя 1 раз",
+                        "ru":  "Улучши любой облик любого героя 1 раз"
+                    },
+    "QUEST_10031":  {
+                        "en":  "Win 6 battles of the Tournament of Elements",
+                        "uk":  "Виграйте 6 битв Турніру Стихій",
+                        "ru":  "Победи в 6 боях Турнира Стихий"
+                    },
+    "QUEST_10043":  {
+                        "en":  "Start or Join an Adventure",
+                        "uk":  "Почніть або приєднайтеся до Пригоди",
+                        "ru":  "Начни или присоеденись к Приключению"
+                    },
+    "QUEST_10044":  {
+                        "en":  "Use Summon Pets 1 time",
+                        "uk":  "Використуй виклик Петів 1 раз",
+                        "ru":  "Воспользуйся призывом Питомцев 1 раз"
+                    },
+    "QUEST_10046":  {
+                        "en":  "Open 3 chests in Adventure",
+                        "uk":  "Відкрий 3 скрині в Пригодах",
+                        "ru":  "Открой 3 сундука в Приключениях"
+                    },
+    "QUEST_10047":  {
+                        "en":  "Get 150 Guild Activity Points",
+                        "uk":  "Отримайте 150 очок активності Гільдії",
+                        "ru":  "Набери 150 очков активности в Гильдии"
+                    },
+    "NOTHING_TO_DO":  {
+                          "en":  "Nothing to do",
+                          "uk":  "Нічого робити",
+                          "ru":  "Нечего выполнять"
+                      },
+    "YOU_CAN_COMPLETE":  {
+                             "en":  "You can complete quests",
+                             "uk":  "Можна виконати квести",
+                             "ru":  "Можно выполнить квесты"
+                         },
+    "BTN_DO_IT":  {
+                      "en":  "Do it",
+                      "uk":  "Роби",
+                      "ru":  "Выполняй"
+                  },
+    "NOT_QUEST_COMPLETED":  {
+                                "en":  "Not a single quest completed",
+                                "uk":  "Жодного виконаного квесту",
+                                "ru":  "Ни одного квеста не выполенно"
+                            },
+    "COMPLETED_QUESTS":  {
+                             "en":  "Completed quests",
+                             "uk":  "Виконаних квестів",
+                             "ru":  "Выполнено квестов"
+                         },
+    "ASSEMBLE_OUTLAND":  {
+                             "en":  "Assemble Outland",
+                             "uk":  "Зберіть Запреділ",
+                             "ru":  "Собрать Запределье"
+                         },
+    "PASS_THE_TOWER":  {
+                           "en":  "Pass the tower",
+                           "uk":  "Пройдіть Башту",
+                           "ru":  "Пройти Башню"
+                       },
+    "CHECK_EXPEDITIONS":  {
+                              "en":  "Check Expeditions",
+                              "uk":  "Перевіріти Експедиції",
+                              "ru":  "Проверить Экспедиции"
+                          },
+    "COMPLETE_TOE":  {
+                         "en":  "Complete ToE",
+                         "uk":  "Пройти Турнір Стихій",
+                         "ru":  "Пройти Турнир Стихий"
+                     },
+    "COMPLETE_DUNGEON":  {
+                             "en":  "Complete the Dungeon",
+                             "uk":  "Пройти Підземелля",
+                             "ru":  "Пройти Подземелье"
+                         },
+    "COLLECT_MAIL":  {
+                         "en":  "Collect mail",
+                         "uk":  "Зібрати пошту",
+                         "ru":  "Собрать почту"
+                     },
+    "COLLECT_MISC":  {
+                         "en":  "Gather up all the junk",
+                         "uk":  "Зібрати мотлох",
+                         "ru":  "Собрать весь хлам"
+                     },
+    "COLLECT_MISC_TITLE":  {
+                               "en":  "Collect Easter Eggs, Skins, Keys, Coins and Crystals",
+                               "uk":  "Зібрати Пасхалки, Скіни, Ключі, Монети та Кристали",
+                               "ru":  "Собрать Пасхалки, Облики, Ключи, Монеты и Хрусталь"
+                           },
+    "COLLECT_QUEST_REWARDS":  {
+                                  "en":  "Collect quest rewards",
+                                  "uk":  "Зібрати нагороди за квест",
+                                  "ru":  "Собрать награды за квесты"
+                              },
+    "MAKE_A_SYNC":  {
+                        "en":  "Make a sync",
+                        "uk":  "Зробити синхронізацію",
+                        "ru":  "Сделать синхронизацию"
+                    },
+    "RUN_FUNCTION":  {
+                         "en":  "Run the following functions?",
+                         "uk":  "Запустити такі функції?",
+                         "ru":  "Выполнить следующие функции?"
+                     },
+    "BTN_GO":  {
+                   "en":  "Go!",
+                   "uk":  "Роби!",
+                   "ru":  "Погнали!"
+               },
+    "PERFORMED":  {
+                      "en":  "Performed",
+                      "uk":  "Виконується",
+                      "ru":  "Выполняется"
+                  },
+    "DONE":  {
+                 "en":  "Done",
+                 "uk":  "Готово",
+                 "ru":  "Выполнено"
+             },
+    "ERRORS_OCCURRES":  {
+                            "en":  "Errors occurred while executing",
+                            "uk":  "Під час виконання виникли помилки",
+                            "ru":  "Призошли ошибки при выполнении"
+                        },
+    "COPY_ERROR":  {
+                       "en":  "Copy error information to clipboard",
+                       "uk":  "Копіювати інформацію про помилку в буфер обміну",
+                       "ru":  "Скопировать в буфер информацию об ошибке"
+                   },
+    "BTN_YES":  {
+                    "en":  "Yes",
+                    "uk":  "Так",
+                    "ru":  "Да"
+                },
+    "ALL_TASK_COMPLETED":  {
+                               "en":  "All tasks completed",
+                               "uk":  "Всі завдання виконано",
+                               "ru":  "Все задачи выполнены"
+                           },
+    "UNKNOWN":  {
+                    "en":  "Unknown",
+                    "uk":  "Невідомо",
+                    "ru":  "Неизвестно"
+                },
+    "ENTER_THE_PATH":  {
+                           "en":  "Enter the path of adventure using commas or dashes",
+                           "uk":  "Введіть шлях пригод, використовуючи коми або тире",
+                           "ru":  "Введите путь приключения через запятые или дефисы"
+                       },
+    "START_ADVENTURE":  {
+                            "en":  "Start your adventure along this path!",
+                            "uk":  "Почати пригоду цим шляхом!",
+                            "ru":  "Начать приключение по этому пути!"
+                        },
+    "INCORRECT_WAY":  {
+                          "en":  "Incorrect path in adventure: {from} -\u003e {to}",
+                          "uk":  "Неправильний шлях у пригоді: {from} -\u003e {to}",
+                          "ru":  "Неверный путь в приключении: {from} -\u003e {to}"
+                      },
+    "BTN_CANCELED":  {
+                         "en":  "Canceled",
+                         "uk":  "Скасовано",
+                         "ru":  "Отменено"
+                     },
+    "MUST_TWO_POINTS":  {
+                            "en":  "The path must contain at least 2 points.",
+                            "uk":  "Шлях повинен містити не менше 2 точок.",
+                            "ru":  "Путь должен состоять минимум из 2х точек"
+                        },
+    "MUST_ONLY_NUMBERS":  {
+                              "en":  "The path must contain only numbers and commas",
+                              "uk":  "Шлях має містити лише цифри та коми",
+                              "ru":  "Путь должен содержать только цифры и запятые"
+                          },
+    "NOT_ON_AN_ADVENTURE":  {
+                                "en":  "You are not on an adventure",
+                                "uk":  "Ви не в пригоді",
+                                "ru":  "Вы не в приключении"
+                            },
+    "YOU_IN_NOT_ON_THE_WAY":  {
+                                  "en":  "Your location is not on the way",
+                                  "uk":  "Ваше місцезнаходження не вказано на маршруті",
+                                  "ru":  "Указанный путь должен включать точку вашего положения"
+                              },
+    "ATTEMPTS_NOT_ENOUGH":  {
+                                "en":  "Your attempts are not enough to complete the path, continue?",
+                                "uk":  "Ваших спроб недостатньо, щоб пройти шлях, продовжити?",
+                                "ru":  "Ваших попыток не достаточно для завершения пути, продолжить?"
+                            },
+    "YES_CONTINUE":  {
+                         "en":  "Yes, continue!",
+                         "uk":  "Так, продовжуйте!",
+                         "ru":  "Да, продолжай!"
+                     },
+    "NOT_ENOUGH_AP":  {
+                          "en":  "Not enough action points",
+                          "uk":  "Недостатньо спроб",
+                          "ru":  "Попыток не достаточно"
+                      },
+    "ATTEMPTS_ARE_OVER":  {
+                              "en":  "The attempts are over",
+                              "uk":  "Спроби закінчилися",
+                              "ru":  "Попытки закончились"
+                          },
+    "MOVES":  {
+                  "en":  "Moves",
+                  "uk":  "Ходи",
+                  "ru":  "Ходы"
+              },
+    "BUFF_GET_ERROR":  {
+                           "en":  "Buff getting error",
+                           "uk":  "Помилка отримання бафа",
+                           "ru":  "Ошибка при получении бафа"
+                       },
+    "BATTLE_END_ERROR":  {
+                             "en":  "Battle end error",
+                             "uk":  "Помилка закінчення битви",
+                             "ru":  "Ошибка завершения боя"
+                         },
+    "AUTOBOT":  {
+                    "en":  "AutoBattle",
+                    "uk":  "АвтоБій",
+                    "ru":  "АвтоБой"
+                },
+    "FAILED_TO_WIN_AUTO":  {
+                               "en":  "Failed to win the auto battle",
+                               "uk":  "Не вдалося виграти автбій",
+                               "ru":  "Не удалось победить в автобою"
+                           },
+    "ERROR_OF_THE_BATTLE_COPY":  {
+                                     "en":  "An error occurred during the passage of the battle\u003cbr\u003eCopy the error to the clipboard?",
+                                     "uk":  "Сталася помилка під час проходження бою\u003cbr\u003eСкопіювати помилку в буфер обміну?",
+                                     "ru":  "Призошли ошибка в процессе прохождения боя\u003cbr\u003eСкопировать ошибку в буфер обмена?"
+                                 },
+    "ERROR_DURING_THE_BATTLE":  {
+                                    "en":  "Error during the battle",
+                                    "uk":  "Помилка під час бою",
+                                    "ru":  "Ошибка в процессе прохождения боя"
+                                },
+    "NO_CHANCE_WIN":  {
+                          "en":  "No chance of winning this fight: 0/",
+                          "uk":  "Немає шансів виграти цей бій: 0/",
+                          "ru":  "Нет шансов победить в этом бою: 0/"
+                      },
+    "LOST_HEROES":  {
+                        "en":  "You have won, but you have lost one or several heroes",
+                        "uk":  "Ви виграли, але втратили одного або кількох героїв",
+                        "ru":  "Вы победили, но потеряли одного или несколько героев!"
+                    },
+    "VICTORY_IMPOSSIBLE":  {
+                               "en":  "Is victory impossible, should we focus on the result?",
+                               "uk":  "Перемога неможлива, чи варто орієнтуватися на результат?",
+                               "ru":  "Победа не возможна, бъем на результат?"
+                           },
+    "FIND_COEFF":  {
+                       "en":  "Find the coefficient greater than",
+                       "uk":  "Шукаю коефіцієнт, більший за",
+                       "ru":  "Поиск коэффициента больше чем"
+                   },
+    "BTN_PASS":  {
+                     "en":  "PASS",
+                     "uk":  "ПРОПУСК",
+                     "ru":  "ПРОПУСК"
+                 },
+    "BRAWLS":  {
+                   "en":  "Brawls",
+                   "uk":  "Потусовки",
+                   "ru":  "Потасовки"
+               },
+    "BRAWLS_TITLE":  {
+                         "en":  "Activates the ability to auto-brawl",
+                         "uk":  "Активує можливість автопотусовок",
+                         "ru":  "Включает возможность автопотасовок"
+                     },
+    "START_AUTO_BRAWLS":  {
+                              "en":  "Start Auto Brawls?",
+                              "uk":  "Почати Авто Потусовки?",
+                              "ru":  "Запустить Автопотасовки?"
+                          },
+    "LOSSES":  {
+                   "en":  "Losses",
+                   "uk":  "Програшів",
+                   "ru":  "Поражений"
+               },
+    "WINS":  {
+                 "en":  "Wins",
+                 "uk":  "Перемоги",
+                 "ru":  "Побед"
+             },
+    "FIGHTS":  {
+                   "en":  "Fights",
+                   "uk":  "Боїв",
+                   "ru":  "Боев"
+               },
+    "STAGE":  {
+                  "en":  "Stage",
+                  "uk":  "Етап",
+                  "ru":  "Стадия"
+              },
+    "DONT_HAVE_LIVES":  {
+                            "en":  "You don't have lives",
+                            "uk":  "У вас немає життів",
+                            "ru":  "У вас нет жизней"
+                        },
+    "LIVES":  {
+                  "en":  "Lives",
+                  "uk":  "життя",
+                  "ru":  "Жизни"
+              },
+    "SECRET_WEALTH_ALREADY":  {
+                                  "en":  "Item for Pet Potions already purchased",
+                                  "uk":  "Предмет за Зілля Петів уже придбано",
+                                  "ru":  "Товар за Зелья питомцев уже куплен"
+                              },
+    "SECRET_WEALTH_NOT_ENOUGH":  {
+                                     "en":  "Not Enough Pet Potion, You Have {available}, Need {need}",
+                                     "uk":  "Недостатньо Зілля Петів, є {available}, потрібно {need}",
+                                     "ru":  "Не достаточно Зелье Питомца, есть {available}, нужно {need}"
+                                 },
+    "SECRET_WEALTH_UPGRADE_NEW_PET":  {
+                                          "en":  "After purchasing the Pet Potion, it will not be enough to upgrade a new pet",
+                                          "uk":  "Після покупки Зілля Петів цього буде недостатньо для покращення нового вихованця",
+                                          "ru":  "После покупки Зелье Питомца будет не достаточно для прокачки нового питомца"
+                                      },
+    "SECRET_WEALTH_PURCHASED":  {
+                                    "en":  "Purchased {count} {name}",
+                                    "uk":  "Придбано {count} {name}",
+                                    "ru":  "Куплено {count} {name}"
+                                },
+    "SECRET_WEALTH_CANCELED":  {
+                                   "en":  "Secret Wealth: Purchase Canceled",
+                                   "uk":  "Секретне багатство: покупку скасовано",
+                                   "ru":  "Тайное богатство: покупка отменена"
+                               },
+    "SECRET_WEALTH_BUY":  {
+                              "en":  "You have {available} Pet Potion.\u003cbr\u003eDo you want to buy {countBuy} {name} for {price} Pet Potion?",
+                              "uk":  "У вас є {available} Зілля Петів.\u003cbr\u003eВи хочете купити {countBuy} {name} за {price} Зілля Петів?",
+                              "ru":  "У вас {available} Зелье Питомца.\u003cbr\u003eВы хотите купить {countBuy} {name} за {price} Зелье Питомца?"
+                          },
+    "DAILY_BONUS":  {
+                        "en":  "Daily bonus",
+                        "uk":  "Щоденний бонус",
+                        "ru":  "Ежедневная награда"
+                    },
+    "DO_DAILY_QUESTS":  {
+                            "en":  "Do daily quests",
+                            "uk":  "Виконати щоденні квести",
+                            "ru":  "Сделать ежедневные квесты"
+                        },
+    "ACTIONS":  {
+                    "en":  "Actions",
+                    "uk":  "Дії",
+                    "ru":  "Действия"
+                },
+    "ACTIONS_TITLE":  {
+                          "en":  "Dialog box with various actions",
+                          "uk":  "Діалогове вікно з різними діями",
+                          "ru":  "Диалоговое окно с различными действиями"
+                      },
+    "OTHERS":  {
+                   "en":  "Others",
+                   "uk":  "Інше",
+                   "ru":  "Разное"
+               },
+    "OTHERS_TITLE":  {
+                         "en":  "Others",
+                         "uk":  "Діалогове вікно з додатковими різними діями",
+                         "ru":  "Диалоговое окно с дополнительными различными действиями"
+                     },
+    "CHOOSE_ACTION":  {
+                          "en":  "Choose an action",
+                          "uk":  "Виберіть дію",
+                          "ru":  "Выберите действие"
+                      },
+    "OPEN_LOOTBOX":  {
+                         "en":  "You have {lootBox} boxes, should we open them?",
+                         "uk":  "У вас {lootBox} ящиків, відкрити?",
+                         "ru":  "У вас {lootBox} ящиков, открываем?"
+                     },
+    "STAMINA":  {
+                    "en":  "Energy",
+                    "uk":  "Енергія",
+                    "ru":  "Энергия"
+                },
+    "BOXES_OVER":  {
+                       "en":  "The boxes are over",
+                       "uk":  "Ящики  закінчилися",
+                       "ru":  "Ящики закончились"
+                   },
+    "NO_BOXES":  {
+                     "en":  "No boxes",
+                     "uk":  "Без ящиків",
+                     "ru":  "Нет ящиков"
+                 },
+    "NO_MORE_ACTIVITY":  {
+                             "en":  "No more activity for items today",
+                             "uk":  "Сьогодні більше немає активності щодо елементів",
+                             "ru":  "Больше активности за предметы сегодня не получить"
+                         },
+    "EXCHANGE_ITEMS":  {
+                           "en":  "Exchange items for activity points (max {maxActive})?",
+                           "uk":  "Обмін предметів на бали активності (не більше {maxActive})?",
+                           "ru":  "Обменять предметы на очки активности (не более {maxActive})?"
+                       },
+    "GET_ACTIVITY":  {
+                         "en":  "Get Activity",
+                         "uk":  "Отримати активність",
+                         "ru":  "Получить активность"
+                     },
+    "NOT_ENOUGH_ITEMS":  {
+                             "en":  "Not enough items",
+                             "uk":  "Недостатньо предметів",
+                             "ru":  "Предметов недостаточно"
+                         },
+    "ACTIVITY_RECEIVED":  {
+                              "en":  "Activity received",
+                              "uk":  "Активністі отримано",
+                              "ru":  "Получено активности"
+                          },
+    "NO_PURCHASABLE_HERO_SOULS":  {
+                                      "en":  "No purchasable Hero Souls",
+                                      "uk":  "Душі героїв не можна придбати",
+                                      "ru":  "Нет доступных для покупки душ героев"
+                                  },
+    "PURCHASED_HERO_SOULS":  {
+                                 "en":  "Purchased {countHeroSouls} Hero Souls",
+                                 "uk":  "Придбано {countHeroSouls} душ героїв",
+                                 "ru":  "Куплено {countHeroSouls} душ героев"
+                             },
+    "NOT_ENOUGH_EMERALDS_540":  {
+                                    "en":  "Not enough emeralds, you need {imgEmerald}540 you have {imgEmerald}{currentStarMoney}",
+                                    "uk":  "Недостатньо смарагдів, вам потрібно {imgEmerald}540 у вас є {imgEmerald}{currentStarMoney}",
+                                    "ru":  "Недостаточно изюма, нужно {imgEmerald}540 у Вас {imgEmerald}{currentStarMoney}"
+                                },
+    "BUY_OUTLAND_BTN":  {
+                            "en":  "Buy {count} chests {imgEmerald}{countEmerald}",
+                            "uk":  "Купіть {count} скринь {imgEmerald}{countEmerald}",
+                            "ru":  "Купить {count} сундуков {imgEmerald}{countEmerald}"
+                        },
+    "CHESTS_NOT_AVAILABLE":  {
+                                 "en":  "Chests not available",
+                                 "uk":  "Скрині недоступні",
+                                 "ru":  "Сундуки не доступны"
+                             },
+    "OUTLAND_CHESTS_RECEIVED":  {
+                                    "en":  "Outland chests received",
+                                    "uk":  "Отримано скрині за кордоном",
+                                    "ru":  "Получено сундуков Запределья"
+                                },
+    "RAID_NOT_AVAILABLE":  {
+                               "en":  "The raid is not available or there are no spheres",
+                               "uk":  "Рейд недоступний або немає сфер",
+                               "ru":  "Рейд не доступен или сфер нет"
+                           },
+    "RAID_ADVENTURE":  {
+                           "en":  "Raid {adventureId} adventure!",
+                           "uk":  "Рейд на пригоду {adventureId}!",
+                           "ru":  "Рейд {adventureId} приключения!"
+                       },
+    "SOMETHING_WENT_WRONG":  {
+                                 "en":  "Something went wrong",
+                                 "uk":  "Щось пішло не так",
+                                 "ru":  "Что-то пошло не так"
+                             },
+    "ADVENTURE_COMPLETED":  {
+                                "en":  "Adventure {adventureId} completed {times} times",
+                                "uk":  "Пригода {adventureId} завершена {times} раз",
+                                "ru":  "Приключение {adventureId} пройдено {times} раз"
+                            },
+    "CLAN_STAT_COPY":  {
+                           "en":  "Clan statistics copied to clipboard",
+                           "uk":  "Статистику клану скопійовано в буфер обміну",
+                           "ru":  "Клановая статистика скопирована в буфер обмена"
+                       },
+    "GET_ENERGY":  {
+                       "en":  "Get Energy",
+                       "uk":  "Отримати енергію",
+                       "ru":  "Получить энергию"
+                   },
+    "GET_ENERGY_TITLE":  {
+                             "en":  "Opens platinum boxes one at a time until you get 250 energy",
+                             "uk":  "Відкриває платинові скриньки по черзі, доки ви не отримаєте 250 енергії",
+                             "ru":  "Открывает платиновые шкатулки по одной до получения 250 энергии"
+                         },
+    "ITEM_EXCHANGE":  {
+                          "en":  "Item Exchange",
+                          "uk":  "Обмін предметів",
+                          "ru":  "Обмен предметов"
+                      },
+    "ITEM_EXCHANGE_TITLE":  {
+                                "en":  "Exchanges items for the specified amount of activity",
+                                "uk":  "Обмін предметів на вказану кількість активності",
+                                "ru":  "Обменивает предметы на указанное количество активности"
+                            },
+    "BUY_SOULS":  {
+                      "en":  "Buy souls",
+                      "uk":  "Купити душі",
+                      "ru":  "Купить души"
+                  },
+    "BUY_SOULS_TITLE":  {
+                            "en":  "Buy hero souls from all available shops",
+                            "uk":  "Купуйте душі героїв у всіх доступних магазинах",
+                            "ru":  "Купить души героев из всех доступных магазинов"
+                        },
+    "BUY_OUTLAND":  {
+                        "en":  "Buy Outland",
+                        "uk":  "Купити Запреділ",
+                        "ru":  "Купить Запределье"
+                    },
+    "BUY_OUTLAND_TITLE":  {
+                              "en":  "Buy 9 chests in Outland for 540 emeralds",
+                              "uk":  "Купіть 9 скринь у Запределі за 540 смарагдів",
+                              "ru":  "Купить 9 сундуков в Запределье за 540 изумрудов"
+                          },
+    "RAID":  {
+                 "en":  "Raid",
+                 "uk":  "Рейд",
+                 "ru":  "Рейд"
+             },
+    "AUTO_RAID_ADVENTURE":  {
+                                "en":  "Raid",
+                                "uk":  "Рейд",
+                                "ru":  "Рейд"
+                            },
+    "AUTO_RAID_ADVENTURE_TITLE":  {
+                                      "en":  "Raid adventure set number of times",
+                                      "uk":  "Рейд пригоди вказану кількість разів",
+                                      "ru":  "Рейд приключения заданное количество раз"
+                                  },
+    "CLAN_STAT":  {
+                      "en":  "Clan statistics",
+                      "uk":  "Статистика клану",
+                      "ru":  "Клановая статистика"
+                  },
+    "CLAN_STAT_TITLE":  {
+                            "en":  "Copies clan statistics to the clipboard",
+                            "uk":  "Копіює статистику клану в буфер обміну",
+                            "ru":  "Копирует клановую статистику в буфер обмена"
+                        },
+    "BTN_AUTO_F5":  {
+                        "en":  "Auto (F5)",
+                        "uk":  "Авто (F5)",
+                        "ru":  "Авто (F5)"
+                    },
+    "BOSS_DAMAGE":  {
+                        "en":  "Boss Damage: ",
+                        "uk":  "Пошкодження боса:",
+                        "ru":  "Урон по боссу: "
+                    },
+    "NOTHING_BUY":  {
+                        "en":  "Nothing to buy",
+                        "uk":  "Нічого купити",
+                        "ru":  "Нечего покупать"
+                    },
+    "LOTS_BOUGHT":  {
+                        "en":  "{countBuy} lots bought for gold",
+                        "uk":  "{countBuy} лотів, куплених за золото",
+                        "ru":  "За золото куплено {countBuy} лотов"
+                    },
+    "BUY_FOR_GOLD":  {
+                         "en":  "Buy for gold",
+                         "uk":  "Скупити за золото",
+                         "ru":  "Скупить за золото"
+                     },
+    "BUY_FOR_GOLD_TITLE":  {
+                               "en":  "Buy items for gold in the Town Shop and in the Pet Soul Stone Shop",
+                               "uk":  "Скупити предмети за золото в Town Shop і Pet Soul Stone Shop",
+                               "ru":  "Скупить предметы за золото в Городской лавке и в магазине Камней Душ Питомцев"
+                           },
+    "REWARDS_AND_MAIL":  {
+                             "en":  "Rewards and Mail",
+                             "uk":  "Нагороди та пошта",
+                             "ru":  "Награды и почта"
+                         },
+    "REWARDS_AND_MAIL_TITLE":  {
+                                   "en":  "Collects rewards and mail",
+                                   "uk":  "Збирає нагороди та пошту",
+                                   "ru":  "Собирает награды и почту"
+                               },
+    "COLLECT_REWARDS_AND_MAIL":  {
+                                     "en":  "Collected {countQuests} rewards and {countMail} letters",
+                                     "uk":  "Зібрано {countQuests} нагород і {countMail} листів",
+                                     "ru":  "Собрано {countQuests} наград и {countMail} писем"
+                                 },
+    "TIMER_ALREADY":  {
+                          "en":  "Timer already started {time}",
+                          "uk":  "Таймер уже запущено {time}",
+                          "ru":  "Таймер уже запущен {time}"
+                      },
+    "NO_ATTEMPTS_TIMER_START":  {
+                                    "en":  "No attempts, timer started {time}",
+                                    "uk":  "Немає спроб, таймер запущено {time}",
+                                    "ru":  "Попыток нет, запущен таймер {time}"
+                                },
+    "EPIC_BRAWL_RESULT":  {
+                              "en":  "Wins: {wins}/{attempts}, Coins: {coins}, Streak: {progress}/{nextStage} [Close]{end}",
+                              "uk":  "Перемоги: {wins}/{attempts}, Монети: {coins}, Серія: {progress}/{nextStage} [Закрити]{end}",
+                              "ru":  "{i} Победы: {wins}/{attempts}, Монеты: {coins}, Серия: {progress}/{nextStage} [Закрыть]{end}"
+                          },
+    "ATTEMPT_ENDED":  {
+                          "en":  "\u003cbr\u003eAttempts ended, timer started {time}",
+                          "uk":  "\u003cbr\u003eСпроби закінчились, запущено таймер {time}",
+                          "ru":  "\u003cbr\u003eПопытки закончились, запущен таймер {time}"
+                      },
+    "EPIC_BRAWL":  {
+                       "en":  "Cosmic Battle",
+                       "uk":  "Всесвітня битва",
+                       "ru":  "Вселенская битва"
+                   },
+    "EPIC_BRAWL_TITLE":  {
+                             "en":  "Spends attempts in the Cosmic Battle",
+                             "uk":  "Витрачає спроби у Всесвітній битві",
+                             "ru":  "Тратит попытки во Вселенской битве"
+                         },
+    "RELOAD_GAME":  {
+                        "en":  "Reload game",
+                        "uk":  "Перезавантажити гру",
+                        "ru":  "Перезагрузить игру"
+                    },
+    "TIMER":  {
+                  "en":  "Timer:",
+                  "uk":  "Таймер:",
+                  "ru":  "Таймер:"
+              },
+    "SHOW_ERRORS":  {
+                        "en":  "Show errors",
+                        "uk":  "Показувати помилки",
+                        "ru":  "Отображать ошибки"
+                    },
+    "SHOW_ERRORS_TITLE":  {
+                              "en":  "Show server request errors",
+                              "uk":  "Показувати помилки запитів до сервера",
+                              "ru":  "Отображать ошибки запросов к серверу"
+                          },
+    "ERROR_MSG":  {
+                      "en":  "Error: {name}\u003cbr\u003e{description}",
+                      "uk":  "Помилка: {name}\u003cbr\u003e{description}",
+                      "ru":  "Ошибка: {name}\u003cbr\u003e{description}"
+                  },
+    "EVENT_AUTO_BOSS":  {
+                            "en":  "Maximum number of battles for calculation:\u003c/br\u003e{length} ∗ {countTestBattle} = {maxCalcBattle}\u003c/br\u003eIf you have a weak computer, it may take a long time for this, click on the cross to cancel.\u003c/br\u003eShould I search for the best pack from all or the first suitable one?",
+                            "uk":  "Максимальна кількість боїв для розрахунку:\u003c/br\u003e{length} ∗ {countTestBattle} = {maxCalcBattle}\u003c/br\u003eЯкщо у вас слабкий комп’ютер, це може зайняти багато часу, натисніть на хрестик, щоб скасувати.\u003c/br\u003eМені шукати найкращий пакет із усіх чи перший відповідний?",
+                            "ru":  "Максимальное количество боев для расчета:\u003c/br\u003e{length} * {countTestBattle} = {maxCalcBattle}\u003c/br\u003eЕсли у Вас слабый компьютер на это может потребоваться много времени, нажмите крестик для отмены.\u003c/br\u003eИскать лучший пак из всех или первый подходящий?"
+                        },
+    "BEST_SLOW":  {
+                      "en":  "Best (slower)",
+                      "uk":  "Найкращий (повільніше)",
+                      "ru":  "Лучший (медленее)"
+                  },
+    "FIRST_FAST":  {
+                       "en":  "First (faster)",
+                       "uk":  "Перший (швидше)",
+                       "ru":  "Первый (быстрее)"
+                   },
+    "FREEZE_INTERFACE":  {
+                             "en":  "Calculating... \u003cbr\u003eThe interface may freeze",
+                             "uk":  "Обчислення... \u003cbr\u003eІнтерфейс може зависати",
+                             "ru":  "Идет расчет... \u003cbr\u003e Интерфейс может зависнуть"
+                         },
+    "ERROR_F12":  {
+                      "en":  "Error, details in the console (F12)",
+                      "uk":  "Помилка, деталі в консолі (F12)",
+                      "ru":  "Ошибка, подробности в консоли (F12)"
+                  },
+    "FAILED_FIND_WIN_PACK":  {
+                                 "en":  "Failed to find a winning pack",
+                                 "uk":  "Не вдалося знайти виграшний пак",
+                                 "ru":  "Победный пак найти не удалось"
+                             },
+    "BEST_PACK":  {
+                      "en":  "Best pack:",
+                      "uk":  "Найкращий пак:",
+                      "ru":  "Наилучший пак: "
+                  },
+    "BOSS_HAS_BEEN_DEF":  {
+                              "en":  "Boss {bossLvl} has been defeated",
+                              "uk":  "Бос {bossLvl} переможений",
+                              "ru":  "Босс {bossLvl} побежден"
+                          },
+    "NOT_ENOUGH_ATTEMPTS_BOSS":  {
+                                     "en":  "Not enough attempts to defeat boss {bossLvl}, retry?",
+                                     "uk":  "Недостатньо спроб перемогти боса {bossLvl}, спробувати ще раз?",
+                                     "ru":  "Для победы босса ${bossLvl} не хватило попыток, повторить?"
+                                 },
+    "BOSS_VICTORY_IMPOSSIBLE":  {
+                                    "en":  "Based on the recalculation of {battles} battles, victory has not been achieved. Would you like to continue the search for a winning battle in real battles?",
+                                    "uk":  "Базуючись на предрахунку {battles} боїв, перемогу не отримано.Хочете продовжити пошук переможного бою в реальних боях?",
+                                    "ru":  "По результатам прерасчета {battles} боев победу получить не удалось. Вы хотите продолжить поиск победного боя на реальных боях?"
+                                },
+    "BOSS_HAS_BEEN_DEF_TEXT":  {
+                                   "en":  "Boss {bossLvl} defeated in\u003cbr\u003e{countBattle}/{countMaxBattle} attempts{winTimer}\u003cbr\u003e(Please synchronize or restart the game to update the data)",
+                                   "uk":  "Бос {bossLvl} переможений за\u003cbr\u003e{countBattle}/{countMaxBattle} спроб{winTimer}\u003cbr\u003e(Будь ласка, синхронізуйте або перезапустіть гру, щоб оновити дані)",
+                                   "ru":  "Босс {bossLvl} побежден за\u003cbr\u003e{countBattle}/{countMaxBattle} попыток{winTimer}\u003cbr\u003e(Сделайте синхронизацию или перезагрузите игру для обновления данных)"
+                               },
+    "MAP":  {
+                "en":  "Map: ",
+                "uk":  "Карта: ",
+                "ru":  "Карта: "
+            },
+    "PLAYER_POS":  {
+                       "en":  "Player positions:",
+                       "uk":  "Позиції гравців:",
+                       "ru":  "Позиции игроков:"
+                   },
+    "NY_GIFTS":  {
+                     "en":  "Gifts",
+                     "uk":  "Подарунки",
+                     "ru":  "Подарки"
+                 },
+    "NY_GIFTS_TITLE":  {
+                           "en":  "Open all the New Year's gifts",
+                           "uk":  "Відкрити всі новорічні подарунки",
+                           "ru":  "Открыть все новогодние подарки"
+                       },
+    "NY_NO_GIFTS":  {
+                        "en":  "There are no unreceived gifts",
+                        "uk":  "Немає неотриманих подарунків",
+                        "ru":  "Нет не полученных подарков"
+                    },
+    "NY_GIFTS_COLLECTED":  {
+                               "en":  "{count} gifts collected",
+                               "uk":  "Зібрано {count} подарунків",
+                               "ru":  "Собрано {count} подарков"
+                           },
+    "CHANGE_MAP":  {
+                       "en":  "Island map",
+                       "uk":  "Карта острова",
+                       "ru":  "Карта острова"
+                   },
+    "CHANGE_MAP_TITLE":  {
+                             "en":  "Change island map",
+                             "uk":  "Змінити карту острова",
+                             "ru":  "Сменить карту острова"
+                         },
+    "SELECT_ISLAND_MAP":  {
+                              "en":  "Select an island map:",
+                              "uk":  "Виберіть карту острова:",
+                              "ru":  "Выберите карту острова:"
+                          },
+    "MAP_NUM":  {
+                    "en":  "Map {num}",
+                    "uk":  "Карта {num}",
+                    "ru":  "Карта {num}"
+                },
+    "SECRET_WEALTH_SHOP":  {
+                               "en":  "Secret Wealth {name}: ",
+                               "uk":  "Секретне багатство {name}:",
+                               "ru":  "Тайное богатство {name}: "
+                           },
+    "SHOPS":  {
+                  "en":  "Shops",
+                  "uk":  "Магазини",
+                  "ru":  "Магазины"
+              },
+    "SHOPS_DEFAULT":  {
+                          "en":  "Default",
+                          "uk":  "Стандартні",
+                          "ru":  "Стандартные"
+                      },
+    "SHOPS_DEFAULT_TITLE":  {
+                                "en":  "Default stores",
+                                "uk":  "Стандартні магазини",
+                                "ru":  "Стандартные магазины"
+                            },
+    "SHOPS_LIST":  {
+                       "en":  "Shops {number}",
+                       "uk":  "Магазини {number}",
+                       "ru":  "Магазины {number}"
+                   },
+    "SHOPS_LIST_TITLE":  {
+                             "en":  "List of shops {number}",
+                             "uk":  "Список магазинів {number}",
+                             "ru":  "Список магазинов {number}"
+                         },
+    "SHOPS_WARNING":  {
+                          "en":  "Stores\u003cbr\u003e\u003cspan style=\"color:red\"\u003eIf you buy brawl store coins for emeralds, you must use them immediately, otherwise they will disappear after restarting the game!\u003c/span\u003e",
+                          "uk":  "Магазини\u003cbr\u003e\u003cspan style=\"color:red\"\u003eЯкщо ви купуєте монети магазинов потусовок за смарагди, ви повинні використати їх негайно, інакше вони зникнуть після перезапуску гри!\u003c/span\u003e",
+                          "ru":  "Магазины\u003cbr\u003e\u003cspan style=\"color:red\"\u003eЕсли Вы купите монеты магазинов потасовок за изумруды, то их надо использовать сразу, иначе после перезагрузки игры они пропадут!\u003c/span\u003e"
+                      },
+    "MINIONS_WARNING":  {
+                            "en":  "The hero packs for attacking minions are incomplete, should I continue?",
+                            "uk":  "Паки героїв для атаки міньйонів не завершені, чи варто продовжувати?",
+                            "ru":  "Пачки героев для атаки приспешников неполные, продолжить?"
+                        },
+    "FAST_SEASON":  {
+                        "en":  "Fast season",
+                        "uk":  "Швидкий сезон",
+                        "ru":  "Быстрый сезон"
+                    },
+    "FAST_SEASON_TITLE":  {
+                              "en":  "Skip the map selection screen in a season",
+                              "uk":  "Пропуск екрану вибору карти в сезоні",
+                              "ru":  "Пропуск экрана с выбором карты в сезоне"
+                          },
+    "SET_NUMBER_LEVELS":  {
+                              "en":  "Specify the number of levels:",
+                              "uk":  "Вкажіть кількість рівнів:",
+                              "ru":  "Указать колличество уровней:"
+                          },
+    "POSSIBLE_IMPROVE_LEVELS":  {
+                                    "en":  "It is possible to improve only {count} levels.\u003cbr\u003eImproving?",
+                                    "uk":  "Можна покращити лише {count} рівнів.\u003cbr\u003eПокращувати?",
+                                    "ru":  "Возможно улучшить только {count} уровней.\u003cbr\u003eУлучшаем?"
+                                },
+    "NOT_ENOUGH_RESOURECES":  {
+                                  "en":  "Not enough resources",
+                                  "uk":  "Недостатньо ресурсів",
+                                  "ru":  "Не хватает ресурсов"
+                              },
+    "IMPROVED_LEVELS":  {
+                            "en":  "Improved levels: {count}",
+                            "uk":  "Покращено рівнів: {count}",
+                            "ru":  "Улучшено уровней: {count}"
+                        },
+    "ARTIFACTS_UPGRADE":  {
+                              "en":  "Artifacts Upgrade",
+                              "uk":  "Оновлення артефактів",
+                              "ru":  "Улучшение артефактов"
+                          },
+    "ARTIFACTS_UPGRADE_TITLE":  {
+                                    "en":  "Upgrades the specified amount of the cheapest hero artifacts",
+                                    "uk":  "Покращує вказану кількість найдешевших артефактів героя",
+                                    "ru":  "Улучшает указанное количество самых дешевых артефактов героев"
+                                },
+    "SKINS_UPGRADE":  {
+                          "en":  "Skins Upgrade",
+                          "uk":  "Оновлення скінів",
+                          "ru":  "Улучшение обликов"
+                      },
+    "SKINS_UPGRADE_TITLE":  {
+                                "en":  "Upgrades the specified amount of the cheapest hero skins",
+                                "uk":  "Оновлює вказану кількість найдешевших скінів героїв",
+                                "ru":  "Улучшает указанное количество самых дешевых обликов героев"
+                            },
+    "HINT":  {
+                 "en":  "\u003cbr\u003eHint: ",
+                 "uk":  "\u003cbr\u003eПідказка:",
+                 "ru":  "\u003cbr\u003eПодсказка: "
+             },
+    "PICTURE":  {
+                    "en":  "\u003cbr\u003ePicture: ",
+                    "uk":  "\u003cbr\u003eЗображення:",
+                    "ru":  "\u003cbr\u003eНа картинке: "
+                },
+    "ANSWER":  {
+                   "en":  "\u003cbr\u003eAnswer: ",
+                   "uk":  "\u003cbr\u003eВідповідь:",
+                   "ru":  "\u003cbr\u003eОтвет: "
+               },
+    "NO_HEROES_PACK":  {
+                           "en":  "Fight at least one battle to save the attacking team",
+                           "uk":  "Проведіть принаймні одну битву, щоб встовити атакуючу команду",
+                           "ru":  "Проведите хотя бы один бой для сохранения атакующей команды"
+                       },
+    "BRAWL_AUTO_PACK":  {
+                            "en":  "Automatic selection of packs",
+                            "uk":  "Автопідбір паків",
+                            "ru":  "Автоподбор пачки"
+                        },
+    "BRAWL_AUTO_PACK_NOT_CUR_HERO":  {
+                                         "en":  "Automatic pack selection is not suitable for the current hero",
+                                         "uk":  "Автоматичний вибір пака не підходить для поточного героя",
+                                         "ru":  "Автоматический подбор пачки не подходит для текущего героя"
+                                     },
+    "BRAWL_DAILY_TASK_COMPLETED":  {
+                                       "en":  "Daily task completed, continue attacking?",
+                                       "uk":  "Щоденне завдання виконано, продовжувати атаку?",
+                                       "ru":  "Ежедневное задание выполнено, продолжить атаку?"
+                                   },
+    "CALC_STAT":  {
+                      "en":  "Calculate statistics",
+                      "uk":  "Обчислити статистику",
+                      "ru":  "Посчитать статистику"
+                  },
+    "ELEMENT_TOURNAMENT_REWARD":  {
+                                      "en":  "Unclaimed bonus for Elemental Tournament",
+                                      "uk":  "Невзятий бонус за Турнир Стихій",
+                                      "ru":  "Несобранная награда за Турнир Стихий"
+                                  },
+    "BTN_TRY_FIX_IT":  {
+                           "en":  "Fix it",
+                           "uk":  "Виправити",
+                           "ru":  "Исправить"
+                       },
+    "BTN_TRY_FIX_IT_TITLE":  {
+                                 "en":  "Enable auto attack combat correction",
+                                 "uk":  "Увімкнути корекцію бою автоматичної атаки",
+                                 "ru":  "Включить исправление боев при автоатаке"
+                             },
+    "DAMAGE_FIXED":  {
+                         "en":  "Damage fixed from {lastDamage} to {maxDamage}!",
+                         "uk":  "Пошкодження виправлено з {lastDamage} до {maxDamage}!",
+                         "ru":  "Урон исправлен с {lastDamage} до {maxDamage}!"
+                     },
+    "DAMAGE_NO_FIXED":  {
+                            "en":  "Failed to fix damage: {lastDamage}",
+                            "uk":  "Не вдалося виправити пошкодження: {lastDamage}",
+                            "ru":  "Не удалось исправить урон: {lastDamage}"
+                        },
+    "LETS_FIX":  {
+                     "en":  "Let's fix",
+                     "uk":  "Виправимо",
+                     "ru":  "Исправляем"
+                 },
+    "COUNT_FIXED":  {
+                        "en":  "For {count} attempts",
+                        "uk":  "За {count} спроб",
+                        "ru":  "За {count} попыток"
+                    },
+    "DEFEAT_TURN_TIMER":  {
+                              "en":  "Defeat! Turn on the timer to complete the mission?",
+                              "uk":  "Поразка! Увімкнути таймер для завершення місії?",
+                              "ru":  "Поражение! Включить таймер для завершения миссии?"
+                          },
+    "SEASON_REWARD":  {
+                          "en":  "Season Rewards",
+                          "uk":  "Нагороди сезону",
+                          "ru":  "Награды сезонов"
+                      },
+    "SEASON_REWARD_TITLE":  {
+                                "en":  "Collects available free rewards from all current seasons",
+                                "uk":  "Збирає доступні безкоштовні нагороди з усіх поточних сезонів",
+                                "ru":  "Собирает доступные бесплатные награды со всех текущих сезонов"
+                            },
+    "SEASON_REWARD_COLLECTED":  {
+                                    "en":  "Collected {count} season rewards",
+                                    "uk":  "Зібрано {count} сезонних нагород",
+                                    "ru":  "Собрано {count} наград сезонов"
+                                },
+    "SELL_HERO_SOULS":  {
+                            "en":  "Sell souls",
+                            "uk":  "Продати душі",
+                            "ru":  "Продать души"
+                        },
+    "SELL_HERO_SOULS_TITLE":  {
+                                  "en":  "Exchanges all absolute star hero souls for gold",
+                                  "uk":  "Обмінює всі душі абсолютних героїв на золото",
+                                  "ru":  "Обменивает все души абсолютных героев на золото"
+                              },
+    "GOLD_RECEIVED":  {
+                          "en":  "Gold received: {gold}",
+                          "uk":  "Золота отримано: {gold}",
+                          "ru":  "Получено золота: {gold}"
+                      },
+    "SERVER_NOT_ACCEPT":  {
+                              "en":  "The server did not accept the result",
+                              "uk":  "Сервер не прийняв результат",
+                              "ru":  "Сервер не принял результат"
+                          },
+    "INVASION_BOSS_BUFF":  {
+                               "en":  "For {bossLvl} boss need buff {needBuff} you have {haveBuff}",
+                               "uk":  "Для {bossLvl} босу потрібен баф {needBuff} у вас {haveBuff}",
+                               "ru":  "Для {bossLvl} босса нужен баф {needBuff} у вас {haveBuff}"
+                           },
+    "HERO_POWER":  {
+                       "en":  "Hero Power",
+                       "uk":  "Сила героїв",
+                       "ru":  "Сила героев"
+                   },
+    "HERO_POWER_TITLE":  {
+                             "en":  "Displays the current and maximum power of heroes",
+                             "uk":  "Відображає поточну та максимальну силу героїв",
+                             "ru":  "Отображает текущую и максимальную силу героев"
+                         },
+    "MAX_POWER_REACHED":  {
+                              "en":  "Maximum power reached: {power}",
+                              "uk":  "Досягнуто максимальної потужності: {power}",
+                              "ru":  "Максимальная достигнутая мощь: {power}"
+                          },
+    "CURRENT_POWER":  {
+                          "en":  "Current power: {power}",
+                          "uk":  "Поточна потужність: {power}",
+                          "ru":  "Текущая мощь: {power}"
+                      },
+    "POWER_TO_MAX":  {
+                         "en":  "Power left to reach maximum: \u003cspan style=\"color:{color};\"\u003e{power}\u003c/span\u003e\u003cbr\u003e",
+                         "uk":  "До максимуму потужністі залишилася: \u003cspan style=\"color:{color};\"\u003e{power}\u003c/span\u003e\u003cbr\u003e",
+                         "ru":  "До максимума мощи осталось: \u003cspan style=\"color:{color};\"\u003e{power}\u003c/span\u003e\u003cbr\u003e"
+                     },
+    "BEST_RESULT":  {
+                        "en":  "Best result: {value}%",
+                        "uk":  "Найкращий результат: {value}%",
+                        "ru":  "Лучший результат: {value}%"
+                    },
+    "GUILD_ISLAND_TITLE":  {
+                               "en":  "Fast travel to Guild Island",
+                               "uk":  "Перейти до Острова Гільдії",
+                               "ru":  "Перейти к Острову Гильдии"
+                           },
+    "TITAN_VALLEY_TITLE":  {
+                               "en":  "Fast travel to Titan Valley",
+                               "uk":  "Перейти до Долини Титанів",
+                               "ru":  "Перейти к Долине Титанов"
+                           },
+    "EXTENSIONS":  {
+                       "en":  "Extensions",
+                       "uk":  "Розширення",
+                       "ru":  "Расширения"
+                   },
+    "EXTENSIONS_TITLE":  {
+                             "en":  "Extensions for the script",
+                             "uk":  "Розширення для скрипта",
+                             "ru":  "Расширения для скрипта"
+                         },
+    "EXTENSIONS_LIST_TITLE":  {
+                                  "en":  "Extensions for the script",
+                                  "uk":  "Розширення для скрипта",
+                                  "ru":  "Расширения для скрипта"
+                              },
+    "EVENT_IS_OVER":  {
+                          "en":  "Event is over",
+                          "uk":  "Подія завершена",
+                          "ru":  "Эвент завершен"
+                      },
+    "SET_COUNT_KILLS":  {
+                            "en":  "Set the number of enemies that need to be killed today:",
+                            "uk":  "Встановіть кількість ворогів, яких потрібно вбити сьогодні:",
+                            "ru":  "Задайте колличество врагов которых необходимо убить сегодня:"
+                        },
+    "MORE_ENEMIES_KILLED":  {
+                                "en":  "Already killed more than {countKills} enemies",
+                                "uk":  "Вже вбито понад {countKills} ворогів",
+                                "ru":  "Уже убито больше {countKills} врагов"
+                            },
+    "RESTART_TRY_AGAIN_LATER":  {
+                                    "en":  "Restart the game and try again later",
+                                    "uk":  "Перезапустіть гру та спробуйте пізніше",
+                                    "ru":  "Перезагрузите игру и попробуйте позже"
+                                },
+    "ENEMIES_KILLED_AND_HEROES_USED":  {
+                                           "en":  "Number of enemies killed: {score}\u003cbr\u003eUsed {count} heroes",
+                                           "uk":  "Кількість убитих ворогів: {score}\u003cbr\u003eВикористано {count} героїв",
+                                           "ru":  "Количество убитых врагов: {score}\u003cbr\u003eИспользовано {count} героев"
+                                       },
+    "FURNACE_OF_SOULS":  {
+                             "en":  "Crucible",
+                             "uk":  "Горнило",
+                             "ru":  "Горнило"
+                         },
+    "PUMPKINS":  {
+                     "en":  "Pumpkins!",
+                     "uk":  "Гарбузи!",
+                     "ru":  "Тыквы!"
+                 },
+    "PUMPKINS_TITLE":  {
+                           "en":  "Exchange all Ghost Energy for Spirit Festival Coins",
+                           "uk":  "Обмін всієї Енергії Привидів на Монети Фестивалю Духів",
+                           "ru":  "Обмен всей Призрачной Энергии на Монеты Фестиваля Духов"
+                       },
+    "PUMPKINS_RUN":  {
+                         "en":  "Exchange all Ghost Energy for Spirit Festival Coins?",
+                         "uk":  "Обміняти всю Енергію Привидів на Монети Фестивалю Духів?",
+                         "ru":  "Обменять всю Призрачную энергию на Монеты Фестиваля Духов?"
+                     },
+    "TIDY_INVENTORY":  {
+                           "en":  "Tidy Inventory",
+                           "uk":  "Прибрати инвентар",
+                           "ru":  "Прибрать инвентарь"
+                       },
+    "TIDY_INVENTORY_TITLE":  {
+                                 "en":  "Tidy Inventory",
+                                 "uk":  "Прибрати инвентар",
+                                 "ru":  "Прибрать инвентарь"
+                             },
+    "EQUIPMENT_FRAGMENT_CRATES":  {
+                                      "en":  "Equipment Fragment Crates",
+                                      "uk":  "Ящики з фрагментами обладунків",
+                                      "ru":  "Ящики фрагментов экипировки"
+                                  },
+    "EQUIPMENT_FRAGMENT_CRATES_TITLE":  {
+                                            "en":  "Open all equipment fragment crates",
+                                            "uk":  "Відкрити всі ящики з фрагментами обладунків",
+                                            "ru":  "Открыть все ящики фрагментов экипировки"
+                                        },
+    "RAND_NUGGETS_AND_REGAL":  {
+                                   "en":  "Chance nuggets and regalia",
+                                   "uk":  "Випадкові самородки та регалії",
+                                   "ru":  "Случайные самородки и регалии"
+                               },
+    "RAND_NUGGETS_AND_REGAL_TITLE":  {
+                                         "en":  "Open chance nuggets and regalia",
+                                         "uk":  "Відкрити випадкові самородки та регалії",
+                                         "ru":  "Открыть случайные самородки и регалии"
+                                     },
+    "ARTIFACT_RESOURCES":  {
+                               "en":  "Artifact Resources",
+                               "uk":  "Ресурси артефактів",
+                               "ru":  "Артефактные ресурсы"
+                           },
+    "ARTIFACT_RESOURCES_TITLE":  {
+                                     "en":  "Open chests containing artifact essences, scrolls, and metals",
+                                     "uk":  "Відкрити скрині, що містять артифактні есенції, сувої та метали",
+                                     "ru":  "Открыть сундуки с артефактными эссенсиями, свитакми, металлами"
+                                 },
+    "USE_KEYBOARD":  {
+                         "en":  "Enter the value using the keyboard",
+                         "uk":  "Введіть значення за допомогою клавіатури",
+                         "ru":  "Введите значение с помощью клавиатуры"
+                     },
+    "SEERGAME":  {
+                     "en":  "Seer Game",
+                     "uk":  "Гра Провидиці",
+                     "ru":  "Игра Провидицы"
+                 },
+    "SEERGAME_TITLE":  {
+                           "en":  "Completes main quests for the «Seer Game» event",
+                           "uk":  "Виконує основні квести події «Гра Провидиці»",
+                           "ru":  "Выполяет основные квесты для ивента «Игра Провидицы»"
+                       },
+    "SEERGAME_MSG":  {
+                         "en":  "This script does not allow you to win the game. It only completes the quest of winning 30 times in automatic mode by repeatedly playing the first 6 rounds until it achieves 30 consecutive wins. The probability of completing the quest this way is very high, but not 100%. If you are very unlucky, you may lose coins and fail the quest. Good luck!",
+                         "uk":  "Цей скрипт не дозволяє вам виграти гру. Він виконує лише 30 виграшів у автоматичному режимі, повторюючи перші 6 раундів, доки не досягне 30 послідовних перемог. Ймовірність виконати квест таким чином дуже висока, але не 100%. Якщо вам дуже не пощастить, ви можете втратити монети та провалити квест. удачі!",
+                         "ru":  "Этот скрипт не позволяет выйграть игру, он всего лиш проходит квест победить 30 раз в автоматическом режиме, для этого он проходит первые 6 раундов снова и снова пока не наберет 30 побед подряд. Вероятность выполнить квест таким образом очень высокая, но она не 100%. Если вам сильно не повезет вы можете потерять монеты и не выполнить квест. Удачи!"
+                     },
+    "SEERGAME_NOT_ENOUGH_COINS_CONTINUE":  {
+                                               "en":  "Not enough coins to continue the game in case of a mistake. You can continue playing manually",
+                                               "uk":  "Недостатньо монет, щоб продовжити гру в разі помилки. Ви можете продовжити гру вручну",
+                                               "ru":  "Недостаточно монет для продолжения игры в случае ошибки. Вы можете продолжить игру вручную"
+                                           },
+    "SEERGAME_NOT_ENOUGH_COINS_START":  {
+                                            "en":  "Not enough coins to start the game",
+                                            "uk":  "Недостатньо монет, щоб почати гру",
+                                            "ru":  "Недостаточно монет для старта игры"
+                                        },
+    "SEERGAME_SUCCESS":  {
+                             "en":  "Success! Continuing the game...",
+                             "uk":  "Успіх! Продовжуємо гру...",
+                             "ru":  "Успех! Продолжаем игру..."
+                         },
+    "SEERGAME_FAILURE":  {
+                             "en":  "Failure!",
+                             "uk":  "Провал!",
+                             "ru":  "Неудача!"
+                         },
+    "SEERGAME_CONTINUE":  {
+                              "en":  "Continuing the game for {cost} coins",
+                              "uk":  "Продовжуєм гру за {cost} монет",
+                              "ru":  "Продолжаем игру за {cost} монет"
+                          },
+    "SEERGAME_NEW":  {
+                         "en":  "Starting! Coins: {coins}",
+                         "uk":  "Починаєм! Монети: {coins}",
+                         "ru":  "Стартуем! Монеты: {coins}"
+                     },
+    "SEERGAME_START":  {
+                           "en":  "Starting a new game for {cost} coins",
+                           "uk":  "Починаєм нову гру за {cost} монет",
+                           "ru":  "Стартуем новую игру за {cost} монет"
+                       },
+    "SEERGAME_END":  {
+                         "en":  "Ending the game and claiming rewards",
+                         "uk":  "Завершення гри та отримання винагороди",
+                         "ru":  "Завершаем игру и забираем награды"
+                     },
+    "SEERGAME_FINISH":  {
+                            "en":  "SeerGame completed, spent {spentCoins} coins",
+                            "uk":  "SeerGame завершено, витрачено {spentCoins} монет",
+                            "ru":  "SeerGame завершена, потрачено {spentCoins} монет"
+                        },
+    "SEERGAME_RESTART":  {
+                             "en":  "Restarting the game...",
+                             "uk":  "Перезапуск гри...",
+                             "ru":  "Перезапуск игры..."
+                         },
+    "PACKS":  {
+                  "en":  "Packs",
+                  "uk":  "Паки",
+                  "ru":  "Паки"
+              },
+    "PACKS_TITLE":  {
+                        "en":  "Manage hero development packs",
+                        "uk":  "Керування паками розвитку героїв",
+                        "ru":  "Управление паками развития героев"
+                    },
+    "PACK":  {
+                 "en":  "Pack",
+                 "uk":  "Пак",
+                 "ru":  "Пак"
+             },
+    "PACK_BANNER":  {
+                        "en":  "Pack banner",
+                        "uk":  "Стяг паку",
+                        "ru":  "Флаг пака"
+                    },
+    "PACK_PET":  {
+                     "en":  "Main pet",
+                     "uk":  "Головний пет",
+                     "ru":  "Главный питомец"
+                 },
+    "SEERGAME_PROGRESS":  {
+                              "en":  "Round {round}, Consecutive wins: {streak}",
+                              "uk":  "Round {round}, Послідовних перемог: {streak}",
+                              "ru":  "Раунд {round}, Побед подряд: {streak}"
+                          },
+    "GEAR_FARM_AUTOMATIC":  {
+                                "en":  "Automatic farming",
+                                "uk":  "Автоматичний фармінг",
+                                "ru":  "Автоматический фарм"
+                            },
+    "GEAR_FARM_ENERGY_LIMIT":  {
+                                   "en":  "Energy limit",
+                                   "uk":  "Ліміт енергії",
+                                   "ru":  "Лимит энергии"
+                               },
+    "GEAR_FARM_PAUSE":  {
+                            "en":  "Pause (ms)",
+                            "uk":  "Пауза (мс)",
+                            "ru":  "Пауза (мс)"
+                        },
+    "GEAR_FARM_RELOAD_CONFIRM":  {
+                                     "en":  "Update data?",
+                                     "uk":  "Оновити дані?",
+                                     "ru":  "Обновить данные?"
+                                 },
+    "STARTUP":  {
+                    "en":  "On startup",
+                    "uk":  "При старті",
+                    "ru":  "При запуске"
+                },
+    "STARTUP_SETTINGS":  {
+                             "en":  "What to do during startup",
+                             "uk":  "Що робити під час запуску",
+                             "ru":  "Что делать при запуске"
+                         },
+    "SEQUENCE":  {
+                     "en":  "Run sequence",
+                     "uk":  "Зробити послідовність",
+                     "ru":  "Выполнить последовательность"
+                 },
+    "SEQUENCE_TITLE":  {
+                           "en":  "Run selected actions in order",
+                           "uk":  "Виконати вибрані дії по черзі",
+                           "ru":  "Выполнить выбранные действия по очереди"
+                       },
+    "SETTINGS_BEHAVIOR":  {
+                              "en":  "Behavior",
+                              "uk":  "Поведінка",
+                              "ru":  "Поведение"
+                          },
+    "SETTINGS_BATTLES":  {
+                             "en":  "Battles",
+                             "uk":  "Бої",
+                             "ru":  "Бои"
+                         },
+    "SETTINGS_ADDITIONAL":  {
+                                "en":  "Additional",
+                                "uk":  "Додатково",
+                                "ru":  "Дополнительно"
+                            }
+}
