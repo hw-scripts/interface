@@ -156,6 +156,56 @@
         }
     }
     const theGame = new Game();
+    theGame.setFunction('VipRuleValueObject', VipRuleValueObject => {
+        const hook = () => {
+            const prototype = VipRuleValueObject?.prototype;
+            const method = prototype?.__properties__?.get_clanQuestsFastFarm;
+            if (typeof prototype?.[method] !== 'function') return false;
+            prototype[method] = function () { return 0; };
+            return true;
+        };
+        if (!hook()) queueMicrotask(() => {
+            if (!hook()) console.warn('Clan quests fast farm property was not available after registration');
+        });
+    });
+
+    function navigateToGameSection(section) {
+        const { MechanicStorage, PopupStashEventParams, Game, GameNavigator } = theGame.classes;
+        const mechanic = MechanicStorage?.[section];
+        const instance = Object.entries(Game?.__properties__ ?? {})
+            .find(([, name]) => name === 'get_instance')?.[0];
+        const navigator = Object.entries(Game?.prototype?.__properties__ ?? {})
+            .find(([, name]) => name === 'get_navigator')?.[0];
+        const navigate = Object.keys(GameNavigator?.prototype ?? {})[20];
+        if (mechanic == null || !instance || !navigator || !navigate || !PopupStashEventParams)
+            throw new Error(`Game navigation is unavailable: ${section}`);
+        return Game[instance]()[navigator]()[navigate](mechanic, new PopupStashEventParams());
+    }
+    let valkyriesBlessing = false;
+    theGame.setFunction('BattleGuiMediator', BattleGuiMediator => {
+        const hook = () => {
+            const prototype = BattleGuiMediator?.prototype;
+            const keys = prototype && Object.keys(prototype);
+            const method = keys?.[45];
+            if (typeof prototype?.[method] !== 'function') return false;
+            const original = prototype[method];
+            prototype[method] = function (...args) {
+                if (!valkyriesBlessing) return original.apply(this, args);
+                try {
+                    const setValue = Object.keys(theGame.classes.BooleanPropertyWriteable.prototype)[0];
+                    this[keys[9]][setValue](true);
+                    this[keys[10]][setValue](true);
+                } catch (error) {
+                    console.error('Unable to enable Valkyries blessing:', error);
+                    return original.apply(this, args);
+                }
+            };
+            return true;
+        };
+        if (!hook()) queueMicrotask(() => {
+            if (!hook()) console.warn('BattleGuiMediator acceleration method was not available after registration');
+        });
+    });
     phase('Game hooks installed');
     theGame.lib = null;
     theGame.libraryReady = new Promise(resolve => { theGame.resolveLibrary = resolve; });
@@ -928,6 +978,7 @@
     const bridge = new Bridge(manifest.typeName);
     phase('Waiting for userGetInfo');
     const userStorage = new UserStorage(await userStorageReady); // Await the real login and user info retrieval to ensure userStorage is ready for use
+    valkyriesBlessing = userStorage.get('valkyriesBlessing') === 'true';
 
     phase('UserStorage ready');
     //#region Language
@@ -1212,6 +1263,58 @@
     //#endregion
 
     //#region Template source
+    const gameNavigationSections = [
+        'MISSION',
+        'ARENA',
+        'GRAND',
+        'CHEST',
+        'SKILLS',
+        'SOCIAL_GIFT',
+        'CLAN',
+        'ENCHANT',
+        'TOWER',
+        'RATING',
+        'CHALLENGE',
+        'BOSS',
+        'CHAT',
+        'CLAN_DUNGEON',
+        'CLAN_CHEST',
+        'TITAN_GIFT',
+        'CLAN_RAID',
+        'ASGARD',
+        'HERO_ASCENSION',
+        'ROLE_ASCENSION',
+        'ASCENSION_CHEST',
+        'TITAN_MISSION',
+        'TITAN_ARENA',
+        'TITAN_ARTIFACT',
+        'TITAN_ARTIFACT_CHEST',
+        'TITAN_VALLEY',
+        'TITAN_SPIRITS',
+        'TITAN_ARTIFACT_MERCHANT',
+        'TITAN_ARENA_HALL_OF_FAME',
+        'CLAN_PVP',
+        'CLAN_PVP_MERCHANT',
+        'CLAN_GLOBAL_PVP',
+        'CLAN_GLOBAL_PVP_TITAN',
+        'ARTIFACT',
+        'ZEPPELIN',
+        'ARTIFACT_CHEST',
+        'ARTIFACT_MERCHANT',
+        'EXPEDITIONS',
+        'SUBSCRIPTION',
+        'NY2018_GIFTS',
+        'NY2018_TREE',
+        'NY2018_WELCOME',
+        'ADVENTURE',
+        'ADVENTURESOLO',
+        'SANCTUARY',
+        'PET_MERCHANT',
+        'PET_LIST',
+        'PET_SUMMON',
+        'BOSS_RATING_EVENT',
+        'BRAWL',
+    ];
     const menuSections = [
         { id: 'settings', title: 'MENU_GENERAL_SETTINGS' },
         { id: 'scripts', title: 'MENU_SCRIPTS' },
@@ -1234,8 +1337,8 @@
     #interfaceSidebar .interface-guild { display: inline-flex; align-items: center; }
     #interfaceSidebar .interface-guild svg { width: 30px; height: 34px; }
     #interfaceSidebar .interface-menu-actions { display: grid; gap: 10px; padding: 20px; }
-    #interfaceSidebar .interface-menu-action { width: 100%; padding: 13px 16px; border: 1px solid #a77b45; border-radius: 6px; background: #332a22; color: #fff1da; font: inherit; text-align: left; cursor: pointer; }
-    #interfaceSidebar .interface-menu-action:hover { background: #49392a; }
+    #interfaceSidebar .interface-menu-action, #interfaceDialog .interface-menu-action { width: 100%; padding: 13px 16px; border: 1px solid #a77b45; border-radius: 6px; background: #332a22; color: #fff1da; font: inherit; text-align: left; cursor: pointer; }
+    #interfaceSidebar .interface-menu-action:hover, #interfaceDialog .interface-menu-action:hover { background: #49392a; }
     #interfaceSidebar button:focus-visible, #interfaceSidebar a:focus-visible, #interfaceDialog button:focus-visible { outline: 2px solid #f2bf69; outline-offset: 3px; }
     #interfaceDialog { box-sizing: border-box; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 0; border: 1px solid #a77b45; border-radius: 10px; background: #27221e; color: #fff1da; box-shadow: 0 20px 70px #0009; }
     #interfaceDialog::backdrop { background: #0009; }
@@ -1343,17 +1446,38 @@
         if (!section) return;
         dialogTitle.textContent = I18N(section.title);
         dialogBody.replaceChildren();
-        if (section.id === 'scripts') {
+        if (section.id === 'settings') {
+            const label = document.createElement('label');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = valkyriesBlessing;
+            checkbox.addEventListener('change', () => {
+                valkyriesBlessing = checkbox.checked;
+                userStorage.set('valkyriesBlessing', String(valkyriesBlessing));
+            });
+            label.append(checkbox, ` ${I18N('VALKYRIES_BLESSING')}`);
+            dialogBody.append(label);
+        } else if (section.id === 'scripts') {
             const list = document.createElement('ul');
             list.className = 'interface-script-list';
-            for (let number = 1; number <= 3; number++) {
+            for (const section of gameNavigationSections) {
                 const item = document.createElement('li');
-                const label = document.createElement('span');
-                label.textContent = `${I18N('MENU_BASE_SCRIPT')} ${number}`;
-                const status = document.createElement('span');
-                status.className = 'interface-script-status';
-                status.textContent = I18N('MENU_PLACEHOLDER');
-                item.append(label, status);
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'interface-menu-action';
+                button.textContent = I18N(`NAV_${section}`);
+                button.addEventListener('click', () => {
+                    try {
+                        navigateToGameSection(section);
+                        interfaceDialog.close();
+                        interfaceSidebar.classList.remove('sidebar_open');
+                        document.querySelector('.sidebar__overlay')?.classList.remove('sidebar__overlay_show');
+                    } catch (error) {
+                        console.error('Unable to open game section:', section, error);
+                        button.textContent = `${I18N(`NAV_${section}`)} — ${I18N('NAV_UNAVAILABLE')}`;
+                    }
+                });
+                item.append(button);
                 list.append(item);
             }
             dialogBody.append(list);
