@@ -431,5 +431,17 @@
     "SEQUENCE_TITLE":  "Run selected actions in order",
     "SETTINGS_BEHAVIOR":  "Behavior",
     "SETTINGS_BATTLES":  "Battles",
-    "SETTINGS_ADDITIONAL":  "Additional"
+    "SETTINGS_ADDITIONAL":  "Additional",
+    "MENU_GENERAL_SETTINGS": "General settings",
+    "MENU_SCRIPTS": "Scripts",
+    "MENU_SEQUENCE": "Create a sequence",
+    "MENU_FARM_HEROES": "Farm heroes",
+    "MENU_AUTOPILOT": "Autopilot",
+    "MENU_CLOSE": "Close",
+    "MENU_LEVEL": "Level",
+    "MENU_GUILD": "Guild",
+    "MENU_NO_GUILD": "No guild",
+    "MENU_BASE_SCRIPT": "Basic script",
+    "MENU_PLACEHOLDER": "Placeholder",
+    "MENU_SECTION_PENDING": "This section is not configured yet."
 }

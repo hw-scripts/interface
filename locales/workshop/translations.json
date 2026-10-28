@@ -2163,5 +2163,65 @@
                                 "en":  "Additional",
                                 "uk":  "Додатково",
                                 "ru":  "Дополнительно"
-                            }
+                            },
+    "MENU_GENERAL_SETTINGS": {
+        "en": "General settings",
+        "uk": "Загальні налаштування",
+        "ru": "Общие настройки"
+    },
+    "MENU_SCRIPTS": {
+        "en": "Scripts",
+        "uk": "Скрипти",
+        "ru": "Скрипты"
+    },
+    "MENU_SEQUENCE": {
+        "en": "Create a sequence",
+        "uk": "Зробити послідовність",
+        "ru": "Создать последовательность"
+    },
+    "MENU_FARM_HEROES": {
+        "en": "Farm heroes",
+        "uk": "Фармити героїв",
+        "ru": "Фармить героев"
+    },
+    "MENU_AUTOPILOT": {
+        "en": "Autopilot",
+        "uk": "Автопілот",
+        "ru": "Автопилот"
+    },
+    "MENU_CLOSE": {
+        "en": "Close",
+        "uk": "Закрити",
+        "ru": "Закрыть"
+    },
+    "MENU_LEVEL": {
+        "en": "Level",
+        "uk": "Рівень",
+        "ru": "Уровень"
+    },
+    "MENU_GUILD": {
+        "en": "Guild",
+        "uk": "Гільдія",
+        "ru": "Гильдия"
+    },
+    "MENU_NO_GUILD": {
+        "en": "No guild",
+        "uk": "Без гільдії",
+        "ru": "Без гильдии"
+    },
+    "MENU_BASE_SCRIPT": {
+        "en": "Basic script",
+        "uk": "Базовий скрипт",
+        "ru": "Базовый скрипт"
+    },
+    "MENU_PLACEHOLDER": {
+        "en": "Placeholder",
+        "uk": "Заглушка",
+        "ru": "Заглушка"
+    },
+    "MENU_SECTION_PENDING": {
+        "en": "This section is not configured yet.",
+        "uk": "Цей розділ ще не налаштований.",
+        "ru": "Этот раздел пока не настроен."
+    }
 }

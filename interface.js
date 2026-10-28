@@ -906,7 +906,7 @@
         }
     }
     //#endregion
-    
+
     phase('Response filters installed; waiting for manifest');
     await manifest.load(5000);
     phase('Manifest ready');
@@ -924,7 +924,7 @@
         };
     })();
     //#endregion
-    
+
     const bridge = new Bridge(manifest.typeName);
     phase('Waiting for userGetInfo');
     const userStorage = new UserStorage(await userStorageReady); // Await the real login and user info retrieval to ensure userStorage is ready for use
@@ -1212,50 +1212,75 @@
     //#endregion
 
     //#region Template source
-    const menuTemplate =
-        `
+    const menuSections = [
+        { id: 'settings', title: 'MENU_GENERAL_SETTINGS' },
+        { id: 'scripts', title: 'MENU_SCRIPTS' },
+        { id: 'sequence', title: 'MENU_SEQUENCE' },
+        { id: 'heroes', title: 'MENU_FARM_HEROES' },
+        { id: 'autopilot', title: 'MENU_AUTOPILOT' }
+    ];
+    const menuTemplate = `
+<style>
+    #interfaceSidebar .interface-menu-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
+    #interfaceSidebar .interface-menu-brand { flex: 1; color: inherit; text-decoration: none; font-weight: 700; }
+    #interfaceSidebar .interface-menu-version { display: block; font-size: 12px; font-weight: 400; opacity: .7; }
+    #interfaceSidebar .interface-menu-close, #interfaceDialog .interface-dialog-close { background: transparent; border: 0; color: inherit; font: inherit; font-size: 26px; cursor: pointer; padding: 4px 10px; }
+    #interfaceSidebar .interface-profile { display: flex; align-items: center; gap: 12px; }
+    #interfaceSidebar .sidebar__profile-data-avatar { flex: 0 0 64px; width: 64px; height: 64px; }
+    #interfaceSidebar .sidebar__profile-data-avatar-image { width: 64px; height: 64px; object-fit: contain; }
+    #interfaceSidebar .interface-profile-meta { min-width: 0; flex: 1; }
+    #interfaceSidebar .interface-profile-name { font-weight: 700; overflow-wrap: anywhere; }
+    #interfaceSidebar .interface-profile-level { margin-top: 6px; opacity: .75; }
+    #interfaceSidebar .interface-guild { display: inline-flex; align-items: center; }
+    #interfaceSidebar .interface-guild svg { width: 30px; height: 34px; }
+    #interfaceSidebar .interface-menu-actions { display: grid; gap: 10px; padding: 20px; }
+    #interfaceSidebar .interface-menu-action { width: 100%; padding: 13px 16px; border: 1px solid #a77b45; border-radius: 6px; background: #332a22; color: #fff1da; font: inherit; text-align: left; cursor: pointer; }
+    #interfaceSidebar .interface-menu-action:hover { background: #49392a; }
+    #interfaceSidebar button:focus-visible, #interfaceSidebar a:focus-visible, #interfaceDialog button:focus-visible { outline: 2px solid #f2bf69; outline-offset: 3px; }
+    #interfaceDialog { box-sizing: border-box; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 0; border: 1px solid #a77b45; border-radius: 10px; background: #27221e; color: #fff1da; box-shadow: 0 20px 70px #0009; }
+    #interfaceDialog::backdrop { background: #0009; }
+    #interfaceDialog .interface-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; border-bottom: 1px solid #ffffff26; }
+    #interfaceDialog h2 { margin: 0; font-size: 20px; color: inherit; }
+    #interfaceDialog .interface-dialog-body { padding: 20px; }
+    #interfaceDialog .interface-script-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    #interfaceDialog .interface-script-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid #ffffff26; border-radius: 6px; }
+    #interfaceDialog .interface-script-status { opacity: .6; font-size: 12px; }
+</style>
 <section id="interfaceSidebar" class="sidebar">
-<div class="sidebar__content">
-    <div class="sidebar__control">
-        <ul class="sidebar__control-button-list">
-            <li class="sidebar__control-button-list-item">
-                <button class="sidebar__control-close-button" onclick="document.getElementById('interfaceSidebar').classList.remove('sidebar_open');
-                         document.querySelector('.sidebar__overlay').classList.remove('sidebar__overlay_show');">
-                    <svg class="sidebar__control-close-button-icon">
-                        <use href="#hwa_sprite_close" data-href="close"></use>
-                    </svg>
-                </button>
-            </li>
-        </ul>
-    </div>
-    <div class="sidebar__content-item">
-        <div class="sidebar__profile-data" data-avatar-id="{{ memoryStorage.memoryStorage.user.info.avatarId }}">
-            <div class="sidebar__profile-data-avatar"><img
-                    src="https://heroesweb-a.akamaihd.net/i/hw-web/v2/2042276//images/hw/avatar.png" alt="user avatar"
-                    class="sidebar__profile-data-avatar-image"></div>
-            <div class="sidebar__profile-data-name">{{ memoryStorage.memoryStorage.user.info.name }}</div>
+    <div class="sidebar__content">
+        <div class="sidebar__control interface-menu-header">
+            <a class="interface-menu-brand" href="{{ manifest.homepage_url }}" target="_blank" rel="noopener noreferrer">
+                {{ manifest.name }}
+                <span class="interface-menu-version">{{ manifest.version }}</span>
+            </a>
+            <button type="button" class="interface-menu-close" data-interface-close aria-label="{{ I18N('MENU_CLOSE') }}">&times;</button>
         </div>
-    </div>
-    <div class="sidebar__content-item">
-        <div class="menu__politicies">
-            <ul class="menu__politicies-list">
-                <li class="menu__politicies-list-item"><a target="_blank" href="/policy/privacy/ru"
-                        class="menu__politicies-link"><span class="menu__politicies-link-label">
-                            Конфиденциальность
-                        </span></a></li>
-                <li class="menu__politicies-list-item"><a target="_blank" href="/policy/fan_content/ru"
-                        class="menu__politicies-link"><span class="menu__politicies-link-label">
-                            Фанатское соглашение
-                        </span></a></li>
-                <li class="menu__politicies-list-item"><a target="_blank" href="/drop-rates"
-                        class="menu__politicies-link"><span class="menu__politicies-link-label">
-                            Шансы на выпадение
-                        </span></a></li>
-            </ul>
+        <div class="sidebar__content-item">
+            <div class="sidebar__profile-data interface-profile" data-avatar-id="{{ memoryStorage.memoryStorage.user.info.avatarId }}">
+                <div class="sidebar__profile-data-avatar">
+                    <img src="https://heroesweb-a.akamaihd.net/i/hw-web/v2/2042276//images/hw/avatar.png" alt="{{ memoryStorage.memoryStorage.user.info.name }}" class="sidebar__profile-data-avatar-image">
+                </div>
+                <div class="interface-profile-meta">
+                    <div class="interface-profile-name">{{ memoryStorage.memoryStorage.user.info.name }}</div>
+                    <div class="interface-profile-level">{{ I18N('MENU_LEVEL') }}: {{ memoryStorage.memoryStorage.user.info.level }}</div>
+                </div>
+                <span class="interface-guild" role="img" aria-label="{{ I18N('MENU_GUILD') }}: {{ memoryStorage.memoryStorage.user.info.clanId || I18N('MENU_NO_GUILD') }}" title="{{ I18N('MENU_GUILD') }}: {{ memoryStorage.memoryStorage.user.info.clanId || I18N('MENU_NO_GUILD') }}">
+                    <svg viewBox="0 0 32 36" aria-hidden="true"><path d="M16 2 29 7v11c0 8-7 13-13 16C10 31 3 26 3 18V7Z" fill="#49392a" stroke="#d9ad65" stroke-width="2"/><path d="M16 9v16M9 16h14" stroke="#d9ad65" stroke-width="2"/></svg>
+                </span>
+            </div>
         </div>
+        <nav class="interface-menu-actions">
+            ${menuSections.map(section => `<button type="button" class="interface-menu-action" data-interface-dialog="${section.id}" aria-haspopup="dialog">{{ I18N('${section.title}') }}</button>`).join('')}
+        </nav>
     </div>
-</div>
 </section>
+<dialog id="interfaceDialog" aria-labelledby="interfaceDialogTitle">
+    <div class="interface-dialog-header">
+        <h2 id="interfaceDialogTitle"></h2>
+        <button type="button" class="interface-dialog-close" aria-label="{{ I18N('MENU_CLOSE') }}">&times;</button>
+    </div>
+    <div class="interface-dialog-body"></div>
+</dialog>
 `;
     //#endregion
 
@@ -1302,6 +1327,45 @@
         menuTemplate,
         (code, callback) => eval(code)
     );
+    const interfaceSidebar = document.getElementById('interfaceSidebar');
+    const interfaceDialog = document.getElementById('interfaceDialog');
+    const dialogTitle = interfaceDialog.querySelector('h2');
+    const dialogBody = interfaceDialog.querySelector('.interface-dialog-body');
+    interfaceSidebar.addEventListener('click', event => {
+        if (event.target.closest('[data-interface-close]')) {
+            interfaceSidebar.classList.remove('sidebar_open');
+            document.querySelector('.sidebar__overlay')?.classList.remove('sidebar__overlay_show');
+            return;
+        }
+        const button = event.target.closest('[data-interface-dialog]');
+        if (!button) return;
+        const section = menuSections.find(item => item.id === button.dataset.interfaceDialog);
+        if (!section) return;
+        dialogTitle.textContent = I18N(section.title);
+        dialogBody.replaceChildren();
+        if (section.id === 'scripts') {
+            const list = document.createElement('ul');
+            list.className = 'interface-script-list';
+            for (let number = 1; number <= 3; number++) {
+                const item = document.createElement('li');
+                const label = document.createElement('span');
+                label.textContent = `${I18N('MENU_BASE_SCRIPT')} ${number}`;
+                const status = document.createElement('span');
+                status.className = 'interface-script-status';
+                status.textContent = I18N('MENU_PLACEHOLDER');
+                item.append(label, status);
+                list.append(item);
+            }
+            dialogBody.append(list);
+        } else {
+            const text = document.createElement('p');
+            text.textContent = I18N('MENU_SECTION_PENDING');
+            dialogBody.append(text);
+        }
+        interfaceDialog.showModal();
+    });
+    interfaceDialog.querySelector('.interface-dialog-close').addEventListener('click', () => interfaceDialog.close());
+
     phase('Sidebar rendered; loading avatar', { avatarId: memoryStorage.memoryStorage.user.info.avatarId, libraryReady: theGame.lib != null });
     gameAssets.getAvatarUrl(memoryStorage.memoryStorage.user.info.avatarId)
         .then(url => {

@@ -431,5 +431,17 @@
     "SEQUENCE_TITLE":  "Виконати вибрані дії по черзі",
     "SETTINGS_BEHAVIOR":  "Поведінка",
     "SETTINGS_BATTLES":  "Бої",
-    "SETTINGS_ADDITIONAL":  "Додатково"
+    "SETTINGS_ADDITIONAL":  "Додатково",
+    "MENU_GENERAL_SETTINGS": "Загальні налаштування",
+    "MENU_SCRIPTS": "Скрипти",
+    "MENU_SEQUENCE": "Зробити послідовність",
+    "MENU_FARM_HEROES": "Фармити героїв",
+    "MENU_AUTOPILOT": "Автопілот",
+    "MENU_CLOSE": "Закрити",
+    "MENU_LEVEL": "Рівень",
+    "MENU_GUILD": "Гільдія",
+    "MENU_NO_GUILD": "Без гільдії",
+    "MENU_BASE_SCRIPT": "Базовий скрипт",
+    "MENU_PLACEHOLDER": "Заглушка",
+    "MENU_SECTION_PENDING": "Цей розділ ще не налаштований."
 }

@@ -431,5 +431,17 @@
     "SEQUENCE_TITLE":  "Выполнить выбранные действия по очереди",
     "SETTINGS_BEHAVIOR":  "Поведение",
     "SETTINGS_BATTLES":  "Бои",
-    "SETTINGS_ADDITIONAL":  "Дополнительно"
+    "SETTINGS_ADDITIONAL":  "Дополнительно",
+    "MENU_GENERAL_SETTINGS": "Общие настройки",
+    "MENU_SCRIPTS": "Скрипты",
+    "MENU_SEQUENCE": "Создать последовательность",
+    "MENU_FARM_HEROES": "Фармить героев",
+    "MENU_AUTOPILOT": "Автопилот",
+    "MENU_CLOSE": "Закрыть",
+    "MENU_LEVEL": "Уровень",
+    "MENU_GUILD": "Гильдия",
+    "MENU_NO_GUILD": "Без гильдии",
+    "MENU_BASE_SCRIPT": "Базовый скрипт",
+    "MENU_PLACEHOLDER": "Заглушка",
+    "MENU_SECTION_PENDING": "Этот раздел пока не настроен."
 }
