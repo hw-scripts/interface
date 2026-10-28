@@ -1,4 +1,6 @@
 (async function () {
+    const phase = (...details) => console.log('[Interface]', window === window.top ? 'top' : 'frame', location.href, ...details);
+    phase('Script started');
     //#region Get manifest data
     class Manifest {
         #ready;
@@ -34,6 +36,7 @@
         }
     }
     const manifest = new Manifest();
+    phase('Manifest listener installed');
     //#endregion
 
     //#region Game integration
@@ -53,6 +56,7 @@
                 PlayerMissionData: 'game.model.user.mission.PlayerMissionData',
                 PlayerMissionBattle: 'game.model.user.mission.PlayerMissionBattle',
                 GameModel: 'game.model.GameModel',
+                AssetStorage: 'game.assets.storage.AssetStorage',
                 CommandManager: 'game.command.CommandManager',
                 MissionCommandList: 'game.command.rpc.mission.MissionCommandList',
                 RPCCommandBase: 'game.command.rpc.RPCCommandBase',
@@ -152,6 +156,7 @@
         }
     }
     const theGame = new Game();
+    phase('Game hooks installed');
     theGame.lib = null;
     theGame.libraryReady = new Promise(resolve => { theGame.resolveLibrary = resolve; });
     theGame.setFunction('GameModel', GameModel => {
@@ -167,7 +172,7 @@
             prototype.start = function (...args) {
                 theGame.lib = args[1]?.raw;
                 console.log('playerAvatar:', theGame.lib?.playerAvatar);
-                debugger;
+                phase('Game library received');
                 if (theGame.lib != null)
                     theGame.resolveLibrary(theGame.lib);
                 return original.apply(this, args);
@@ -182,6 +187,100 @@
             });
         }
     });
+    //#endregion
+
+    //#region Game assets
+    class GameAssets {
+        #game;
+        #images = null;
+
+        constructor(game) {
+            this.#game = game;
+            this.index = null;
+            this.config = null;
+            this.storage = null;
+            let resolveReady;
+            this.ready = new Promise(resolve => { resolveReady = resolve; });
+
+            game.setFunction('AssetStorage', AssetStorage => {
+                const hook = () => {
+                    const prototype = AssetStorage?.prototype;
+                    if (typeof prototype?.init !== 'function') return false;
+                    if (game.originals.AssetStorage) return true;
+
+                    const assets = this;
+                    const original = prototype.init;
+                    game.originals.AssetStorage = { init: original };
+                    prototype.init = function (...args) {
+                        const result = original.apply(this, args);
+                        assets.storage = this;
+                        assets.index = args[0];
+                        assets.config = args[1];
+                        resolveReady(assets);
+                        phase('Game asset configuration received', assets.config);
+                        phase('Game asset index received', assets.index);
+                        return result;
+                    };
+                    return true;
+                };
+                if (!hook()) {
+                    queueMicrotask(() => {
+                        if (!hook()) console.warn('AssetStorage.init was not available after registration');
+                    });
+                }
+            });
+        }
+
+        getFile(name) {
+            return this.storage?.kI(name) ?? null;
+        }
+
+        getUrl(name) {
+            const file = this.getFile(name);
+            return file?.AP() ?? '';
+        }
+
+        getAtlas(section, id) {
+            return this.config?.[section]?.[id] ?? null;
+        }
+
+        async getAvatarUrl(avatarId) {
+            const [library] = await Promise.all([this.#game.libraryReady, this.ready]);
+            const avatar = library.playerAvatar?.[avatarId];
+            if (!avatar) return '';
+
+            if (avatar.assetType === 'external_file') {
+                return this.getUrl(avatar.assetOwnerId);
+            }
+
+            let atlasKey;
+            let textureName;
+            if (avatar.assetType === 'hero_icon') {
+                const url = this.getUrl(`${avatar.assetOwnerId}.png`);
+                if (url) return url;
+                atlasKey = this.getAtlas('inventory', avatar.assetTypeAtlas)?.atlas;
+                textureName = avatar.assetOwnerId;
+            } else if (avatar.assetType === 'hero') {
+                const reference = library.hero?.[avatar.assetOwnerId]?.iconAssetTexture;
+                if (!reference) return '';
+                const texture = String(reference);
+                const separator = texture.lastIndexOf(':');
+                atlasKey = separator > 0
+                    ? texture.slice(0, separator)
+                    : 'hero_icons_only/hero_icons_only.xml';
+                textureName = separator >= 0
+                    ? texture.slice(separator + 1)
+                    : texture.slice(texture.lastIndexOf('/') + 1);
+            } else {
+                return '';
+            }
+
+            if (!atlasKey || !textureName) return '';
+            this.#images ??= new GameImages();
+            return this.#images.get(atlasKey, textureName);
+        }
+    }
+    const gameAssets = new GameAssets(theGame);
     //#endregion
 
     //#region Working with AJAX
@@ -304,18 +403,18 @@
                     ...response.headers
                 ]);
                 try {
-                    const body = await response.clone().text();
-                    ajax.fetchFilter.callFunction(
+                    void ajax.fetchFilter.callFunction(
                         request.method,
                         request.url,
-                        headers,
-                        body
-                    );
+                        headers
+                    ).catch(error => {
+                        console.error('Fetch response processing failed:', error);
+                    });
                 } catch (error) {
                     console.error('Fetch response processing failed:', error);
                 }
 
-                return response; return response;
+                return response;
             };
 
             // WebSocket
@@ -351,6 +450,7 @@
     }
     //#endregion
     const ajax = new AJAX();
+    phase('AJAX hooks installed');
 
     //#region Tasks
     class Task {
@@ -761,9 +861,10 @@
         if (user?.id == null)
             return;
         memoryStorage.set('user', 'info', user);
+        phase('userGetInfo received', { userId: user.id, avatarId: user.avatarId });
         resolveUserStorage(user.id);
     });
-    ajax.sendFilter.setFunction('post', '.*/api$', async (header, response) => {
+    ajax.sendFilter.setFunction('post', '.*/api/$', async (header, response) => {
         const data = typeof response === 'string' ? JSON.parse(response) : response;
         if (!Array.isArray(data?.results))
             return;
@@ -806,7 +907,9 @@
     }
     //#endregion
     
+    phase('Response filters installed; waiting for manifest');
     await manifest.load(5000);
+    phase('Manifest ready');
     //#region Events pseudo-class
     const Events = (() => {
         const prefix = `${manifest.typeName}:`;
@@ -823,8 +926,10 @@
     //#endregion
     
     const bridge = new Bridge(manifest.typeName);
+    phase('Waiting for userGetInfo');
     const userStorage = new UserStorage(await userStorageReady); // Await the real login and user info retrieval to ensure userStorage is ready for use
 
+    phase('UserStorage ready');
     //#region Language
     class Language {
         constructor(language) {
@@ -863,7 +968,9 @@
             ?.textContent.trim().toLowerCase()
         || null;
     const i18n = new Language(language);
+    phase('Loading language', language);
     await i18n.load();
+    phase('Language loading finished');
     //#endregion
     function I18N(key_name) { return i18n.get(key_name); }
 
@@ -1102,7 +1209,6 @@
         }
     }
 
-    const gameImages = new GameImages();
     //#endregion
 
     //#region Template source
@@ -1154,6 +1260,7 @@
     //#endregion
 
     //#region Interface layout
+    phase('Templates ready; waiting for .layout-header');
     const header = await (async () => {
         let element;
         while (!(element = document.querySelector('.layout-header')))
@@ -1161,7 +1268,9 @@
         return element;
     })();
 
+    phase('Header found');
     const logo = header.querySelector('.layout-header__logo-hw');
+    phase('Rendering menu button', { logoFound: Boolean(logo) });
 
     // Interface button
     const buttonTemplate = `
@@ -1180,6 +1289,7 @@
     logo.afterTemplate(buttonTemplate,
         (code, callback) => eval(code));
 
+    phase('Menu button rendered');
     // Interface message
     const message = document.createElement('div');
     message.id = 'interfaceMessage';
@@ -1187,10 +1297,20 @@
     document.querySelector('#interfaceNav').after(message);
 
     const sidebar = document.querySelector('.sidebar');
+    phase('Rendering sidebar', { sidebarFound: Boolean(sidebar) });
     sidebar.afterTemplate(
         menuTemplate,
         (code, callback) => eval(code)
     );
+    phase('Sidebar rendered; loading avatar', { avatarId: memoryStorage.memoryStorage.user.info.avatarId, libraryReady: theGame.lib != null });
+    gameAssets.getAvatarUrl(memoryStorage.memoryStorage.user.info.avatarId)
+        .then(url => {
+            phase('Avatar loading finished', { imageReceived: Boolean(url) });
+            if (url) {
+                document.querySelector('#interfaceSidebar .sidebar__profile-data-avatar-image').src = url;
+            }
+        })
+        .catch(error => console.warn('Unable to load user avatar:', error));
     //#endregion
 
 })();
