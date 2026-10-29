@@ -263,14 +263,16 @@
         const navigate = [];
         const execute = new Function('automation', 'I18N', 'i18n', 'message', 'menuSections', 'gameNavigationSections', 'navigateToGameSection', 'userStorage', source.slice(start, end));
         execute(engine, key => dictionary[key] || key, { translations: dictionary }, message,
-            [{ id: 'scripts', title: 'MENU_SCRIPTS' }], ['EXPEDITIONS', 'TOWER', 'BOSS', 'CHAT'], section => navigate.push(section), storage);
+            [{ id: 'scripts', title: 'MENU_SCRIPTS' }, { id: 'navigation', title: 'MENU_NAVIGATION' }], ['EXPEDITIONS', 'TOWER', 'BOSS', 'CHAT'], section => navigate.push(section), storage);
+        const navigation = document.createElement('button');
+        navigation.dataset.interfaceDialog = 'navigation';
+        root.querySelector('#interfaceSidebar').append(navigation);
         const open = root.querySelector('[data-interface-dialog="scripts"]');
         open.click();
         let rows = root.querySelectorAll('li');
-        equal(rows.length, 4);
+        equal(rows.length, 3);
         equal(rows[0].querySelectorAll('button').length, 3);
         assert(!rows[0].querySelectorAll('button')[1].disabled);
-        equal(rows[3].querySelectorAll('button').length, 1);
         assert(rows[0].querySelector('button').classList.contains('interface-script-link'));
         rows[0].querySelectorAll('button')[1].click();
         const inputs = root.querySelectorAll('form input');
@@ -286,22 +288,22 @@
         assert(rows[2].querySelector('.interface-script-name').textContent.includes(` (${dictionary.SCRIPT_DONE})`));
         const list = root.querySelector('ul');
         const dragged = rows[0];
-        const target = rows[3];
+        const target = rows[2];
         const transfer = new DataTransfer();
         dragged.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: transfer }));
         const bounds = target.getBoundingClientRect();
         target.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: transfer, clientY: bounds.bottom }));
         target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer }));
         dragged.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: transfer }));
-        equal(JSON.parse(storage.get('scriptOrder')), ['TOWER', 'BOSS', 'CHAT', 'EXPEDITIONS']);
+        equal(JSON.parse(storage.get('scriptOrder:scripts')), ['TOWER', 'BOSS', 'EXPEDITIONS']);
         open.click();
-        equal([...root.querySelectorAll('li')].map(row => row.dataset.script), ['TOWER', 'BOSS', 'CHAT', 'EXPEDITIONS']);
+        equal([...root.querySelectorAll('li')].map(row => row.dataset.script), ['TOWER', 'BOSS', 'EXPEDITIONS']);
         // Cancelled drags restore the saved order.
         const first = root.querySelector('li');
         first.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: transfer }));
         root.querySelector('ul').append(first);
         first.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: transfer }));
-        equal([...root.querySelectorAll('li')].map(row => row.dataset.script), ['TOWER', 'BOSS', 'CHAT', 'EXPEDITIONS']);
+        equal([...root.querySelectorAll('li')].map(row => row.dataset.script), ['TOWER', 'BOSS', 'EXPEDITIONS']);
         rows = root.querySelectorAll('li');
         const scrollBody = root.querySelector('.interface-dialog-body');
         for (let index = 0; index < 60; index++) root.querySelector('ul').append(rows[0].cloneNode(true));
@@ -310,9 +312,20 @@
         assert(scrollBody.scrollTop > 0, 'Dialog body must scroll');
         equal(header.getBoundingClientRect().top, headerTop);
         equal(dialog.scrollTop, 0);
-        rows[3].querySelector('button').click();
+        rows[2].querySelector('button').click();
         equal(navigate, ['EXPEDITIONS']);
         assert(!root.querySelector('dialog').open);
+        navigation.click();
+        equal([...root.querySelectorAll('li')].map(row => row.dataset.script), ['CHAT']);
+        equal(root.querySelector('li').querySelectorAll('button').length, 1);
+        equal(JSON.parse(storage.get('scriptOrder:scripts')), ['TOWER', 'BOSS', 'EXPEDITIONS']);
+        // Adding an automation moves its section out of navigation into scripts.
+        engine.definitions.CHAT = engine.definitions.BOSS;
+        navigation.click();
+        equal(root.querySelectorAll('li').length, 0);
+        open.click();
+        equal([...root.querySelectorAll('li')].map(row => row.dataset.script), ['TOWER', 'BOSS', 'EXPEDITIONS', 'CHAT']);
+        root.querySelector('dialog').close();
         root.remove();
     });
     document.getElementById('result').textContent = results.join('\n') + `\n${results.filter(result => result.startsWith('PASS')).length}/${results.length} passed`;

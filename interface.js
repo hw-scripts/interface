@@ -1322,6 +1322,7 @@
     const menuSections = [
         { id: 'settings', title: 'MENU_GENERAL_SETTINGS' },
         { id: 'scripts', title: 'MENU_SCRIPTS' },
+        { id: 'navigation', title: 'MENU_NAVIGATION' },
         { id: 'sequence', title: 'MENU_SEQUENCE' },
         { id: 'heroes', title: 'MENU_FARM_HEROES' },
         { id: 'autopilot', title: 'MENU_AUTOPILOT' }
@@ -1556,13 +1557,15 @@
             });
             label.append(checkbox, ` ${I18N('VALKYRIES_BLESSING')}`);
             dialogBody.append(label);
-        } else if (section.id === 'scripts') {
+        } else if (section.id === 'scripts' || section.id === 'navigation') {
             const list = document.createElement('ul');
             list.className = 'interface-script-list';
+            const orderKey = `scriptOrder:${section.id}`;
             let savedOrder;
-            try { savedOrder = JSON.parse(userStorage.get('scriptOrder')); } catch {}
+            try { savedOrder = JSON.parse(userStorage.get(orderKey) ?? userStorage.get('scriptOrder')); } catch {}
+            const available = gameNavigationSections.filter(name => Boolean(automation.definitions[name]) === (section.id === 'scripts'));
             const sections = [...new Set([...(Array.isArray(savedOrder) ? savedOrder : []), ...gameNavigationSections])]
-                .filter(section => gameNavigationSections.includes(section));
+                .filter(section => available.includes(section));
             let dragged = null;
             list.addEventListener('dragover', event => {
                 if (!dragged) return;
@@ -1576,7 +1579,7 @@
             list.addEventListener('drop', event => {
                 if (!dragged) return;
                 event.preventDefault();
-                userStorage.set('scriptOrder', JSON.stringify([...list.children].map(item => item.dataset.script)));
+                userStorage.set(orderKey, JSON.stringify([...list.children].map(item => item.dataset.script)));
             });
             for (const section of sections) {
                 const item = document.createElement('li');
