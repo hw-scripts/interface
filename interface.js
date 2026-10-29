@@ -410,6 +410,7 @@
             ajax.sendFilter = new AjaxSendFilter(); // Create sending filters set
             XMLHttpRequest.prototype.send = function (body) {
                 this.requestObject.request.body = body;
+                ajax.gameApi?.observe(this.requestObject);
                 this.addEventListener('loadend', () => {
                     this.requestObject.response.status = this.status;
                     this.getAllResponseHeaders()
@@ -500,6 +501,8 @@
     }
     //#endregion
     const ajax = new AJAX();
+    const gameApi = new InterfaceGameApi(ajax.original);
+    ajax.gameApi = gameApi;
     phase('AJAX hooks installed');
 
     //#region Tasks
@@ -978,6 +981,7 @@
     const bridge = new Bridge(manifest.typeName);
     phase('Waiting for userGetInfo');
     const userStorage = new UserStorage(await userStorageReady); // Await the real login and user info retrieval to ensure userStorage is ready for use
+    const automation = new InterfaceAutomation(theGame, gameApi, userStorage);
     valkyriesBlessing = userStorage.get('valkyriesBlessing') === 'true';
 
     phase('UserStorage ready');
@@ -1327,6 +1331,8 @@
     #interfaceSidebar .interface-menu-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
     #interfaceSidebar .interface-menu-brand { flex: 1; color: inherit; text-decoration: none; font-weight: 700; }
     #interfaceSidebar .interface-menu-version { display: block; font-size: 12px; font-weight: 400; opacity: .7; }
+    #interfaceSidebar .interface-language { flex: 0 0 auto; padding: 4px 6px; border: 1px solid #a77b45; border-radius: 4px; background: #332a22; color: #fff1da; font: inherit; font-size: 12px; cursor: pointer; }
+    #interfaceSidebar .interface-language:focus-visible { outline: 2px solid #f2bf69; outline-offset: 3px; }
     #interfaceSidebar .interface-menu-close, #interfaceDialog .interface-dialog-close { background: transparent; border: 0; color: inherit; font: inherit; font-size: 26px; cursor: pointer; padding: 4px 10px; }
     #interfaceSidebar .interface-profile { display: flex; align-items: center; gap: 12px; }
     #interfaceSidebar .sidebar__profile-data-avatar { flex: 0 0 64px; width: 64px; height: 64px; }
@@ -1336,17 +1342,31 @@
     #interfaceSidebar .interface-profile-level { margin-top: 6px; opacity: .75; }
     #interfaceSidebar .interface-guild { display: inline-flex; align-items: center; }
     #interfaceSidebar .interface-guild svg { width: 30px; height: 34px; }
-    #interfaceSidebar .interface-menu-actions { display: grid; gap: 10px; padding: 20px; }
-    #interfaceSidebar .interface-menu-action, #interfaceDialog .interface-menu-action { width: 100%; padding: 13px 16px; border: 1px solid #a77b45; border-radius: 6px; background: #332a22; color: #fff1da; font: inherit; text-align: left; cursor: pointer; }
+    #interfaceSidebar .interface-menu-actions { display: grid; gap: 5px; padding: 10px 12px; }
+    #interfaceSidebar .interface-menu-action, #interfaceDialog .interface-menu-action { box-sizing: border-box; width: 100%; padding: 7px 10px; border: 1px solid #a77b45; border-radius: 4px; background: #332a22; color: #fff1da; font: inherit; font-size: 13px; line-height: 1.3; text-align: left; cursor: pointer; }
     #interfaceSidebar .interface-menu-action:hover, #interfaceDialog .interface-menu-action:hover { background: #49392a; }
     #interfaceSidebar button:focus-visible, #interfaceSidebar a:focus-visible, #interfaceDialog button:focus-visible { outline: 2px solid #f2bf69; outline-offset: 3px; }
     #interfaceDialog { box-sizing: border-box; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 0; border: 1px solid #a77b45; border-radius: 10px; background: #27221e; color: #fff1da; box-shadow: 0 20px 70px #0009; }
     #interfaceDialog::backdrop { background: #0009; }
-    #interfaceDialog .interface-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; border-bottom: 1px solid #ffffff26; }
+    #interfaceDialog { overflow: hidden; }
+    #interfaceDialog[open] { display: flex; flex-direction: column; }
+    #interfaceDialog .interface-dialog-header { flex: 0 0 auto; }
+    #interfaceDialog .interface-dialog-body { min-height: 0; overflow-y: auto; }
+    #interfaceDialog .interface-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-bottom: 1px solid #ffffff26; }
     #interfaceDialog h2 { margin: 0; font-size: 20px; color: inherit; }
-    #interfaceDialog .interface-dialog-body { padding: 20px; }
-    #interfaceDialog .interface-script-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-    #interfaceDialog .interface-script-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid #ffffff26; border-radius: 6px; }
+    #interfaceDialog .interface-dialog-body { padding: 10px 12px; }
+    #interfaceDialog .interface-script-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+    #interfaceDialog .interface-script-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 8px; padding: 6px 8px; border: 1px solid #ffffff26; border-radius: 4px; font-size: 13px; }
+    #interfaceDialog .interface-script-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+    #interfaceDialog .interface-script-actions .interface-menu-action { flex: 0 1 auto; width: auto; padding: 4px 6px; font-size: 12px; text-align: center; }
+    #interfaceDialog .interface-script-name { min-width: 0; overflow-wrap: anywhere; }
+    #interfaceDialog .interface-script-link { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+    #interfaceDialog .interface-script-link:hover { text-decoration: underline; }
+    #interfaceDialog .interface-script-list li[draggable] { cursor: grab; }
+    #interfaceDialog .interface-script-list li.interface-dragging { opacity: .45; }
+    #interfaceDialog .interface-script-status:empty { display: none; }
+    @media (max-width: 520px) { #interfaceDialog .interface-script-list li { grid-template-columns: minmax(0, 1fr); } }
+    #interfaceDialog .interface-menu-action:disabled { opacity: .45; cursor: default; }
     #interfaceDialog .interface-script-status { opacity: .6; font-size: 12px; }
 </style>
 <section id="interfaceSidebar" class="sidebar">
@@ -1356,6 +1376,11 @@
                 {{ manifest.name }}
                 <span class="interface-menu-version">{{ manifest.version }}</span>
             </a>
+            <select id="interfaceLanguage" class="interface-language" aria-label="{{ I18N('MENU_LANGUAGE') }}">
+                <option value="uk">Українська</option>
+                <option value="en">English</option>
+                <option value="ru">Русский</option>
+            </select>
             <button type="button" class="interface-menu-close" data-interface-close aria-label="{{ I18N('MENU_CLOSE') }}">&times;</button>
         </div>
         <div class="sidebar__content-item">
@@ -1430,10 +1455,84 @@
         menuTemplate,
         (code, callback) => eval(code)
     );
+    const languageSelector = document.getElementById('interfaceLanguage');
+    languageSelector.value = i18n.language;
+    languageSelector.addEventListener('change', () => {
+        userStorage.set('language', languageSelector.value);
+        location.reload();
+    });
     const interfaceSidebar = document.getElementById('interfaceSidebar');
     const interfaceDialog = document.getElementById('interfaceDialog');
     const dialogTitle = interfaceDialog.querySelector('h2');
     const dialogBody = interfaceDialog.querySelector('.interface-dialog-body');
+    const scriptText = value => i18n.translations[value] || value;
+    const scriptReports = new Map();
+    const refreshRunButtons = () => {
+        for (const button of dialogBody.querySelectorAll('[data-interface-run]')) {
+            const active = automation.running?.section === button.dataset.interfaceRun;
+            button.textContent = I18N(active ? 'SCRIPT_STOP' : 'SCRIPT_RUN_CONFIGURED');
+            button.disabled = Boolean(automation.running && (!active || automation.running.stopped));
+        }
+    };
+    const reportScript = (section, key, detail) => {
+        const text = `${scriptText(key)}${detail == null ? '' : `: ${detail}`}`;
+        scriptReports.set(section, text);
+        const status = dialogBody.querySelector(`[data-interface-status="${section}"]`);
+        if (status) status.textContent = ` (${text})`;
+        message.textContent = `${I18N(`NAV_${section}`)}: ${text}`;
+    };
+    const showScriptSettings = section => {
+        dialogTitle.textContent = `${I18N(`NAV_${section}`)} — ${I18N('SCRIPT_CONFIGURE')}`;
+        dialogBody.replaceChildren();
+        const form = document.createElement('form');
+        const settings = automation.settings(section);
+        const inputs = {};
+        for (const name of Object.keys(automation.definitions[section].fields)) {
+            const label = document.createElement('label');
+            label.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 14px';
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.checked = settings[name] === true;
+            inputs[name] = input;
+            label.append(input, I18N(`SCRIPT_OPTION_${name.toUpperCase()}`));
+            form.append(label);
+        }
+        const save = document.createElement('button');
+        save.type = 'submit';
+        save.className = 'interface-menu-action';
+        save.textContent = I18N('SCRIPT_SAVE');
+        const back = document.createElement('button');
+        back.type = 'button';
+        back.className = 'interface-menu-action';
+        back.textContent = I18N('SCRIPT_BACK');
+        back.addEventListener('click', () => interfaceSidebar.querySelector('[data-interface-dialog="scripts"]').click());
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+            automation.save(section, Object.fromEntries(Object.entries(inputs).map(([name, input]) => [name, input.checked])));
+            back.click();
+        });
+        form.append(save, back);
+        dialogBody.append(form);
+    };
+    const runScript = async (section, button, status) => {
+        if (automation.running) {
+            status.textContent = I18N('SCRIPT_ALREADY_RUNNING');
+            return;
+        }
+        const report = (key, detail) => reportScript(section, key, detail);
+        report('SCRIPT_RUNNING');
+        try {
+            const execution = automation.run(section, report);
+            refreshRunButtons();
+            await execution;
+        }
+        catch (error) {
+            console.error('Automation failed:', section, error);
+            report('SCRIPT_FAILED', scriptText(error.message));
+        } finally {
+            refreshRunButtons();
+        }
+    };
     interfaceSidebar.addEventListener('click', event => {
         if (event.target.closest('[data-interface-close]')) {
             interfaceSidebar.classList.remove('sidebar_open');
@@ -1460,11 +1559,52 @@
         } else if (section.id === 'scripts') {
             const list = document.createElement('ul');
             list.className = 'interface-script-list';
-            for (const section of gameNavigationSections) {
+            let savedOrder;
+            try { savedOrder = JSON.parse(userStorage.get('scriptOrder')); } catch {}
+            const sections = [...new Set([...(Array.isArray(savedOrder) ? savedOrder : []), ...gameNavigationSections])]
+                .filter(section => gameNavigationSections.includes(section));
+            let dragged = null;
+            list.addEventListener('dragover', event => {
+                if (!dragged) return;
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+                const target = event.target.closest('li');
+                if (!target || target === dragged || target.parentElement !== list) return;
+                const bounds = target.getBoundingClientRect();
+                list.insertBefore(dragged, event.clientY < bounds.top + bounds.height / 2 ? target : target.nextSibling);
+            });
+            list.addEventListener('drop', event => {
+                if (!dragged) return;
+                event.preventDefault();
+                userStorage.set('scriptOrder', JSON.stringify([...list.children].map(item => item.dataset.script)));
+            });
+            for (const section of sections) {
                 const item = document.createElement('li');
+                item.dataset.script = section;
+                item.draggable = true;
+                let previousOrder;
+                let dropped = false;
+                item.addEventListener('dragstart', event => {
+                    dragged = item;
+                    previousOrder = [...list.children];
+                    dropped = false;
+                    item.classList.add('interface-dragging');
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', section);
+                });
+                list.addEventListener('drop', () => { if (dragged === item) dropped = true; });
+                item.addEventListener('dragend', () => {
+                    if (!dropped && previousOrder) list.append(...previousOrder);
+                    item.classList.remove('interface-dragging');
+                    dragged = null;
+                });
+                const label = document.createElement('span');
+                label.className = 'interface-script-name';
+                const actions = document.createElement('div');
+                actions.className = 'interface-script-actions';
                 const button = document.createElement('button');
                 button.type = 'button';
-                button.className = 'interface-menu-action';
+                button.className = 'interface-script-link';
                 button.textContent = I18N(`NAV_${section}`);
                 button.addEventListener('click', () => {
                     try {
@@ -1477,16 +1617,46 @@
                         button.textContent = `${I18N(`NAV_${section}`)} — ${I18N('NAV_UNAVAILABLE')}`;
                     }
                 });
-                item.append(button);
+                label.append(button);
+                const status = document.createElement('span');
+                status.className = 'interface-script-status';
+                status.setAttribute('role', 'status');
+                status.dataset.interfaceStatus = section;
+                status.textContent = scriptReports.has(section) ? ` (${scriptReports.get(section)})` : '';
+                label.append(status);
+                for (const action of ['SCRIPT_CONFIGURE', 'SCRIPT_RUN_CONFIGURED']) {
+                    if (!automation.definitions[section]) continue;
+                    const actionButton = document.createElement('button');
+                    actionButton.type = 'button';
+                    actionButton.className = 'interface-menu-action';
+                    actionButton.textContent = I18N(action);
+                    actionButton.disabled = !automation.definitions[section];
+                    if (actionButton.disabled) actionButton.title = I18N('SCRIPT_NOT_IMPLEMENTED');
+                    else {
+                        if (action === 'SCRIPT_RUN_CONFIGURED') actionButton.dataset.interfaceRun = section;
+                        actionButton.addEventListener('click', () => {
+                            if (action === 'SCRIPT_CONFIGURE') showScriptSettings(section);
+                            else if (automation.running?.section === section) {
+                                automation.stop();
+                                reportScript(section, 'SCRIPT_STOPPING');
+                                refreshRunButtons();
+                            } else void runScript(section, actionButton, status);
+                        });
+                    }
+                    actions.append(actionButton);
+                }
+                item.append(label);
+                if (actions.childElementCount) item.append(actions);
                 list.append(item);
             }
             dialogBody.append(list);
+            refreshRunButtons();
         } else {
             const text = document.createElement('p');
             text.textContent = I18N('MENU_SECTION_PENDING');
             dialogBody.append(text);
         }
-        interfaceDialog.showModal();
+        if (!interfaceDialog.open) interfaceDialog.showModal();
     });
     interfaceDialog.querySelector('.interface-dialog-close').addEventListener('click', () => interfaceDialog.close());
 

@@ -1,0 +1,320 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Interface automation tests</title>
+<pre id="result">RUNNING</pre>
+<script src="../battle-calculator.js"></script>
+<script src="../automation.js"></script>
+<script>
+(async () => {
+    const results = [];
+    const assert = (value, message = 'Assertion failed') => { if (!value) throw new Error(message); };
+    const equal = (a, b) => assert(JSON.stringify(a) === JSON.stringify(b), `${JSON.stringify(a)} !== ${JSON.stringify(b)}`);
+    const test = async (name, run) => {
+        try { await run(); results.push(`PASS ${name}`); }
+        catch (error) { results.push(`FAIL ${name}: ${error.stack}`); }
+    };
+    const fixture = (responses = {}, game = {}) => {
+        const calls = [];
+        const values = {};
+        const storage = { get: key => values[key] ?? null, set: (key, value) => { values[key] = value; } };
+        const api = { call: async (name, args = {}) => {
+            calls.push({ name, args });
+            const response = responses[name];
+            if (typeof response === 'function') return response(args);
+            return structuredClone(response);
+        } };
+        return { engine: new InterfaceAutomation(game, api, storage), calls, storage };
+    };
+    await test('syntax of interface and automation', async () => {
+        for (const file of ['../interface.js', '../automation.js', '../battle-calculator.js']) {
+            const response = await fetch(file);
+            new Function(await response.text());
+        }
+    });
+    await test('MD5 standard vectors and padding', () => {
+        equal(InterfaceGameApi.md5(''), 'd41d8cd98f00b204e9800998ecf8427e');
+        equal(InterfaceGameApi.md5('abc'), '900150983cd24fb0d6963f7d28e17f72');
+        equal(InterfaceGameApi.md5('a'.repeat(1000000)), '7707d6ae4e027c70eea2a935c2296f21');
+    });
+    await test('manifest loads automation before interface; all option and status labels exist', async () => {
+        const manifest = await (await fetch('../manifest.json')).json();
+        const main = manifest.content_scripts.find(item => item.world === 'MAIN');
+        assert(main.js.indexOf('automation.js') >= 0 && main.js.indexOf('automation.js') < main.js.indexOf('interface.js'));
+        assert(main.js.indexOf('battle-calculator.js') >= 0 && main.js.indexOf('battle-calculator.js') < main.js.indexOf('automation.js'));
+        const source = await (await fetch('../automation.js')).text() + await (await fetch('../battle-calculator.js')).text();
+        const keys = [...new Set(source.match(/SCRIPT_[A-Z_]+/g))];
+        const { engine } = fixture();
+        for (const language of ['uk', 'en', 'ru']) {
+            const dictionary = await (await fetch(`../locales/${language}.json`)).json();
+            for (const key of keys) assert(dictionary[key], `${language} missing ${key}`);
+            for (const definition of Object.values(engine.definitions)) {
+                for (const field of Object.keys(definition.fields)) {
+                    assert(dictionary[`SCRIPT_OPTION_${field.toUpperCase()}`], `${language} missing option ${field}`);
+                }
+            }
+        }
+    });
+    await test('request signing, ordering, error recovery', async () => {
+        const NativeXHR = window.XMLHttpRequest;
+        const sent = [];
+        class FakeXHR { set responseType(value) {} }
+        window.XMLHttpRequest = FakeXHR;
+        try {
+            const original = {
+                open(method, url) { this.headers = {}; this.url = url; },
+                setRequestHeader(key, value) { this.headers[key] = value; },
+                send(body) {
+                    sent.push({ headers: this.headers, body });
+                    const call = JSON.parse(body).calls[0];
+                    this.status = 200;
+                    this.response = call.name === 'fail' ? { error: { description: 'expected failure' } }
+                        : { results: [{ ident: 'body', result: { response: call.name } }] };
+                    queueMicrotask(() => this.onload());
+                }
+            };
+            const api = new InterfaceGameApi(original);
+            api.observe({ method: 'POST', url: 'https://example.test/api/', request: { headers: {
+                'X-Auth-Token': 'test', 'X-Auth-Session-Id': 'session', 'X-Request-Id': '8',
+                'X-Env-Unique-Session-Id': 'unique', 'X-Env-Unique-Session-Uuid': 'uuid'
+            } } });
+            const first = api.call('one');
+            const failure = api.call('fail').catch(error => error.message);
+            const third = api.call('three');
+            equal(await Promise.all([first, failure, third]), ['one', 'expected failure', 'three']);
+            equal(sent.map(item => item.headers['x-request-id']), ['9', '10', '11']);
+            for (const request of sent) {
+                const signature = `${request.headers['x-request-id']}:test:session:${request.body}:LIBRARY-VERSION=1UNIQUE-SESSION-ID=uniqueUNIQUE-SESSION-UUID=uuid`;
+                equal(request.headers['x-auth-signature'], InterfaceGameApi.md5(signature));
+            }
+        } finally { window.XMLHttpRequest = NativeXHR; }
+    });
+    await test('settings persist per script', () => {
+        const { engine } = fixture();
+        engine.save('EXPEDITIONS', { collect: false, send: true });
+        equal(engine.settings('EXPEDITIONS'), { collect: false, send: true });
+        equal(engine.settings('BOSS'), { raid: true, openChests: true });
+    });
+    await test('outland raids and free chests only', async () => {
+        const { engine, calls } = fixture({ bossGetAll: { bosses: [
+            { id: 1, mayRaid: true }, { id: 2, chestId: 1 }, { id: 3, chestId: 2 }
+        ] } });
+        await engine.run('BOSS', () => {});
+        equal(calls.map(call => call.name), ['bossGetAll', 'bossRaid', 'bossOpenChest', 'bossOpenChest']);
+        assert(calls.filter(call => call.name === 'bossOpenChest').every(call => call.args.starmoney === 0 && call.args.amount === 1));
+    });
+    await test('outland respects disabled actions', async () => {
+        const { engine, calls } = fixture({ bossGetAll: { bosses: [{ id: 1, mayRaid: true, chestId: 1 }] } });
+        engine.save('BOSS', { raid: false, openChests: false });
+        await engine.run('BOSS', () => {});
+        equal(calls.map(call => call.name), ['bossGetAll']);
+    });
+    await test('stop prevents subsequent mutations', async () => {
+        const { engine, calls } = fixture({ bossGetAll: { bosses: [{ id: 1, mayRaid: true }, { id: 2, mayRaid: true }] } });
+        await engine.run('BOSS', key => { if (key === 'SCRIPT_BOSS_RAIDED') engine.stop(); });
+        equal(calls.map(call => call.name), ['bossGetAll', 'bossRaid']);
+        equal(engine.running, null);
+    });
+    await test('only one automation runs at a time', async () => {
+        let release;
+        const { engine } = fixture({ bossGetAll: () => new Promise(resolve => { release = resolve; }) });
+        const first = engine.run('BOSS', () => {});
+        let rejected = false;
+        try { await engine.run('BOSS', () => {}); } catch (error) { rejected = error.message === 'SCRIPT_ALREADY_RUNNING'; }
+        assert(rejected);
+        release({ bosses: [] });
+        await first;
+    });
+    await test('expeditions refresh, skip video and avoid occupied heroes', async () => {
+        let reads = 0;
+        const heroes = Object.fromEntries(Array.from({ length: 12 }, (_, i) => [i + 1, { id: i + 1, power: 100 }]));
+        const { engine, calls } = fixture({
+            expeditionGet: () => ++reads === 1 ? {
+                1: { id: 1, slotId: 1, status: 2, endTime: 1, heroes: [1, 2, 3, 4, 5] },
+                2: { id: 2, slotId: 2, status: 2, endTime: 1, heroes: [11] }
+            } : {
+                1: { id: 1, slotId: 1, status: 1, power: 400 },
+                2: { id: 2, slotId: 2, status: 1, power: 400 },
+                3: { id: 3, slotId: 1, status: 2, heroes: [1, 2], endTime: 9999999999 }
+            }, heroGetAll: heroes
+        }, { lib: { expedition: { slot: { 1: { type: 'normal' }, 2: { type: 'video' } } } } });
+        await engine.run('EXPEDITIONS', () => {});
+        equal(calls.filter(call => call.name === 'expeditionFarm').map(call => call.args.expeditionId), [1]);
+        const sent = calls.filter(call => call.name === 'expeditionSendHeroes');
+        equal(sent.length, 1);
+        equal(sent[0].args.heroes.length, 5);
+        assert(!sent[0].args.heroes.includes(1) && !sent[0].args.heroes.includes(2));
+    });
+    await test('expeditions do not send insufficient teams', async () => {
+        const { engine, calls } = fixture({ expeditionGet: { 1: { id: 1, slotId: 1, status: 1, power: 1000 } },
+            heroGetAll: { 1: { id: 1, power: 10 } } }, { lib: { expedition: { slot: { 1: { type: 'normal' } } } } });
+        await engine.run('EXPEDITIONS', () => {});
+        assert(!calls.some(call => call.name === 'expeditionSendHeroes'));
+    });
+    await test('tower full skip opens one chest per floor and collects rewards', async () => {
+        let floor = 1;
+        let opened = false;
+        const info = () => ({ floorNumber: floor, floorType: floor === 1 ? 'battle' : 'chest',
+            floor: floor === 1 ? {} : { chests: [{ opened }] }, mayFullSkip: true, teamLevel: 130,
+            pointRewards: { 10: false, 20: true, 30: false }, points: 20 });
+        const { engine, calls } = fixture({ towerGetInfo: info, inventoryGet: { coin: { 7: 5 } },
+            towerNextChest: () => { floor = floor === 1 ? 3 : 50; opened = false; return { tower: info() }; },
+            towerOpenChest: () => { opened = true; return {}; }
+        });
+        engine.save('TOWER', { battles: false });
+        await engine.run('TOWER', () => {});
+        equal(calls.filter(call => call.name === 'towerOpenChest').length, 2);
+        equal(calls.find(call => call.name === 'tower_farmPointRewards').args.points, ['10']);
+        assert(calls.some(call => call.name === 'tower_farmSkullReward'));
+    });
+    await test('tower stops before a battle when disabled', async () => {
+        const { engine, calls } = fixture({ towerGetInfo: { floorNumber: 1, floorType: 'battle', floor: { state: 1 }, maySkipFloor: 0 }, inventoryGet: { coin: {} } });
+        engine.save('TOWER', { battles: false });
+        const reports = [];
+        await engine.run('TOWER', key => reports.push(key));
+        assert(reports.includes('SCRIPT_TOWER_NEEDS_BATTLE'));
+        assert(!reports.includes('SCRIPT_DONE'));
+        assert(!calls.some(call => call.name === 'towerStartBattle'));
+    });
+    await test('tower skips battle floors, respects skull budget and advances', async () => {
+        const { engine, calls } = fixture({
+            towerGetInfo: { floorNumber: 1, floorType: 'battle', floor: {}, maySkipFloor: 1 },
+            inventoryGet: { coin: { 7: 2 } },
+            towerSkipFloor: { tower: { floorNumber: 2, floorType: 'buff', floor: [{ id: 1 }, { id: 2 }, { id: 5 }] } },
+            towerNextFloor: { tower: { floorNumber: 50, floorType: 'chest', floor: { chests: [{ opened: false }] } } }
+        });
+        engine.save('TOWER', { battles: false, collectRewards: false });
+        await engine.run('TOWER', () => {});
+        equal(calls.filter(call => call.name === 'towerBuyBuff').map(call => call.args.buffId), [1, 5]);
+        equal(calls.filter(call => call.name === 'towerOpenChest').length, 1);
+    });
+    await test('tower battle uses living heroes, retains pet and submits calculated result', async () => {
+        let complete = false;
+        const heroGetAll = Object.fromEntries(Array.from({ length: 6 }, (_, i) => [i + 1, { id: i + 1, power: 100 - i }]));
+        const classes = Object.fromEntries(['BattlePresets', 'BattleConfigStorage', 'DataStorage', 'BattleInstantPlay', 'MultiBattleResult', 'BattleLogEncoder', 'BattleLogReader'].map(name => [name, {}]));
+        const { engine, calls } = fixture({
+            towerGetInfo: { floorNumber: 1, floorType: 'battle', floor: { state: 1 }, maySkipFloor: 0, states: { heroes: { 1: { isDead: true } } } },
+            inventoryGet: { coin: {} }, heroGetAll, teamGetAll: { tower: [1, 6001] }, teamGetFavor: { tower: { 1: 6000, 2: 6002 } },
+            towerStartBattle: { test: 'battle' }, towerEndBattle: () => { complete = true; return {}; },
+            towerNextFloor: { tower: { floorNumber: 50, floorType: 'chest', floor: { chests: [{ opened: true }] } } }
+        }, { classes });
+        engine.save('TOWER', { collectRewards: false });
+        engine.battleCalculator.calculate = async (data, config) => { equal(config, 'get_tower'); equal(data, { test: 'battle' }); return { result: { stars: 3 }, progress: ['calculated'], waitSeconds: 0 }; };
+        await engine.run('TOWER', () => {});
+        const args = calls.find(call => call.name === 'towerStartBattle').args;
+        equal(args.heroes, [2, 3, 4, 5, 6]);
+        equal(args.favor, { 2: 6002 });
+        equal(args.pet, 6001);
+        assert(complete);
+        equal(calls.find(call => call.name === 'towerEndBattle').args.progress, ['calculated']);
+    });
+    await test('API error stops automation and releases running state', async () => {
+        const { engine, calls } = fixture({ bossGetAll: { bosses: [{ id: 1, mayRaid: true }] }, bossRaid: () => { throw new Error('server refused'); } });
+        let rejected = false;
+        try { await engine.run('BOSS', () => {}); } catch { rejected = true; }
+        assert(rejected);
+        equal(engine.running, null);
+        assert(!calls.some(call => call.name === 'bossOpenChest'));
+    });
+    await test('battle adapter reads game aliases, progress, result and duration', async () => {
+        const classes = {};
+        classes.BattleConfigStorage = function () {};
+        classes.BattleConfigStorage.prototype.__properties__ = { towerAlias: 'get_tower' };
+        classes.DataStorage = Object.fromEntries(Array.from({ length: 25 }, (_, index) => [`key${index}`, null]));
+        classes.DataStorage.storage = { towerAlias: () => 'towerConfig' };
+        classes.BattlePresets = function (progress, a, b, config) { equal(config, 'towerConfig'); };
+        classes.BattlePresets.prototype.__properties__ = { timeAlias: 'get_timeLimit' };
+        classes.BattlePresets.prototype.timeAlias = () => 200;
+        const result = { parts: ['part'], resultAlias: () => ({ stars: 3 }), progressAlias: () => ['real progress'] };
+        classes.MultiBattleResult = function () {};
+        Object.assign(classes.MultiBattleResult.prototype, { first: null, second: null, parts: null,
+            __properties__: { resultAlias: 'get_result', progressAlias: 'get_progress' } });
+        classes.BattleInstantPlay = function () { this.signal = { add: callback => { this.callback = callback; } }; };
+        Object.assign(classes.BattleInstantPlay.prototype,
+            Object.fromEntries(Array.from({ length: 9 }, (_, i) => [`key${i}`, null])),
+            { signal: null, __properties__: { resultAlias: 'get_result' }, resultAlias: () => result,
+                start() { this.callback(this); } });
+        classes.BattleLogReader = function (value) { equal(value, 'part'); };
+        classes.BattleLogEncoder = { read: () => [{ time: 90 }, { time: 168.8 }, { time: 250 }] };
+        const calculator = new InterfaceBattleCalculator({ classes });
+        const calculated = await calculator.calculate({}, 'get_tower');
+        equal(calculated.result, { stars: 3 });
+        equal(calculated.progress, ['real progress']);
+        equal(calculated.waitSeconds, 62);
+    });
+    await test('menu configures, saves, runs and navigates through real event handlers', async () => {
+        const source = await (await fetch('../interface.js')).text();
+        const dictionary = await (await fetch('../locales/en.json')).json();
+        const start = source.indexOf("    const interfaceSidebar = document.getElementById('interfaceSidebar');");
+        const end = source.indexOf("    phase('Sidebar rendered; loading avatar'", start);
+        assert(start >= 0 && end > start);
+        const root = document.createElement('div');
+        root.innerHTML = '<section id="interfaceSidebar"><button data-interface-dialog="scripts">Scripts</button></section><dialog id="interfaceDialog"><h2></h2><button class="interface-dialog-close">Close</button><div class="interface-dialog-body"></div></dialog><div class="sidebar__overlay"></div>';
+        const dialog = root.querySelector('dialog');
+        const header = document.createElement('div');
+        header.className = 'interface-dialog-header';
+        header.append(dialog.querySelector('h2'), dialog.querySelector('.interface-dialog-close'));
+        dialog.prepend(header);
+        const style = document.createElement('style');
+        style.textContent = source.match(/<style>([\s\S]*?)<\/style>/)[1];
+        root.append(style);
+        document.body.append(root);
+        const message = document.createElement('div');
+        const { engine, calls, storage } = fixture({ bossGetAll: { bosses: [] } });
+        const navigate = [];
+        const execute = new Function('automation', 'I18N', 'i18n', 'message', 'menuSections', 'gameNavigationSections', 'navigateToGameSection', 'userStorage', source.slice(start, end));
+        execute(engine, key => dictionary[key] || key, { translations: dictionary }, message,
+            [{ id: 'scripts', title: 'MENU_SCRIPTS' }], ['EXPEDITIONS', 'TOWER', 'BOSS', 'CHAT'], section => navigate.push(section), storage);
+        const open = root.querySelector('[data-interface-dialog="scripts"]');
+        open.click();
+        let rows = root.querySelectorAll('li');
+        equal(rows.length, 4);
+        equal(rows[0].querySelectorAll('button').length, 3);
+        assert(!rows[0].querySelectorAll('button')[1].disabled);
+        equal(rows[3].querySelectorAll('button').length, 1);
+        assert(rows[0].querySelector('button').classList.contains('interface-script-link'));
+        rows[0].querySelectorAll('button')[1].click();
+        const inputs = root.querySelectorAll('form input');
+        equal(inputs.length, 2);
+        inputs[0].checked = false;
+        root.querySelector('form').requestSubmit();
+        equal(engine.settings('EXPEDITIONS'), { collect: false, send: true });
+        rows = root.querySelectorAll('li');
+        rows[2].querySelectorAll('button')[2].click();
+        await new Promise(resolve => setTimeout(resolve, 0));
+        equal(calls.map(call => call.name), ['bossGetAll']);
+        assert(rows[2].textContent.includes(dictionary.SCRIPT_DONE));
+        assert(rows[2].querySelector('.interface-script-name').textContent.includes(` (${dictionary.SCRIPT_DONE})`));
+        const list = root.querySelector('ul');
+        const dragged = rows[0];
+        const target = rows[3];
+        const transfer = new DataTransfer();
+        dragged.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: transfer }));
+        const bounds = target.getBoundingClientRect();
+        target.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: transfer, clientY: bounds.bottom }));
+        target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer }));
+        dragged.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: transfer }));
+        equal(JSON.parse(storage.get('scriptOrder')), ['TOWER', 'BOSS', 'CHAT', 'EXPEDITIONS']);
+        open.click();
+        equal([...root.querySelectorAll('li')].map(row => row.dataset.script), ['TOWER', 'BOSS', 'CHAT', 'EXPEDITIONS']);
+        // Cancelled drags restore the saved order.
+        const first = root.querySelector('li');
+        first.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: transfer }));
+        root.querySelector('ul').append(first);
+        first.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: transfer }));
+        equal([...root.querySelectorAll('li')].map(row => row.dataset.script), ['TOWER', 'BOSS', 'CHAT', 'EXPEDITIONS']);
+        rows = root.querySelectorAll('li');
+        const scrollBody = root.querySelector('.interface-dialog-body');
+        for (let index = 0; index < 60; index++) root.querySelector('ul').append(rows[0].cloneNode(true));
+        const headerTop = header.getBoundingClientRect().top;
+        scrollBody.scrollTop = 150;
+        assert(scrollBody.scrollTop > 0, 'Dialog body must scroll');
+        equal(header.getBoundingClientRect().top, headerTop);
+        equal(dialog.scrollTop, 0);
+        rows[3].querySelector('button').click();
+        equal(navigate, ['EXPEDITIONS']);
+        assert(!root.querySelector('dialog').open);
+        root.remove();
+    });
+    document.getElementById('result').textContent = results.join('\n') + `\n${results.filter(result => result.startsWith('PASS')).length}/${results.length} passed`;
+})();
+</script>
