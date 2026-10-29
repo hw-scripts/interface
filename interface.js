@@ -755,7 +755,9 @@
         const isEmpty = value =>
             value == null ||
             value === '' ||
-            (Array.isArray(value)
+            (value instanceof ArrayBuffer || ArrayBuffer.isView(value)
+                ? value.byteLength === 0
+                : Array.isArray(value)
                 ? value.length === 0
                 : typeof value === 'object' && Object.keys(value).length === 0);
         const data = {};
@@ -764,7 +766,17 @@
         if (!Object.keys(data).length) return;
         let json;
         try {
-            json = JSON.stringify(data);
+            const ancestors = [];
+            json = JSON.stringify(data, function (key, value) {
+                if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
+                    return { type: value.constructor.name, byteLength: value.byteLength };
+                }
+                if (value === null || typeof value !== 'object') return value;
+                while (ancestors.length && ancestors[ancestors.length - 1] !== this) ancestors.pop();
+                if (ancestors.includes(value)) return '[Circular]';
+                ancestors.push(value);
+                return value;
+            });
         } catch (error) {
             console.error('Stringify error:', error);
             return;

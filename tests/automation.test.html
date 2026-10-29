@@ -36,6 +36,29 @@
         equal(InterfaceGameApi.md5('abc'), '900150983cd24fb0d6963f7d28e17f72');
         equal(InterfaceGameApi.md5('a'.repeat(1000000)), '7707d6ae4e027c70eea2a935c2296f21');
     });
+    await test('debug logger handles binary data, cycles and shared references', async () => {
+        const source = await (await fetch('../interface.js')).text();
+        const start = source.indexOf('    ajax.logger =');
+        const end = source.indexOf("    ajax.sendFilter.setFunction('get'", start);
+        const values = [];
+        const ajax = {};
+        new Function('ajax', 'sessionStorage', source.slice(start, end))(ajax, { setItem: (key, text) => values.push(text) });
+        const buffer = new ArrayBuffer(8);
+        buffer.owner = { bytes: new Uint8Array(buffer), buffer };
+        ajax.logger('ajax', 'post', {}, buffer);
+        equal(JSON.parse(values.pop()).response, { type: 'ArrayBuffer', byteLength: 8 });
+        ajax.logger('ajax', 'post', {}, new Uint8Array(buffer));
+        equal(JSON.parse(values.pop()).response, { type: 'Uint8Array', byteLength: 8 });
+        const cycle = { value: 1 };
+        cycle.self = cycle;
+        ajax.logger('ajax', 'post', {}, cycle);
+        equal(JSON.parse(values.pop()).response, { value: 1, self: '[Circular]' });
+        const shared = { value: 2 };
+        ajax.logger('ajax', 'post', {}, { a: shared, b: shared });
+        equal(JSON.parse(values.pop()).response, { a: { value: 2 }, b: { value: 2 } });
+        ajax.logger('ajax', 'post', {}, new ArrayBuffer(0));
+        equal(values.length, 0);
+    });
     await test('manifest loads automation before interface; all option and status labels exist', async () => {
         const manifest = await (await fetch('../manifest.json')).json();
         const main = manifest.content_scripts.find(item => item.world === 'MAIN');
