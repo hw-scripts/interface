@@ -92,6 +92,10 @@ class InterfaceAutomation {
         this.storage = storage;
         this.running = null;
         this.definitions = {
+            DAILY_BONUS: {
+                fields: {},
+                run: (settings, report, token) => this.dailyBonus(token)
+            },
             EXPEDITIONS: {
                 fields: { collect: true, send: true },
                 run: (settings, report, token) => this.expeditions(settings, report, token)
@@ -128,6 +132,25 @@ class InterfaceAutomation {
     }
 
     stop() { if (this.running) this.running.stopped = true; }
+
+    async dailyBonus(token) {
+        const { availableToday, availableVip, currentDay } = await this.api.call('dailyBonusGetInfo');
+        if (token.stopped) return;
+        if (!availableToday) return 'SCRIPT_DAILY_BONUS_ALREADY_COLLECTED';
+
+        const library = this.game.lib;
+        const day = library?.dailyBonusStatic?.[`${currentDay}_0_0`];
+        const vipLevels = library?.level?.vip;
+        if (!day || !vipLevels) throw new Error('SCRIPT_LIBRARY_NOT_READY');
+        const user = await this.api.call('userGetInfo');
+        if (token.stopped) return;
+        const vipLevel = Object.values(vipLevels).reduce((level, entry) =>
+            Number(user.vipPoints) >= Number(entry.vipPoints) ? Math.max(level, Number(entry.level)) : level, 0);
+        await this.api.call('dailyBonusFarm', {
+            vip: availableVip && vipLevel >= Number(day.vipLevelDouble) ? 1 : 0
+        });
+        return 'SCRIPT_DAILY_BONUS_COLLECTED';
+    }
 
     async expeditions(settings, report, token) {
         const slots = this.game.lib?.expedition?.slot;

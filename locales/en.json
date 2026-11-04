@@ -1,4 +1,7 @@
 {
+    "NAV_DAILY_BONUS": "Daily bonus",
+    "SCRIPT_DAILY_BONUS_ALREADY_COLLECTED": "Daily bonus already collected",
+    "SCRIPT_DAILY_BONUS_COLLECTED": "Daily bonus collected",
     "MENU_NAVIGATION": "Navigation",
     "MENU_LANGUAGE": "Interface language",
     "SCRIPT_SAVE": "Save",

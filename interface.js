@@ -281,13 +281,9 @@
             });
         }
 
-        getFile(name) {
-            return this.storage?.kI(name) ?? null;
-        }
-
-        getUrl(name) {
-            const file = this.getFile(name);
-            return file?.AP() ?? '';
+        async getUrl(name) {
+            this.#images ??= new GameImages();
+            return this.#images.getUrl(name);
         }
 
         getAtlas(section, id) {
@@ -306,10 +302,17 @@
             let atlasKey;
             let textureName;
             if (avatar.assetType === 'hero_icon') {
-                const url = this.getUrl(`${avatar.assetOwnerId}.png`);
-                if (url) return url;
                 atlasKey = this.getAtlas('inventory', avatar.assetTypeAtlas)?.atlas;
                 textureName = avatar.assetOwnerId;
+                if (!atlasKey) {
+                    this.#images ??= new GameImages();
+                    const indexedAtlases = (await this.#images.getAssetKeys()).filter(key => key.endsWith('.xml'));
+                    const atlases = [...new Set([
+                        ...indexedAtlases,
+                        ...Object.values(this.config?.inventory ?? {}).map(entry => entry?.atlas)
+                    ].filter(Boolean))];
+                    return this.#images.getBest(atlases, textureName, 64, 64);
+                }
             } else if (avatar.assetType === 'hero') {
                 const reference = library.hero?.[avatar.assetOwnerId]?.iconAssetTexture;
                 if (!reference) return '';
@@ -1223,9 +1226,69 @@
             return cache.get(url);
         }
 
+        async getUrl(name) {
+            const flashVars = window.NXFlashVars;
+            const indexUrl = String(flashVars?.index_url?.asset_index ?? '');
+            const staticUrl = String(flashVars?.static_url ?? '').replace(/\/+$/, '');
+            if (!indexUrl || !staticUrl) return '';
+            const index = await this.fetchCached(this.assetIndexes, indexUrl, response =>
+                indexUrl.toLowerCase().includes('.gz')
+                    ? new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json()
+                    : response.json());
+            const path = index[name]?.path;
+            return path ? `${staticUrl}/assets/${path}` : '';
+        }
+
+        async getAssetKeys() {
+            const indexUrl = String(window.NXFlashVars?.index_url?.asset_index ?? '');
+            if (!indexUrl) return [];
+            const index = await this.fetchCached(this.assetIndexes, indexUrl, response =>
+                indexUrl.toLowerCase().includes('.gz')
+                    ? new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json()
+                    : response.json());
+            return Object.keys(index);
+        }
+
+        async getBest(atlases, textureName, width, height) {
+            const candidates = [];
+            const fileName = `${textureName}.png`;
+            const files = (await this.getAssetKeys()).filter(key =>
+                key === fileName || key.endsWith(`/${fileName}`));
+            for (const assetKey of files) {
+                try {
+                    const imageUrl = await this.getUrl(assetKey);
+                    const blob = await this.fetchCached(this.images, imageUrl, response => response.blob());
+                    const image = await createImageBitmap(blob);
+                    candidates.push({ assetKey, imageUrl, width: image.width, height: image.height });
+                    image.close?.();
+                } catch (error) {
+                    console.warn('Unable to inspect avatar image', assetKey, error);
+                }
+            }
+            for (const atlas of atlases) {
+                const texture = await this.readTexture(atlas, textureName);
+                if (texture && !candidates.some(item => item.atlasKey === texture.atlasKey))
+                    candidates.push(texture);
+            }
+            const sufficient = candidates.filter(item => item.width >= width && item.height >= height);
+            const ranked = sufficient.length ? sufficient : candidates;
+            ranked.sort((a, b) => sufficient.length
+                ? a.width * a.height - b.width * b.height
+                : Math.min(b.width / width, b.height / height) - Math.min(a.width / width, a.height / height));
+            const selected = ranked[0];
+            phase('Avatar texture candidates', {
+                textureName, requestedWidth: width, requestedHeight: height,
+                scannedAtlases: atlases.length,
+                candidates: candidates.map(({ atlasKey, assetKey, width, height }) => ({ atlasKey, assetKey, width, height })),
+                selected: selected && { atlasKey: selected.atlasKey, assetKey: selected.assetKey, width: selected.width, height: selected.height }
+            });
+            if (!selected) return '';
+            return selected.assetKey ? selected.imageUrl : this.get(selected.atlasKey, textureName);
+        }
+
         // Reads a named texture from a game atlas, using the HWrunner algorithm.
         // Mapping user.avatarId to atlasKey and textureName is added separately.
-        async load(atlasKey, textureName) {
+        async readTexture(atlasKey, textureName) {
             try {
                 atlasKey = String(atlasKey)
                     .replace(/^.*?\/assets\//i, '')
@@ -1241,6 +1304,10 @@
                     indexUrl.toLowerCase().includes('.gz')
                         ? new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json()
                         : response.json());
+                if (!index[atlasKey]) {
+                    const matches = Object.keys(index).filter(key => key.endsWith(`/${atlasKey}`));
+                    if (matches.length === 1) atlasKey = matches[0];
+                }
                 const atlasPath = index[atlasKey]?.path;
                 if (!atlasPath) {
                     return '';
@@ -1254,6 +1321,7 @@
                 }
                 const readAttribute = (name) => Number(frame.match(new RegExp(`\\b${name}\\s*=\\s*["'](\\d+)["']`, 'i'))?.[1]);
                 const [x, y, width, height] = ['x', 'y', 'width', 'height'].map(readAttribute);
+                phase('Game image texture found', { atlasKey, textureName, imagePath, x, y, width, height, frame });
                 const imageKey = atlasKey.slice(0, atlasKey.lastIndexOf('/') + 1) + imagePath;
                 const imageAssetPath = index[imageKey]?.path;
                 if (!imageAssetPath || ![x, y, width, height].every(Number.isFinite)
@@ -1261,8 +1329,21 @@
                     return '';
                 }
                 const imageUrl = `${staticUrl}/assets/${imageAssetPath}`;
+                return { atlasKey, imageUrl, x, y, width, height };
+            } catch (error) {
+                console.warn('Unable to read game texture', atlasKey, textureName, error);
+                return null;
+            }
+        }
+
+        async load(atlasKey, textureName) {
+            try {
+                const texture = await this.readTexture(atlasKey, textureName);
+                if (!texture) return '';
+                const { imageUrl, x, y, width, height } = texture;
                 const blob = await this.fetchCached(this.images, imageUrl, response => response.blob());
                 const image = await createImageBitmap(blob);
+                phase('Game image atlas loaded', { atlasKey, imageUrl, width: image.width, height: image.height });
                 const canvas = document.createElement('canvas');
                 canvas.width = width;
                 canvas.height = height;
@@ -1575,7 +1656,10 @@
             const orderKey = `scriptOrder:${section.id}`;
             let savedOrder;
             try { savedOrder = JSON.parse(userStorage.get(orderKey) ?? userStorage.get('scriptOrder')); } catch {}
-            const available = gameNavigationSections.filter(name => Boolean(automation.definitions[name]) === (section.id === 'scripts'));
+            const available = section.id === 'scripts'
+                ? [...gameNavigationSections.filter(name => automation.definitions[name]),
+                    ...Object.keys(automation.definitions).filter(name => !gameNavigationSections.includes(name))]
+                : gameNavigationSections.filter(name => !automation.definitions[name]);
             const sections = [...new Set([...(Array.isArray(savedOrder) ? savedOrder : []), ...gameNavigationSections])]
                 .filter(section => available.includes(section));
             let dragged = null;
@@ -1632,7 +1716,8 @@
                         button.textContent = `${I18N(`NAV_${section}`)} — ${I18N('NAV_UNAVAILABLE')}`;
                     }
                 });
-                label.append(button);
+                if (gameNavigationSections.includes(section)) label.append(button);
+                else label.append(document.createTextNode(I18N(`NAV_${section}`)));
                 const status = document.createElement('span');
                 status.className = 'interface-script-status';
                 status.setAttribute('role', 'status');
@@ -1641,6 +1726,7 @@
                 label.append(status);
                 for (const action of ['SCRIPT_CONFIGURE', 'SCRIPT_RUN_CONFIGURED']) {
                     if (!automation.definitions[section]) continue;
+                    if (action === 'SCRIPT_CONFIGURE' && !Object.keys(automation.definitions[section].fields).length) continue;
                     const actionButton = document.createElement('button');
                     actionButton.type = 'button';
                     actionButton.className = 'interface-menu-action';

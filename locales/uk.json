@@ -1,4 +1,7 @@
 {
+    "NAV_DAILY_BONUS": "Щоденний бонус",
+    "SCRIPT_DAILY_BONUS_ALREADY_COLLECTED": "Щоденний бонус уже зібрано",
+    "SCRIPT_DAILY_BONUS_COLLECTED": "Щоденний бонус отримано",
     "MENU_NAVIGATION": "Переходи",
     "MENU_LANGUAGE": "Мова інтерфейсу",
     "SCRIPT_SAVE": "Зберегти",

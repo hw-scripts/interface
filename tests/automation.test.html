@@ -31,6 +31,32 @@
             new Function(await response.text());
         }
     });
+    await test('daily bonus skips collected days, respects VIP threshold and cancellation', async () => {
+        const game = { lib: { dailyBonusStatic: { '3_0_0': { vipLevelDouble: 4 } },
+            level: { vip: [{ level: 0, vipPoints: 0 }, { level: 4, vipPoints: 100 }] } } };
+        for (const [availableVip, vipPoints, expectedVip] of [[true, 100, 1], [true, 99, 0], [false, 100, 0]]) {
+            const { engine, calls } = fixture({
+                dailyBonusGetInfo: { availableToday: true, availableVip, currentDay: 3 },
+                userGetInfo: { vipPoints }
+            }, game);
+            const statuses = [];
+            await engine.run('DAILY_BONUS', status => statuses.push(status));
+            equal(calls, [{ name: 'dailyBonusGetInfo', args: {} }, { name: 'userGetInfo', args: {} },
+                { name: 'dailyBonusFarm', args: { vip: expectedVip } }]);
+            equal(statuses, ['SCRIPT_DAILY_BONUS_COLLECTED']);
+        }
+        const collected = fixture({ dailyBonusGetInfo: { availableToday: false } });
+        const statuses = [];
+        await collected.engine.run('DAILY_BONUS', status => statuses.push(status));
+        equal(collected.calls.length, 1);
+        equal(statuses, ['SCRIPT_DAILY_BONUS_ALREADY_COLLECTED']);
+        const stopped = fixture({ dailyBonusGetInfo: () => {
+            stopped.engine.stop();
+            return { availableToday: true };
+        } }, game);
+        await stopped.engine.run('DAILY_BONUS', () => {});
+        equal(stopped.calls.length, 1);
+    });
     await test('MD5 standard vectors and padding', () => {
         equal(InterfaceGameApi.md5(''), 'd41d8cd98f00b204e9800998ecf8427e');
         equal(InterfaceGameApi.md5('abc'), '900150983cd24fb0d6963f7d28e17f72');
