@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Interface",
-  "version": "3.2.1",
+  "version": "3.3.3",
   "description": "Extension interface testing",
   "author": "Miish",
   "homepage_url": "https://github.com/hw-scripts/interface",
@@ -16,6 +16,7 @@
       "js": [
         "battle-calculator.js",
         "automation.js",
+        "autopilot.js",
         "interface.js"
       ],
       "run_at": "document_start",

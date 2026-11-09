@@ -88,7 +88,18 @@ class InterfaceAutomation {
     constructor(game, api, storage, battleCalculator = new InterfaceBattleCalculator(game)) {
         this.game = game;
         this.battleCalculator = battleCalculator;
-        this.api = api;
+        this.api = { call: async (name, args) => {
+            if (this.running?.stopped) throw new Error('SCRIPT_STOPPED');
+            const response = await api.call(name, args);
+            if (name === 'userGetInfo') this.userInfo = response;
+            if (name === 'expeditionGet') {
+                for (const expedition of Object.values(response ?? {})) {
+                    const time = Number(expedition.endTime) * 1000;
+                    if (time > Date.now()) this.boundaries?.push(time);
+                }
+            }
+            return response;
+        } };
         this.storage = storage;
         this.running = null;
         this.definitions = {
@@ -96,8 +107,20 @@ class InterfaceAutomation {
                 fields: {},
                 run: (settings, report, token) => this.dailyBonus(token)
             },
+            QUEST_REWARDS: {
+                fields: { collectStamina: false, collectPortals: false, collectBuffs: false,
+                    collectVipPoints: false, collectHeroSouls: false, collectHeroes: false,
+                    collectExperience: true, followChains: true },
+                run: (settings, report, token) => this.questRewards(settings, report, token)
+            },
+            MAIL: {
+                fields: { collectStamina: false, collectPortals: false, collectBuffs: false,
+                    collectVipPoints: false, collectHeroSouls: false, collectHeroes: false,
+                    collectExperience: true, collectExpiring: true },
+                run: (settings, report, token) => this.mail(settings, report, token)
+            },
             EXPEDITIONS: {
-                fields: { collect: true, send: true },
+                fields: { collect: true, send: true, openArtifactChest: false },
                 run: (settings, report, token) => this.expeditions(settings, report, token)
             },
             TOWER: {
@@ -107,31 +130,131 @@ class InterfaceAutomation {
             BOSS: {
                 fields: { raid: true, openChests: true },
                 run: (settings, report, token) => this.outland(settings, report, token)
+            },
+            RESTART: {
+                fields: {},
+                endsSequence: true,
+                run: (settings, report, token) => {
+                    if (!token.stopped) window.location.reload();
+                }
             }
         };
+        let legacy = [];
+        try { legacy = JSON.parse(storage.get('scriptSequence') ?? '[]'); } catch {}
+        for (const section of Object.keys(this.definitions)) {
+            let saved = {};
+            try { saved = JSON.parse(storage.get(`script:${section}`)) || {}; } catch {}
+            if (typeof saved.enabled !== 'boolean')
+                storage.set(`script:${section}`, JSON.stringify({ ...saved, enabled: Array.isArray(legacy) && legacy.includes(section) }));
+        }
     }
 
     settings(section) {
         let saved;
         try { saved = JSON.parse(this.storage.get(`script:${section}`)); } catch {}
-        return { ...this.definitions[section].fields, ...saved };
+        return { enabled: false, ...this.definitions[section].fields, ...saved };
     }
 
     save(section, settings) {
-        this.storage.set(`script:${section}`, JSON.stringify(settings));
+        this.storage.set(`script:${section}`, JSON.stringify({ ...this.settings(section), ...settings }));
     }
 
     async run(section, report) {
         if (this.running) throw new Error('SCRIPT_ALREADY_RUNNING');
         const token = { stopped: false, section };
         this.running = token;
+        this.boundaries = [];
+        this.lastResult = null;
         try {
             const outcome = await this.definitions[section].run(this.settings(section), report, token);
+            this.lastResult = { completed: !token.stopped && [undefined, 'SCRIPT_DONE',
+                'SCRIPT_DAILY_BONUS_ALREADY_COLLECTED', 'SCRIPT_DAILY_BONUS_COLLECTED', 'SCRIPT_NOTHING_TO_COLLECT'].includes(outcome),
+                boundaries: this.boundaries };
             report(token.stopped ? 'SCRIPT_STOPPED' : outcome || 'SCRIPT_DONE');
+        } catch (error) {
+            if (!token.stopped) throw error;
+            this.lastResult = { completed: false, boundaries: this.boundaries };
+            report('SCRIPT_STOPPED');
         } finally { this.running = null; }
     }
 
     stop() { if (this.running) this.running.stopped = true; }
+
+    rewardAllowed(reward, settings) {
+        if (!reward || !Object.keys(reward).length) return false;
+        return !(reward.stamina && !settings.collectStamina
+            || reward.refillable?.[45] && !settings.collectPortals
+            || reward.buff && !settings.collectBuffs
+            || reward.vipPoints && !settings.collectVipPoints
+            || reward.fragmentHero && !settings.collectHeroSouls
+            || reward.bundleHeroReward && !settings.collectHeroes
+            || (reward.exp || reward.teamExp) && !settings.collectExperience);
+    }
+
+    async mail(settings, report, token) {
+        const result = await this.api.call('mailGetAll');
+        if (token.stopped) return;
+        const now = Date.now() / 1000;
+        const letterIds = Object.values(result?.letters ?? {}).filter(letter => {
+            if (!letter?.reward || !Object.keys(letter.reward).length) return false;
+            const expires = Number(letter.availableUntil);
+            if (expires && expires <= now) return false;
+            return this.rewardAllowed(letter.reward, settings)
+                || settings.collectExpiring && expires > now && expires - now < 86400;
+        }).map(letter => Number(letter.id)).filter(Number.isSafeInteger);
+        if (!letterIds.length) return 'SCRIPT_NOTHING_TO_COLLECT';
+        await this.api.call('mailFarm', { letterIds });
+        report('SCRIPT_MAIL_COLLECTED', letterIds.length);
+    }
+
+    async questRewards(settings, report, token) {
+        const collected = new Set();
+        let passes;
+        do {
+            const quests = await this.api.call('questGetAll');
+            if (token.stopped) return;
+            const ready = Object.values(quests ?? {}).filter(quest => quest.state == 2
+                && !collected.has(Number(quest.id)) && this.rewardAllowed(quest.reward, settings));
+            const eligible = [];
+            for (const quest of ready) {
+                const questId = Number(quest.id);
+                if (!Number.isSafeInteger(questId) || questId >= 2001e4 && questId < 14e8) continue;
+                if (quest.reward?.battlePassExp && !this.game.lib?.quest?.special?.[questId]) {
+                    const library = this.game.lib;
+                    const info = library?.quest?.battlePass?.[questId];
+                    const chain = library?.battlePass?.questChain?.[info?.chain];
+                    if (!chain) continue;
+                    if (!passes) {
+                        const regular = await this.api.call('battlePass_getInfo');
+                        if (token.stopped) return;
+                        const special = await this.api.call('battlePass_getSpecial');
+                        if (token.stopped) return;
+                        passes = { [regular.id]: regular.battlePass, ...special };
+                    }
+                    const pass = passes[chain.battlePass];
+                    if (!pass) continue;
+                    const now = Date.now() / 1000;
+                    if (pass.startDate > now || pass.endDate < now) continue;
+                    if (chain.requirement?.battlePassTicket && !pass.ticket) continue;
+                    const level = Math.max(0, ...Object.values(library.battlePass.level ?? {})
+                        .filter(entry => entry.battlePass == chain.battlePass && pass.exp >= entry.experience)
+                        .map(entry => Number(entry.level)));
+                    if (chain.requirement?.battlePassLevel && level < chain.requirement.battlePassLevel) continue;
+                }
+                eligible.push(questId);
+            }
+            if (!eligible.length) break;
+            for (const questId of eligible) {
+                if (token.stopped) return;
+                if (questId >= 2e7 && questId < 14e8)
+                    await this.api.call('quest_questsFarm', { questIds: [questId] });
+                else await this.api.call('questFarm', { questId });
+                collected.add(questId);
+                report('SCRIPT_QUESTS_COLLECTED', collected.size);
+            }
+        } while (settings.followChains && !token.stopped);
+        if (!collected.size) return 'SCRIPT_NOTHING_TO_COLLECT';
+    }
 
     async dailyBonus(token) {
         const { availableToday, availableVip, currentDay } = await this.api.call('dailyBonusGetInfo');
@@ -165,6 +288,22 @@ class InterfaceAutomation {
                     report('SCRIPT_EXPEDITION_COLLECTED', expedition.id);
                 }
             }
+        }
+        if (token.stopped) return;
+        if (settings.openArtifactChest) {
+            const inventory = await this.api.call('inventoryGet');
+            if (token.stopped) return;
+            const keys = Number(inventory?.consumable?.[45]);
+            if (Number.isSafeInteger(keys) && keys > 0) {
+                let remaining = keys;
+                while (remaining > 0) {
+                    if (token.stopped) return;
+                    const amount = remaining >= 100 ? 100 : remaining > 10 ? 10 : 1;
+                    await this.api.call('artifactChestOpen', { amount, free: true });
+                    remaining -= amount;
+                    report('SCRIPT_ARTIFACT_CHEST_OPENED', keys - remaining);
+                }
+            } else report('SCRIPT_ARTIFACT_CHEST_NO_KEY');
         }
         if (!settings.send || token.stopped) return;
         // Refresh after collecting so heroes and newly available expeditions are current.

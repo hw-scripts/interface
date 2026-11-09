@@ -1416,7 +1416,6 @@
         { id: 'settings', title: 'MENU_GENERAL_SETTINGS' },
         { id: 'scripts', title: 'MENU_SCRIPTS' },
         { id: 'navigation', title: 'MENU_NAVIGATION' },
-        { id: 'sequence', title: 'MENU_SEQUENCE' },
         { id: 'heroes', title: 'MENU_FARM_HEROES' },
         { id: 'autopilot', title: 'MENU_AUTOPILOT' }
     ];
@@ -1425,48 +1424,53 @@
     #interfaceSidebar .interface-menu-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
     #interfaceSidebar .interface-menu-brand { flex: 1; color: inherit; text-decoration: none; font-weight: 700; }
     #interfaceSidebar .interface-menu-version { display: block; font-size: 12px; font-weight: 400; opacity: .7; }
-    #interfaceSidebar .interface-language { flex: 0 0 auto; padding: 4px 6px; border: 1px solid #a77b45; border-radius: 4px; background: #332a22; color: #fff1da; font: inherit; font-size: 12px; cursor: pointer; }
+    #interfaceSidebar .interface-language { flex: 0 0 auto; padding: 4px 6px; border: 1px solid #d9bd7b; border-radius: 6px; background: #fffad6; color: #47230e; font: inherit; font-size: 12px; cursor: pointer; }
     #interfaceSidebar .interface-language:focus-visible { outline: 2px solid #f2bf69; outline-offset: 3px; }
-    #interfaceSidebar .interface-menu-close, #interfaceDialog .interface-dialog-close { background: transparent; border: 0; color: inherit; font: inherit; font-size: 26px; cursor: pointer; padding: 4px 10px; }
-    #interfaceSidebar .interface-profile { display: flex; align-items: center; gap: 12px; }
-    #interfaceSidebar .sidebar__profile-data-avatar { flex: 0 0 64px; width: 64px; height: 64px; }
-    #interfaceSidebar .sidebar__profile-data-avatar-image { width: 64px; height: 64px; object-fit: contain; }
-    #interfaceSidebar .interface-profile-meta { min-width: 0; flex: 1; }
-    #interfaceSidebar .interface-profile-name { font-weight: 700; overflow-wrap: anywhere; }
-    #interfaceSidebar .interface-profile-level { margin-top: 6px; opacity: .75; }
-    #interfaceSidebar .interface-guild { display: inline-flex; align-items: center; }
-    #interfaceSidebar .interface-guild svg { width: 30px; height: 34px; }
+    #interfaceSidebar .interface-menu-close, #interfacePanel .interface-cancel { background: transparent; border: 0; color: inherit; font: inherit; font-size: 26px; cursor: pointer; padding: 4px 10px; }
     #interfaceSidebar .interface-menu-actions { display: grid; gap: 5px; padding: 10px 12px; }
-    #interfaceSidebar .interface-menu-action, #interfaceDialog .interface-menu-action { box-sizing: border-box; width: 100%; padding: 7px 10px; border: 1px solid #a77b45; border-radius: 4px; background: #332a22; color: #fff1da; font: inherit; font-size: 13px; line-height: 1.3; text-align: left; cursor: pointer; }
-    #interfaceSidebar .interface-menu-action:hover, #interfaceDialog .interface-menu-action:hover { background: #49392a; }
-    #interfaceSidebar button:focus-visible, #interfaceSidebar a:focus-visible, #interfaceDialog button:focus-visible { outline: 2px solid #f2bf69; outline-offset: 3px; }
-    #interfaceDialog { box-sizing: border-box; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 0; border: 1px solid #a77b45; border-radius: 10px; background: #27221e; color: #fff1da; box-shadow: 0 20px 70px #0009; }
-    #interfaceDialog::backdrop { background: #0009; }
-    #interfaceDialog { overflow: hidden; }
-    #interfaceDialog[open] { display: flex; flex-direction: column; }
-    #interfaceDialog .interface-dialog-header { flex: 0 0 auto; }
-    #interfaceDialog .interface-dialog-body { min-height: 0; overflow-y: auto; }
-    #interfaceDialog .interface-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-bottom: 1px solid #ffffff26; }
-    #interfaceDialog h2 { margin: 0; font-size: 20px; color: inherit; }
-    #interfaceDialog .interface-dialog-body { padding: 10px 12px; }
-    #interfaceDialog .interface-script-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-    #interfaceDialog .interface-script-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 8px; padding: 6px 8px; border: 1px solid #ffffff26; border-radius: 4px; font-size: 13px; }
-    #interfaceDialog .interface-script-actions { display: flex; flex-wrap: wrap; gap: 4px; }
-    #interfaceDialog .interface-script-actions .interface-menu-action { flex: 0 1 auto; width: auto; padding: 4px 6px; font-size: 12px; text-align: center; }
-    #interfaceDialog .interface-script-name { min-width: 0; overflow-wrap: anywhere; }
-    #interfaceDialog .interface-script-link { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
-    #interfaceDialog .interface-script-link:hover { text-decoration: underline; }
-    #interfaceDialog .interface-script-list li[draggable] { cursor: grab; }
-    #interfaceDialog .interface-script-list li.interface-dragging { opacity: .45; }
-    #interfaceDialog .interface-script-status:empty { display: none; }
-    @media (max-width: 520px) { #interfaceDialog .interface-script-list li { grid-template-columns: minmax(0, 1fr); } }
-    #interfaceDialog .interface-menu-action:disabled { opacity: .45; cursor: default; }
-    #interfaceDialog .interface-script-status { opacity: .6; font-size: 12px; }
+    #interfaceSidebar .interface-menu-action, #interfacePanel .interface-menu-action { box-sizing: border-box; width: 100%; padding: 7px 10px; margin: 0; height: auto; min-height: 36px; justify-content: flex-start; font: inherit; font-size: 14px; line-height: 1.3; text-align: left; cursor: pointer; }
+    #interfaceSidebar .interface-menu-action:hover, #interfacePanel .interface-menu-action:hover { background: #ffebab; }
+    #interfaceSidebar button:focus-visible, #interfaceSidebar a:focus-visible, #interfacePanel button:focus-visible { outline: 2px solid #f2bf69; outline-offset: 3px; }
+    #interfaceSidebar { position: fixed; top: 0; right: 0; bottom: 0; width: min(360px, 90vw); height: 100dvh; z-index: 10002; transform: translateX(100%); color: #47230e; font-family: "Noto Sans", sans-serif; font-size: 14px; }
+    #interfaceSidebar.sidebar_open { transform: translateX(0); }
+    #interfaceSidebar .sidebar__content { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+    #interfaceSidebar .interface-menu-header { flex-shrink: 0; }
+    #interfaceSidebar .interface-menu-version { display: inline; margin-left: 6px; }
+    #interfaceSidebar.interface-section-open { width: min(560px, 90vw); }
+    #interfaceSidebar [hidden], #interfaceLog[hidden] { display: none !important; }
+    #interfacePanel { flex: 1; min-height: 0; }
+    #interfacePanelForm { display: flex; flex-direction: column; height: 100%; }
+    #interfacePanel .interface-panel-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #d9bd7b; }
+    #interfacePanel h2 { flex: 1; margin: 0; font-size: 18px; }
+    #interfacePanel .interface-confirm, #interfacePanel .interface-cancel { border: 0; border-radius: 4px; padding: 6px 12px; color: white; font-size: 20px; cursor: pointer; }
+    #interfacePanel .interface-confirm { background: #28783c; }
+    #interfacePanel .interface-cancel { background: #a33333; }
+    #interfacePanel .interface-panel-body { overflow-y: auto; min-height: 0; padding: 10px 12px; }
+    #interfacePanel .interface-setting { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    #interfacePanel input[type="number"] { width: 80px; }
+    #interfaceLog { position: fixed; z-index: 10001; top: 16px; left: 16px; right: calc(min(560px, 90vw) + 16px); bottom: 16px; overflow-y: auto; color: #f5f5f5; text-shadow: 0 1px 2px #000; overflow-wrap: anywhere; pointer-events: none; }
+    #interfaceLog > div { margin-bottom: 6px; padding: 8px 12px; background: #fffad6ed; color: #47230e; text-shadow: none; border-radius: 8px; font: 14px/1.5 "Noto Sans", sans-serif; }
+    @media (max-width: 720px) { #interfaceLog { right: 16px; bottom: 55vh; } #interfaceSidebar.interface-section-open { top: 45vh; height: 55vh; width: 100vw; } }
+    #interfacePanel .interface-script-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+    #interfacePanel .interface-script-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 8px; padding: 6px 8px; border: 1px solid #e2cd98; background: #fff4c4; border-radius: 4px; font-size: 13px; }
+    #interfacePanel .interface-script-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+    #interfacePanel .interface-script-actions .interface-menu-action { flex: 0 1 auto; width: auto; padding: 4px 6px; min-height: 32px; font-size: 13px; text-align: center; }
+    #interfacePanel .interface-script-name { min-width: 0; overflow-wrap: anywhere; }
+    #interfacePanel .interface-script-list li.interface-sequence-item { grid-template-columns: auto minmax(0, 1fr) auto; }
+    #interfacePanel [data-sequence-script] { position: relative; z-index: 1; pointer-events: auto; cursor: pointer; margin: 0 4px 0 0; }
+    #interfacePanel .interface-script-link { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+    #interfacePanel .interface-script-link:hover { text-decoration: underline; }
+    #interfacePanel .interface-script-list li[draggable] { cursor: grab; }
+    #interfacePanel .interface-script-list li.interface-dragging { opacity: .45; }
+    #interfacePanel .interface-script-status:empty { display: none; }
+    @media (max-width: 520px) { #interfacePanel .interface-script-list li { grid-template-columns: minmax(0, 1fr); } }
+    #interfacePanel .interface-menu-action:disabled { opacity: .45; cursor: default; }
+    #interfacePanel .interface-script-status { opacity: .6; font-size: 12px; }
 </style>
 <section id="interfaceSidebar" class="sidebar">
     <div class="sidebar__content">
         <div class="sidebar__control interface-menu-header">
-            <a class="interface-menu-brand" href="{{ manifest.homepage_url }}" target="_blank" rel="noopener noreferrer">
+            <a class="interface-menu-brand menu__help-title" href="{{ manifest.homepage_url }}" target="_blank" rel="noopener noreferrer">
                 {{ manifest.name }}
                 <span class="interface-menu-version">{{ manifest.version }}</span>
             </a>
@@ -1477,32 +1481,23 @@
             </select>
             <button type="button" class="interface-menu-close" data-interface-close aria-label="{{ I18N('MENU_CLOSE') }}">&times;</button>
         </div>
-        <div class="sidebar__content-item">
-            <div class="sidebar__profile-data interface-profile" data-avatar-id="{{ memoryStorage.memoryStorage.user.info.avatarId }}">
-                <div class="sidebar__profile-data-avatar">
-                    <img src="https://heroesweb-a.akamaihd.net/i/hw-web/v2/2042276//images/hw/avatar.png" alt="{{ memoryStorage.memoryStorage.user.info.name }}" class="sidebar__profile-data-avatar-image">
-                </div>
-                <div class="interface-profile-meta">
-                    <div class="interface-profile-name">{{ memoryStorage.memoryStorage.user.info.name }}</div>
-                    <div class="interface-profile-level">{{ I18N('MENU_LEVEL') }}: {{ memoryStorage.memoryStorage.user.info.level }}</div>
-                </div>
-                <span class="interface-guild" role="img" aria-label="{{ I18N('MENU_GUILD') }}: {{ memoryStorage.memoryStorage.user.info.clanId || I18N('MENU_NO_GUILD') }}" title="{{ I18N('MENU_GUILD') }}: {{ memoryStorage.memoryStorage.user.info.clanId || I18N('MENU_NO_GUILD') }}">
-                    <svg viewBox="0 0 32 36" aria-hidden="true"><path d="M16 2 29 7v11c0 8-7 13-13 16C10 31 3 26 3 18V7Z" fill="#49392a" stroke="#d9ad65" stroke-width="2"/><path d="M16 9v16M9 16h14" stroke="#d9ad65" stroke-width="2"/></svg>
-                </span>
-            </div>
-        </div>
         <nav class="interface-menu-actions">
-            ${menuSections.map(section => `<button type="button" class="interface-menu-action" data-interface-dialog="${section.id}" aria-haspopup="dialog">{{ I18N('${section.title}') }}</button>`).join('')}
+            ${menuSections.map(section => `<button type="button" class="interface-menu-action menu__help-support-button" data-interface-dialog="${section.id}">{{ I18N('${section.title}') }}</button>`).join('')}
         </nav>
+        <section id="interfacePanel" hidden aria-labelledby="interfacePanelTitle">
+            <form id="interfacePanelForm">
+                <div class="interface-panel-header">
+                    <h2 id="interfacePanelTitle" class="menu__help-title"></h2>
+                    <button type="submit" class="interface-confirm" aria-label="{{ I18N('SCRIPT_SAVE') }}">&#10003;</button>
+                    <button type="button" class="interface-cancel" aria-label="{{ I18N('MENU_CLOSE') }}">&#10005;</button>
+                </div>
+                <div class="interface-panel-body"></div>
+            </form>
+        </section>
     </div>
 </section>
-<dialog id="interfaceDialog" aria-labelledby="interfaceDialogTitle">
-    <div class="interface-dialog-header">
-        <h2 id="interfaceDialogTitle"></h2>
-        <button type="button" class="interface-dialog-close" aria-label="{{ I18N('MENU_CLOSE') }}">&times;</button>
-    </div>
-    <div class="interface-dialog-body"></div>
-</dialog>
+<aside id="interfaceLog" hidden aria-label="{{ I18N('MESSAGE_LOG') }}" aria-live="polite"></aside>
+
 `;
     //#endregion
 
@@ -1524,9 +1519,7 @@
 <nav class="layout-nav" id="interfaceNav">
     <ul class="user-control-list">
         <li class="user-control-list-item">
-            <button class="user-control-lang-button"
-                onclick="document.getElementById('interfaceSidebar').classList.add('sidebar_open');
-                         document.querySelector('.sidebar__overlay').classList.add('sidebar__overlay_show');">
+            <button type="button" class="user-control-lang-button">
                 <span class="user-control-lang-button-label">\u23F8\u25B6</span>
             </button>
         </li>
@@ -1538,10 +1531,76 @@
 
     phase('Menu button rendered');
     // Interface message
+    class MessageLog {
+        constructor(element, ttl = 0, { overwrite = true, limit = Infinity } = {}) {
+            this.element = element;
+            this.entries = new Map();
+            this.overwrite = overwrite;
+            this.limit = limit;
+            this.setTTL(ttl);
+        }
+
+        setTTL(value) {
+            const seconds = Number(value);
+            this.ttl = Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+            if (!this.ttl && this.overwrite) {
+                const entries = [...this.entries.values()];
+                for (const entry of entries.slice(0, -1)) this.remove(entry.id);
+            }
+            for (const entry of this.entries.values()) this.schedule(entry);
+        }
+
+        remove(id) {
+            const entry = this.entries.get(id);
+            if (!entry) return;
+            clearTimeout(entry.timer);
+            entry.element.remove();
+            this.entries.delete(id);
+        }
+
+        clear() {
+            for (const id of this.entries.keys()) this.remove(id);
+        }
+
+        setLimit(value) {
+            this.limit = Math.max(1, Math.floor(Number(value) || 20));
+            while (this.entries.size > this.limit) this.remove(this.entries.keys().next().value);
+        }
+
+        schedule(entry) {
+            clearTimeout(entry.timer);
+            if (this.ttl && !entry.pending)
+                entry.timer = setTimeout(() => this.remove(entry.id), this.ttl * 1000);
+        }
+
+        write(text, { id = Symbol(), pending = false } = {}) {
+            // Countdown updates reuse id with pending: true; the final update clears pending to start TTL.
+            if (!this.ttl && this.overwrite) {
+                for (const previous of this.entries.keys()) {
+                    if (previous !== id) this.remove(previous);
+                }
+            }
+            let entry = this.entries.get(id);
+            if (!entry) {
+                entry = { id, element: document.createElement('div') };
+                this.entries.set(id, entry);
+                this.element.append(entry.element);
+            }
+            entry.element.textContent = text;
+            entry.pending = pending;
+            this.schedule(entry);
+            while (this.entries.size > this.limit) this.remove(this.entries.keys().next().value);
+            return id;
+        }
+    }
+
     const message = document.createElement('div');
     message.id = 'interfaceMessage';
-    message.style.cssText = 'flex: 1; position: relative; overflow: visible';
-    document.querySelector('#interfaceNav').after(message);
+    message.style.cssText = 'flex: 1; height: 0; min-width: 0; position: relative; z-index: 100; overflow: visible; cursor: pointer; color: #f5f5f5; text-shadow: 0 1px 2px #000; overflow-wrap: anywhere';
+    const currentLog = new MessageLog(message, 0, { overwrite: false });
+    currentLog.setLimit(userStorage.get('messageLimit') ?? 20);
+    message.addEventListener('click', () => currentLog.clear());
+    document.querySelector('#interfaceNav').before(message);
 
     const sidebar = document.querySelector('.sidebar');
     phase('Rendering sidebar', { sidebarFound: Boolean(sidebar) });
@@ -1556,101 +1615,200 @@
         location.reload();
     });
     const interfaceSidebar = document.getElementById('interfaceSidebar');
-    const interfaceDialog = document.getElementById('interfaceDialog');
-    const dialogTitle = interfaceDialog.querySelector('h2');
-    const dialogBody = interfaceDialog.querySelector('.interface-dialog-body');
+    const panel = document.getElementById('interfacePanel');
+    const panelForm = document.getElementById('interfacePanelForm');
+    const panelTitle = panel.querySelector('h2');
+    const panelBody = panel.querySelector('.interface-panel-body');
+    const mainMenu = interfaceSidebar.querySelector('.interface-menu-actions');
+    const logElement = document.getElementById('interfaceLog');
+    const messageLog = new MessageLog(logElement, userStorage.get('messageTTL') ?? 0);
     const scriptText = value => i18n.translations[value] || value;
     const scriptReports = new Map();
+    let savePanel;
+    let cancelPanel;
+    let sequenceRunning = false;
+    let sequenceView = false;
+    let pilot;
+    const returnToMenu = () => {
+        panel.hidden = true;
+        mainMenu.hidden = false;
+        logElement.hidden = true;
+        interfaceSidebar.classList.remove('interface-section-open');
+        panelBody.replaceChildren();
+        savePanel = cancelPanel = null;
+        sequenceView = false;
+    };
+    const closeMenu = () => {
+        returnToMenu();
+        interfaceSidebar.classList.remove('sidebar_open');
+        document.querySelector('.sidebar__overlay')?.classList.remove('sidebar__overlay_show');
+    };
+    const openPanel = (title, scripts = false) => {
+        mainMenu.hidden = true;
+        panel.hidden = false;
+        panelTitle.textContent = title;
+        panelBody.replaceChildren();
+        interfaceSidebar.classList.add('interface-section-open');
+        logElement.hidden = !scripts;
+        savePanel = cancelPanel = returnToMenu;
+        sequenceView = false;
+        panel.querySelector('.interface-confirm').disabled = false;
+        panel.querySelector('.interface-confirm').setAttribute('aria-label', I18N('SCRIPT_SAVE'));
+        panel.querySelector('.interface-confirm').title = I18N('SCRIPT_SAVE');
+    };
+    panelForm.addEventListener('submit', event => {
+        event.preventDefault();
+        savePanel?.();
+    });
+    panel.querySelector('.interface-cancel').addEventListener('click', () => cancelPanel?.());
+    document.querySelector('#interfaceNav button').addEventListener('click', () => {
+        interfaceSidebar.classList.add('sidebar_open');
+        document.querySelector('.sidebar__overlay')?.classList.add('sidebar__overlay_show');
+    });
+    document.querySelector('.sidebar__overlay')?.addEventListener('click', closeMenu);
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && interfaceSidebar.classList.contains('sidebar_open')) closeMenu();
+    });
     const refreshRunButtons = () => {
-        for (const button of dialogBody.querySelectorAll('[data-interface-run]')) {
+        if (sequenceView) panel.querySelector('.interface-confirm').disabled = sequenceRunning || Boolean(automation.running);
+        for (const button of panelBody.querySelectorAll('[data-interface-run]')) {
             const active = automation.running?.section === button.dataset.interfaceRun;
             button.textContent = I18N(active ? 'SCRIPT_STOP' : 'SCRIPT_RUN_CONFIGURED');
-            button.disabled = Boolean(automation.running && (!active || automation.running.stopped));
+            button.disabled = Boolean(automation.running && (!active || automation.running.stopped)) || sequenceRunning && !active;
         }
     };
-    const reportScript = (section, key, detail) => {
+    const reportScript = (section, key, detail, options = {}) => {
         const text = `${scriptText(key)}${detail == null ? '' : `: ${detail}`}`;
         scriptReports.set(section, text);
-        const status = dialogBody.querySelector(`[data-interface-status="${section}"]`);
+        const status = panelBody.querySelector(`[data-interface-status="${section}"]`);
         if (status) status.textContent = ` (${text})`;
-        message.textContent = `${I18N(`NAV_${section}`)}: ${text}`;
+        const entry = { ...options, id: options.id ?? Symbol() };
+        const line = `${I18N(`NAV_${section}`)}: ${text}`;
+        currentLog.write(line, entry);
+        messageLog.write(line, entry);
+    };
+    const settingInput = (label, type, value, min = 0) => {
+        const wrapper = document.createElement('label');
+        wrapper.className = 'interface-setting';
+        const input = document.createElement('input');
+        input.type = type;
+        if (type === 'checkbox') input.checked = value;
+        else { input.min = String(min); input.step = '1'; input.required = true; input.value = String(value); }
+        wrapper.append(input, label);
+        panelBody.append(wrapper);
+        return input;
     };
     const showScriptSettings = section => {
-        dialogTitle.textContent = `${I18N(`NAV_${section}`)} — ${I18N('SCRIPT_CONFIGURE')}`;
-        dialogBody.replaceChildren();
-        const form = document.createElement('form');
+        openPanel(`${I18N(`NAV_${section}`)} — ${I18N('SCRIPT_CONFIGURE')}`, true);
         const settings = automation.settings(section);
         const inputs = {};
-        for (const name of Object.keys(automation.definitions[section].fields)) {
-            const label = document.createElement('label');
-            label.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 14px';
-            const input = document.createElement('input');
-            input.type = 'checkbox';
-            input.checked = settings[name] === true;
-            inputs[name] = input;
-            label.append(input, I18N(`SCRIPT_OPTION_${name.toUpperCase()}`));
-            form.append(label);
-        }
-        const save = document.createElement('button');
-        save.type = 'submit';
-        save.className = 'interface-menu-action';
-        save.textContent = I18N('SCRIPT_SAVE');
-        const back = document.createElement('button');
-        back.type = 'button';
-        back.className = 'interface-menu-action';
-        back.textContent = I18N('SCRIPT_BACK');
-        back.addEventListener('click', () => interfaceSidebar.querySelector('[data-interface-dialog="scripts"]').click());
-        form.addEventListener('submit', event => {
-            event.preventDefault();
+        for (const name of Object.keys(automation.definitions[section].fields))
+            inputs[name] = settingInput(I18N(`SCRIPT_OPTION_${name.toUpperCase()}`), 'checkbox', settings[name] === true);
+        savePanel = () => {
             automation.save(section, Object.fromEntries(Object.entries(inputs).map(([name, input]) => [name, input.checked])));
-            back.click();
-        });
-        form.append(save, back);
-        dialogBody.append(form);
+            showSection('scripts');
+        };
+        cancelPanel = () => showSection('scripts');
     };
-    const runScript = async (section, button, status) => {
-        if (automation.running) {
-            status.textContent = I18N('SCRIPT_ALREADY_RUNNING');
-            return;
+    const runScript = async (section, button, status, inSequence = false) => {
+        if (automation.running || sequenceRunning && !inSequence) {
+            if (status) status.textContent = I18N('SCRIPT_ALREADY_RUNNING');
+            return false;
         }
-        const report = (key, detail) => reportScript(section, key, detail);
+        currentLog.clear();
+        const executedSettings = pilot.fingerprint(section);
+        let stopped = false;
+        const report = (key, detail, options) => {
+            if (key === 'SCRIPT_STOPPED') stopped = true;
+            reportScript(section, key, detail, options);
+        };
         report('SCRIPT_RUNNING');
         try {
             const execution = automation.run(section, report);
             refreshRunButtons();
             await execution;
-        }
-        catch (error) {
+            const completed = !stopped && automation.lastResult?.completed !== false;
+            if (completed && !inSequence) pilot.checkpoint(section, executedSettings);
+            return completed;
+        } catch (error) {
             console.error('Automation failed:', section, error);
             report('SCRIPT_FAILED', scriptText(error.message));
-        } finally {
+            return false;
+        } finally { refreshRunButtons(); }
+    };
+    pilot = new InterfaceAutopilot(automation, userStorage, {
+        execute: section => runScript(section, null, null, true),
+        sections: () => {
+            let order = [];
+            try { order = JSON.parse(userStorage.get('scriptOrder:scripts') ?? '[]'); } catch {}
+            return [...new Set([...(Array.isArray(order) ? order : []), ...gameNavigationSections,
+                ...Object.keys(automation.definitions)])].filter(section => automation.definitions[section] && automation.settings(section).enabled);
+        },
+        ready: () => Boolean(gameApi.headers && theGame.lib),
+        userInfo: () => memoryStorage.memoryStorage.user.info,
+        changed: () => {
+            sequenceRunning = pilot.running;
             refreshRunButtons();
         }
-    };
-    interfaceSidebar.addEventListener('click', event => {
-        if (event.target.closest('[data-interface-close]')) {
-            interfaceSidebar.classList.remove('sidebar_open');
-            document.querySelector('.sidebar__overlay')?.classList.remove('sidebar__overlay_show');
-            return;
+    });
+    const runSequence = sections => pilot.run(sections);
+    const inputDocuments = new Set();
+    const onActivity = event => { if (event.isTrusted) pilot.activity(); };
+    const watchActivity = doc => {
+        if (inputDocuments.has(doc)) return;
+        inputDocuments.add(doc);
+        for (const name of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'])
+            doc.addEventListener(name, onActivity, { capture: true, passive: true });
+        for (const frame of doc.querySelectorAll('iframe')) {
+            try { if (frame.contentDocument) watchActivity(frame.contentDocument); } catch {}
         }
-        const button = event.target.closest('[data-interface-dialog]');
-        if (!button) return;
-        const section = menuSections.find(item => item.id === button.dataset.interfaceDialog);
+        doc.addEventListener('load', event => {
+            try { if (event.target.tagName === 'IFRAME' && event.target.contentDocument) watchActivity(event.target.contentDocument); } catch {}
+        }, true);
+    };
+    watchActivity(document);
+    window.addEventListener('pagehide', () => {
+        pilot.dispose();
+        for (const doc of inputDocuments)
+            for (const name of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'])
+                doc.removeEventListener(name, onActivity, true);
+    }, { once: true });
+    const showSection = id => {
+        const section = menuSections.find(item => item.id === id);
         if (!section) return;
-        dialogTitle.textContent = I18N(section.title);
-        dialogBody.replaceChildren();
-        if (section.id === 'settings') {
-            const label = document.createElement('label');
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.checked = valkyriesBlessing;
-            checkbox.addEventListener('change', () => {
-                valkyriesBlessing = checkbox.checked;
+        openPanel(I18N(section.title), id === 'scripts');
+        if (id === 'settings') {
+            const blessing = settingInput(I18N('VALKYRIES_BLESSING'), 'checkbox', valkyriesBlessing);
+            const ttl = settingInput(I18N('MESSAGE_TTL'), 'number', messageLog.ttl);
+            const limit = settingInput(I18N('MESSAGE_LIMIT'), 'number', currentLog.limit, 1);
+            const autoEnabled = settingInput(I18N('AUTOPILOT_ENABLED'), 'checkbox', pilot.options.enabled);
+            const idle = settingInput(I18N('AUTOPILOT_IDLE_MINUTES'), 'number', pilot.options.idleMinutes, 5);
+            savePanel = () => {
+                valkyriesBlessing = blessing.checked;
                 userStorage.set('valkyriesBlessing', String(valkyriesBlessing));
-            });
-            label.append(checkbox, ` ${I18N('VALKYRIES_BLESSING')}`);
-            dialogBody.append(label);
-        } else if (section.id === 'scripts' || section.id === 'navigation') {
+                messageLog.setTTL(ttl.value);
+                userStorage.set('messageTTL', String(messageLog.ttl));
+                currentLog.setLimit(limit.value);
+                userStorage.set('messageLimit', String(currentLog.limit));
+                pilot.configure({ ...pilot.options, enabled: autoEnabled.checked, idleMinutes: Number(idle.value) });
+                returnToMenu();
+            };
+        } else if (id === 'autopilot') {
+            const description = document.createElement('p');
+            description.textContent = I18N('AUTOPILOT_DESCRIPTION');
+            panelBody.append(description);
+            const enabled = settingInput(I18N('AUTOPILOT_ENABLED'), 'checkbox', pilot.options.enabled);
+            const idle = settingInput(I18N('AUTOPILOT_IDLE_MINUTES'), 'number', pilot.options.idleMinutes, 5);
+            const inputs = {};
+            for (const section of Object.keys(automation.definitions).filter(section => !automation.definitions[section].endsSequence))
+                inputs[section] = settingInput(`${I18N(`NAV_${section}`)}: ${I18N('AUTOPILOT_INTERVAL')}`, 'number',
+                    pilot.interval(section) / 60000, 1);
+            savePanel = () => {
+                pilot.configure({ enabled: enabled.checked, idleMinutes: Number(idle.value),
+                    intervals: Object.fromEntries(Object.entries(inputs).map(([section, input]) => [section, Number(input.value)])) });
+                returnToMenu();
+            };
+        } else if (id === 'scripts' || id === 'navigation') {
             const list = document.createElement('ul');
             list.className = 'interface-script-list';
             const orderKey = `scriptOrder:${section.id}`;
@@ -1660,8 +1818,25 @@
                 ? [...gameNavigationSections.filter(name => automation.definitions[name]),
                     ...Object.keys(automation.definitions).filter(name => !gameNavigationSections.includes(name))]
                 : gameNavigationSections.filter(name => !automation.definitions[name]);
-            const sections = [...new Set([...(Array.isArray(savedOrder) ? savedOrder : []), ...gameNavigationSections])]
+            const sections = [...new Set([...(Array.isArray(savedOrder) ? savedOrder : []), ...available])]
                 .filter(section => available.includes(section));
+            const persistList = () => {
+                userStorage.set(orderKey, JSON.stringify([...list.children].map(item => item.dataset.script)));
+                if (id === 'scripts') for (const input of list.querySelectorAll('[data-sequence-script]'))
+                    automation.save(input.dataset.sequenceScript, { enabled: input.checked });
+            };
+            if (id === 'scripts') {
+                sequenceView = true;
+                panel.querySelector('.interface-confirm').setAttribute('aria-label', I18N('SCRIPT_RUN_SEQUENCE'));
+                panel.querySelector('.interface-confirm').title = I18N('SCRIPT_RUN_SEQUENCE');
+                savePanel = () => void runSequence([...list.querySelectorAll('[data-sequence-script]:checked')]
+                    .map(input => input.dataset.sequenceScript));
+                cancelPanel = () => {
+                    persistList();
+                    if (sequenceRunning) pilot.stop();
+                    returnToMenu();
+                };
+            }
             let dragged = null;
             list.addEventListener('dragover', event => {
                 if (!dragged) return;
@@ -1675,7 +1850,7 @@
             list.addEventListener('drop', event => {
                 if (!dragged) return;
                 event.preventDefault();
-                userStorage.set(orderKey, JSON.stringify([...list.children].map(item => item.dataset.script)));
+                persistList();
             });
             for (const section of sections) {
                 const item = document.createElement('li');
@@ -1684,6 +1859,7 @@
                 let previousOrder;
                 let dropped = false;
                 item.addEventListener('dragstart', event => {
+                    if (event.target.closest('input, button, select, a')) { event.preventDefault(); return; }
                     dragged = item;
                     previousOrder = [...list.children];
                     dropped = false;
@@ -1697,8 +1873,21 @@
                     item.classList.remove('interface-dragging');
                     dragged = null;
                 });
-                const label = document.createElement('span');
+                const label = document.createElement(id === 'scripts' ? 'label' : 'span');
                 label.className = 'interface-script-name';
+                if (id === 'scripts') {
+                    item.classList.add('interface-sequence-item');
+                    const include = document.createElement('input');
+                    include.type = 'checkbox';
+                    include.id = `interfaceEnabled_${section}`;
+                    label.htmlFor = include.id;
+                    label.style.cursor = 'pointer';
+                    include.dataset.sequenceScript = section;
+                    include.checked = automation.settings(section).enabled;
+                    include.setAttribute('aria-label', `${I18N('SCRIPT_INCLUDE_SEQUENCE')}: ${I18N(`NAV_${section}`)}`);
+                    include.addEventListener('change', () => automation.save(section, { enabled: include.checked }));
+                    item.append(include);
+                }
                 const actions = document.createElement('div');
                 actions.className = 'interface-script-actions';
                 const button = document.createElement('button');
@@ -1708,7 +1897,7 @@
                 button.addEventListener('click', () => {
                     try {
                         navigateToGameSection(section);
-                        interfaceDialog.close();
+                        closeMenu();
                         interfaceSidebar.classList.remove('sidebar_open');
                         document.querySelector('.sidebar__overlay')?.classList.remove('sidebar__overlay_show');
                     } catch (error) {
@@ -1716,7 +1905,7 @@
                         button.textContent = `${I18N(`NAV_${section}`)} — ${I18N('NAV_UNAVAILABLE')}`;
                     }
                 });
-                if (gameNavigationSections.includes(section)) label.append(button);
+                if (id === 'navigation' && gameNavigationSections.includes(section)) label.append(button);
                 else label.append(document.createTextNode(I18N(`NAV_${section}`)));
                 const status = document.createElement('span');
                 status.className = 'interface-script-status';
@@ -1729,7 +1918,7 @@
                     if (action === 'SCRIPT_CONFIGURE' && !Object.keys(automation.definitions[section].fields).length) continue;
                     const actionButton = document.createElement('button');
                     actionButton.type = 'button';
-                    actionButton.className = 'interface-menu-action';
+                    actionButton.className = 'interface-menu-action menu__help-support-button';
                     actionButton.textContent = I18N(action);
                     actionButton.disabled = !automation.definitions[section];
                     if (actionButton.disabled) actionButton.title = I18N('SCRIPT_NOT_IMPLEMENTED');
@@ -1738,6 +1927,7 @@
                         actionButton.addEventListener('click', () => {
                             if (action === 'SCRIPT_CONFIGURE') showScriptSettings(section);
                             else if (automation.running?.section === section) {
+                                if (sequenceRunning) pilot.stop();
                                 automation.stop();
                                 reportScript(section, 'SCRIPT_STOPPING');
                                 refreshRunButtons();
@@ -1750,26 +1940,20 @@
                 if (actions.childElementCount) item.append(actions);
                 list.append(item);
             }
-            dialogBody.append(list);
+            panelBody.append(list);
             refreshRunButtons();
         } else {
             const text = document.createElement('p');
             text.textContent = I18N('MENU_SECTION_PENDING');
-            dialogBody.append(text);
+            panelBody.append(text);
         }
-        if (!interfaceDialog.open) interfaceDialog.showModal();
+    };
+    interfaceSidebar.addEventListener('click', event => {
+        if (event.target.closest('[data-interface-close]')) { closeMenu(); return; }
+        const button = event.target.closest('[data-interface-dialog]');
+        if (button) showSection(button.dataset.interfaceDialog);
     });
-    interfaceDialog.querySelector('.interface-dialog-close').addEventListener('click', () => interfaceDialog.close());
-
-    phase('Sidebar rendered; loading avatar', { avatarId: memoryStorage.memoryStorage.user.info.avatarId, libraryReady: theGame.lib != null });
-    gameAssets.getAvatarUrl(memoryStorage.memoryStorage.user.info.avatarId)
-        .then(url => {
-            phase('Avatar loading finished', { imageReceived: Boolean(url) });
-            if (url) {
-                document.querySelector('#interfaceSidebar .sidebar__profile-data-avatar-image').src = url;
-            }
-        })
-        .catch(error => console.warn('Unable to load user avatar:', error));
+    phase('Sidebar rendered');
     //#endregion
 
 })();

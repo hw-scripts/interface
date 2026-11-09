@@ -4,6 +4,7 @@
 <pre id="result">RUNNING</pre>
 <script src="../battle-calculator.js"></script>
 <script src="../automation.js"></script>
+<script src="../autopilot.js"></script>
 <script>
 (async () => {
     const results = [];
@@ -26,7 +27,7 @@
         return { engine: new InterfaceAutomation(game, api, storage), calls, storage };
     };
     await test('syntax of interface and automation', async () => {
-        for (const file of ['../interface.js', '../automation.js', '../battle-calculator.js']) {
+        for (const file of ['../interface.js', '../automation.js', '../autopilot.js', '../battle-calculator.js']) {
             const response = await fetch(file);
             new Function(await response.text());
         }
@@ -56,6 +57,266 @@
         } }, game);
         await stopped.engine.run('DAILY_BONUS', () => {});
         equal(stopped.calls.length, 1);
+    });
+    await test('mail filters mixed rewards and supports configurable expiry override', async () => {
+        const now = Date.now() / 1000;
+        const letters = [
+            { id: 1, reward: { gold: 100 } },
+            { id: 2, reward: { gold: 100, stamina: 60 } },
+            { id: 3, reward: { refillable: { 45: 1 } }, availableUntil: now + 3600 },
+            { id: 4, reward: {} },
+            { id: 5, reward: { gold: 1 }, availableUntil: now - 1 },
+            { id: 6, reward: { vipPoints: 10 } },
+            { id: 7, reward: { buff: { 1: 1 } } },
+            { id: 8, reward: { fragmentHero: { 1: 2 } } },
+            { id: 9, reward: { bundleHeroReward: { 1: 1 } } }
+        ];
+        for (const [overrides, expected] of [[{}, [1, 3]], [{ collectExpiring: false }, [1]],
+            [{ collectStamina: true, collectExpiring: false }, [1, 2]]]) {
+            const { engine, calls } = fixture({ mailGetAll: { letters } });
+            engine.save('MAIL', overrides);
+            await engine.run('MAIL', () => {});
+            equal(calls[1], { name: 'mailFarm', args: { letterIds: expected } });
+        }
+        const empty = fixture({ mailGetAll: { letters: [] } });
+        const statuses = [];
+        await empty.engine.run('MAIL', status => statuses.push(status));
+        equal(empty.calls.length, 1);
+        equal(statuses, ['SCRIPT_NOTHING_TO_COLLECT']);
+    });
+    await test('quest collection filters rewards, follows chains and selects the correct RPC', async () => {
+        let reads = 0;
+        const { engine, calls } = fixture({ questGetAll: () => {
+            reads++;
+            return [
+                { id: 1, state: 2, reward: { gold: 1 } },
+                { id: 2, state: 1, reward: { gold: 1 } },
+                { id: 3, state: 2, reward: { stamina: 60 } },
+                { id: 20010001, state: 2, reward: { gold: 1 } },
+                { id: 20000001, state: 2, reward: { gold: 1 } },
+                ...(reads > 1 ? [{ id: 4, state: 2, reward: { gold: 1 } }] : [])
+            ];
+        } });
+        await engine.run('QUEST_REWARDS', () => {});
+        equal(calls.filter(call => call.name !== 'questGetAll'), [
+            { name: 'questFarm', args: { questId: 1 } },
+            { name: 'quest_questsFarm', args: { questIds: [20000001] } },
+            { name: 'questFarm', args: { questId: 4 } }
+        ]);
+        equal(reads, 3);
+        const single = fixture({ questGetAll: [{ id: 1, state: 2, reward: { exp: 10 } }] });
+        single.engine.save('QUEST_REWARDS', { followChains: false, collectExperience: false });
+        await single.engine.run('QUEST_REWARDS', () => {});
+        equal(single.calls.length, 1);
+        const stopped = fixture({ questGetAll: () => {
+            stopped.engine.stop();
+            return [{ id: 1, state: 2, reward: { gold: 1 } }];
+        } });
+        await stopped.engine.run('QUEST_REWARDS', () => {});
+        equal(stopped.calls.length, 1);
+    });
+    await test('battle pass quests require an active pass, ticket and level', async () => {
+        const now = Date.now() / 1000;
+        for (const [ticket, endDate, experience, expected] of [[true, now + 3600, 100, 1],
+            [false, now + 3600, 100, 0], [true, now - 1, 100, 0], [true, now + 3600, 0, 0]]) {
+            const { engine, calls } = fixture({
+                questGetAll: [{ id: 20000001, state: 2, reward: { battlePassExp: 100 } }],
+                battlePass_getInfo: { id: 1, battlePass: { ticket, startDate: now - 100, endDate, exp: experience } },
+                battlePass_getSpecial: {}
+            }, { lib: { quest: { battlePass: { 20000001: { chain: 1 } } }, battlePass: {
+                questChain: { 1: { battlePass: 1, requirement: { battlePassTicket: true, battlePassLevel: 2 } } },
+                level: [{ battlePass: 1, level: 2, experience: 100 }]
+            } } });
+            engine.save('QUEST_REWARDS', { followChains: false });
+            await engine.run('QUEST_REWARDS', () => {});
+            equal(calls.filter(call => call.name === 'quest_questsFarm').length, expected);
+        }
+    });
+    await test('message log appends, expires independently, overwrites at zero and delays countdown TTL', async () => {
+        const source = await (await fetch('../interface.js')).text();
+        const timers = new Map();
+        let sequence = 0;
+        const MessageLog = new Function('setTimeout', 'clearTimeout',
+            source.slice(source.indexOf('    class MessageLog {'), source.indexOf("    const message = document.createElement('div');"))
+                + ';return MessageLog;')((run, delay) => {
+                    const id = ++sequence;
+                    timers.set(id, { run, delay });
+                    return id;
+                }, id => timers.delete(id));
+        const root = document.createElement('div');
+        const log = new MessageLog(root);
+        log.write('first');
+        log.write('second');
+        equal(root.children.length, 1);
+        equal(root.textContent, 'second');
+        equal(timers.size, 0);
+        log.setTTL(5);
+        const previousTimer = [...timers.values()][0];
+        log.write('third');
+        equal([...root.children].map(row => row.textContent), ['second', 'third']);
+        previousTimer.run();
+        equal(root.textContent, 'third');
+        const id = log.write('countdown 2', { pending: true });
+        equal(timers.size, 1);
+        log.write('countdown 1', { id, pending: true });
+        equal(root.children.length, 2);
+        equal(timers.size, 1);
+        log.write('countdown finished', { id });
+        equal(timers.size, 2);
+        equal([...timers.values()].map(timer => timer.delay), [5000, 5000]);
+        log.setTTL(0);
+        equal(root.children.length, 1);
+        equal(root.textContent, 'countdown finished');
+        equal(timers.size, 0);
+        log.write('latest');
+        equal(root.textContent, 'latest');
+        log.setTTL(-1);
+        equal(log.ttl, 0);
+    });
+    await test('restart reloads the page without API calls and terminates a sequence', async () => {
+        const source = await (await fetch('../automation.js')).text();
+        let reloads = 0;
+        const Engine = new Function('window', source + ';return InterfaceAutomation;')({ location: { reload: () => reloads++ } });
+        const engine = new Engine({}, { call: () => { throw new Error('Unexpected API call'); } }, { get: () => null, set() {} });
+        await engine.run('RESTART', () => {});
+        equal(reloads, 1);
+        assert(engine.definitions.RESTART.endsSequence);
+        engine.definitions.RESTART.run({}, () => {}, { stopped: true });
+        equal(reloads, 1);
+    });
+    const pilotFixture = (names = ['A', 'B']) => {
+        let clock = 1000000;
+        const { engine, storage, calls } = fixture();
+        const executed = [];
+        engine.definitions = Object.fromEntries(names.map(name => [name, { fields: {}, run: async () => { executed.push(name); } }]));
+        for (const name of names) engine.save(name, { enabled: true });
+        const timers = new Map();
+        let timerId = 0;
+        const dependencies = { execute: async section => {
+            await engine.run(section, () => {});
+            return engine.lastResult.completed;
+        }, sections: () => names, now: () => clock,
+            setTimer: (run, delay) => { timers.set(++timerId, { run, delay }); return timerId; },
+            clearTimer: id => timers.delete(id) };
+        const pilot = new InterfaceAutopilot(engine, storage, dependencies);
+        return { pilot, engine, storage, calls, executed, timers, dependencies,
+            advance: milliseconds => { clock += milliseconds; }, now: () => clock };
+    };
+    await test('autopilot enforces five minute inactivity and yields before the next request', async () => {
+        const f = pilotFixture();
+        f.pilot.configure({ enabled: true, idleMinutes: 1 });
+        equal(f.pilot.options.idleMinutes, 5);
+        await f.pilot.tick();
+        equal(f.executed, []);
+        f.advance(299999);
+        await f.pilot.tick();
+        equal(f.executed, []);
+        f.advance(1);
+        await f.pilot.tick();
+        equal(f.executed, ['A', 'B']);
+        f.pilot.activity();
+        f.advance(299999);
+        await f.pilot.tick();
+        equal(f.executed, ['A', 'B']);
+        let release;
+        f.engine.definitions.A.run = async () => {
+            await new Promise(resolve => { release = resolve; });
+            await f.engine.api.call('mutation');
+        };
+        f.advance(1);
+        const running = f.pilot.tick();
+        assert(release);
+        f.pilot.activity();
+        release();
+        await running;
+        equal(f.calls, []);
+        equal(f.executed, ['A', 'B']);
+        assert(!f.pilot.running);
+        assert(f.pilot.due('A'));
+    });
+    await test('sequence checkpoints survive reload and skip restart before continuing remaining scripts', async () => {
+        const f = pilotFixture(['A', 'RESTART', 'B']);
+        f.engine.definitions.RESTART.endsSequence = true;
+        f.engine.definitions.RESTART.run = async () => {
+            const progress = JSON.parse(f.storage.get('autopilotProgress'));
+            equal(progress.pending.sections, ['B']);
+            f.executed.push('RESTART');
+        };
+        await f.pilot.run(['A', 'RESTART', 'B']);
+        equal(f.executed, ['A', 'RESTART']);
+        const resumed = new InterfaceAutopilot(f.engine, f.storage, f.dependencies);
+        await resumed.tick();
+        equal(f.executed, ['A', 'RESTART', 'B']);
+        await resumed.run(['A', 'RESTART', 'B']);
+        equal(f.executed, ['A', 'RESTART', 'B']);
+        f.advance(300001);
+        await resumed.run(['A', 'RESTART', 'B']);
+        equal(f.executed, ['A', 'RESTART', 'B', 'A', 'RESTART']);
+    });
+    await test('autopilot uses the nearest day, expedition or configured time boundary', async () => {
+        const f = pilotFixture(['DAILY_BONUS', 'EXPEDITIONS']);
+        f.dependencies.userInfo = () => ({ nextDayTs: (f.now() + 180000) / 1000,
+            nextServerDayTs: (f.now() + 120000) / 1000 });
+        const pilot = new InterfaceAutopilot(f.engine, f.storage, f.dependencies);
+        await pilot.run(['DAILY_BONUS']);
+        equal(pilot.state.completed.DAILY_BONUS.until, f.now() + 120000);
+        f.engine.lastResult = { boundaries: [f.now() + 90000] };
+        pilot.checkpoint('EXPEDITIONS');
+        equal(pilot.state.completed.EXPEDITIONS.until, f.now() + 90000);
+        pilot.configure({ intervals: { EXPEDITIONS: 1 } });
+        pilot.checkpoint('EXPEDITIONS');
+        equal(pilot.state.completed.EXPEDITIONS.until, f.now() + 60000);
+        assert(!pilot.due('DAILY_BONUS'));
+        f.storage.set('script:DAILY_BONUS', JSON.stringify({ changed: true }));
+        assert(pilot.due('DAILY_BONUS'));
+    });
+    await test('failed or unfinished scripts are retried and never checkpointed', async () => {
+        const f = pilotFixture();
+        f.engine.definitions.A.run = async () => 'SCRIPT_TOWER_NEEDS_BATTLE';
+        await f.pilot.run(['A', 'B']);
+        equal(f.executed, []);
+        assert(!f.pilot.state.completed.A);
+        f.engine.definitions.A.run = async () => { throw new Error('unavailable'); };
+        await f.pilot.run(['A', 'B']);
+        assert(!f.pilot.state.completed.A);
+        equal(f.executed, []);
+    });
+    await test('disabled autopilot does not run and frequent input persists inactivity across reloads', async () => {
+        const f = pilotFixture();
+        f.advance(600000);
+        await f.pilot.tick();
+        equal(f.executed, []);
+        for (let index = 0; index < 20; index++) { f.advance(100); f.pilot.activity(); }
+        assert(JSON.parse(f.storage.get('autopilotProgress')).lastActivity > f.now() - 1000);
+        f.pilot.dispose();
+        equal(JSON.parse(f.storage.get('autopilotProgress')).lastActivity, f.now());
+        f.pilot.configure({ enabled: true, idleMinutes: 5 });
+        const reloaded = new InterfaceAutopilot(f.engine, f.storage, f.dependencies);
+        f.advance(299999);
+        await reloaded.tick();
+        equal(f.executed, []);
+        f.advance(1);
+        await reloaded.tick();
+        equal(f.executed, ['A', 'B']);
+    });
+    await test('enabled is a persistent script property migrated from legacy selection and independent of progress', () => {
+        const values = { scriptSequence: JSON.stringify(['TOWER', 'BOSS']),
+            'script:TOWER': JSON.stringify({ battles: false }), 'script:BOSS': JSON.stringify({ enabled: false }) };
+        const storage = { get: key => values[key] ?? null, set: (key, value) => { values[key] = value; } };
+        const engine = new InterfaceAutomation({}, {}, storage);
+        assert(engine.settings('TOWER').enabled);
+        equal(engine.settings('TOWER').battles, false);
+        assert(!engine.settings('BOSS').enabled);
+        engine.save('TOWER', { buyBuffs: false });
+        assert(engine.settings('TOWER').enabled);
+        const pilot = new InterfaceAutopilot(engine, storage);
+        const fingerprint = pilot.fingerprint('TOWER');
+        engine.save('TOWER', { enabled: false });
+        equal(pilot.fingerprint('TOWER'), fingerprint);
+        const reloaded = new InterfaceAutomation({}, {}, storage);
+        assert(!reloaded.settings('TOWER').enabled);
+        equal(reloaded.settings('TOWER').battles, false);
+        pilot.dispose();
     });
     await test('MD5 standard vectors and padding', () => {
         equal(InterfaceGameApi.md5(''), 'd41d8cd98f00b204e9800998ecf8427e');
@@ -90,6 +351,7 @@
         const main = manifest.content_scripts.find(item => item.world === 'MAIN');
         assert(main.js.indexOf('automation.js') >= 0 && main.js.indexOf('automation.js') < main.js.indexOf('interface.js'));
         assert(main.js.indexOf('battle-calculator.js') >= 0 && main.js.indexOf('battle-calculator.js') < main.js.indexOf('automation.js'));
+        assert(main.js.indexOf('autopilot.js') > main.js.indexOf('automation.js') && main.js.indexOf('autopilot.js') < main.js.indexOf('interface.js'));
         const source = await (await fetch('../automation.js')).text() + await (await fetch('../battle-calculator.js')).text();
         const keys = [...new Set(source.match(/SCRIPT_[A-Z_]+/g))];
         const { engine } = fixture();
@@ -140,8 +402,8 @@
     await test('settings persist per script', () => {
         const { engine } = fixture();
         engine.save('EXPEDITIONS', { collect: false, send: true });
-        equal(engine.settings('EXPEDITIONS'), { collect: false, send: true });
-        equal(engine.settings('BOSS'), { raid: true, openChests: true });
+        equal(engine.settings('EXPEDITIONS'), { enabled: false, collect: false, send: true, openArtifactChest: false });
+        equal(engine.settings('BOSS'), { enabled: false, raid: true, openChests: true });
     });
     await test('outland raids and free chests only', async () => {
         const { engine, calls } = fixture({ bossGetAll: { bosses: [
@@ -192,6 +454,33 @@
         equal(sent.length, 1);
         equal(sent[0].args.heroes.length, 5);
         assert(!sent[0].args.heroes.includes(1) && !sent[0].args.heroes.includes(2));
+    });
+    await test('expeditions use all artifact keys only when the option is enabled', async () => {
+        const game = { lib: { expedition: { slot: {} } } };
+        for (const [enabled, keys, expected] of [[true, 3, [1, 1, 1]], [true, 1, [1]],
+            [true, 10, Array(10).fill(1)], [true, '12', [10, 1, 1]], [true, 21, [10, 10, 1]],
+            [true, 100, [100]], [true, 110, [100, ...Array(10).fill(1)]],
+            [true, 256, [100, 100, 10, 10, 10, 10, 10, 1, 1, 1, 1, 1, 1]],
+            [true, 0, []], [true, undefined, []], [true, -1, []], [true, 1.5, []], [false, 3, []]]) {
+            const { engine, calls } = fixture({ expeditionGet: {}, inventoryGet: { consumable: { 45: keys } } }, game);
+            engine.save('EXPEDITIONS', { collect: false, send: false, openArtifactChest: enabled });
+            await engine.run('EXPEDITIONS', () => {});
+            const opens = calls.filter(call => call.name === 'artifactChestOpen');
+            equal(opens.map(call => call.args), expected.map(amount => ({ amount, free: true })));
+            equal(calls.filter(call => call.name === 'inventoryGet').length, enabled ? 1 : 0);
+        }
+        const stopped = fixture({ expeditionGet: {}, inventoryGet: () => {
+            stopped.engine.stop();
+            return { consumable: { 45: 1 } };
+        } }, game);
+        stopped.engine.save('EXPEDITIONS', { collect: false, send: false, openArtifactChest: true });
+        await stopped.engine.run('EXPEDITIONS', () => {});
+        equal(stopped.calls.some(call => call.name === 'artifactChestOpen'), false);
+        const midBatch = fixture({ expeditionGet: {}, inventoryGet: { consumable: { 45: 25 } },
+            artifactChestOpen: () => { midBatch.engine.stop(); } }, game);
+        midBatch.engine.save('EXPEDITIONS', { collect: false, send: false, openArtifactChest: true });
+        await midBatch.engine.run('EXPEDITIONS', () => {});
+        equal(midBatch.calls.filter(call => call.name === 'artifactChestOpen').map(call => call.args.amount), [10]);
     });
     await test('expeditions do not send insufficient teams', async () => {
         const { engine, calls } = fixture({ expeditionGet: { 1: { id: 1, slotId: 1, status: 1, power: 1000 } },
@@ -290,91 +579,204 @@
         equal(calculated.progress, ['real progress']);
         equal(calculated.waitSeconds, 62);
     });
-    await test('menu configures, saves, runs and navigates through real event handlers', async () => {
+    await test('inline menu saves or cancels drafts, runs scripts and separates bounded current output from TTL log', async () => {
         const source = await (await fetch('../interface.js')).text();
         const dictionary = await (await fetch('../locales/en.json')).json();
-        const start = source.indexOf("    const interfaceSidebar = document.getElementById('interfaceSidebar');");
-        const end = source.indexOf("    phase('Sidebar rendered; loading avatar'", start);
-        assert(start >= 0 && end > start);
+        const I18N = key => dictionary[key] || key;
+        const menuSections = [{ id: 'settings', title: 'MENU_GENERAL_SETTINGS' },
+            { id: 'scripts', title: 'MENU_SCRIPTS' }, { id: 'navigation', title: 'MENU_NAVIGATION' },
+            { id: 'autopilot', title: 'MENU_AUTOPILOT' }];
+        const manifest = { name: 'Interface', version: 'test', homepage_url: 'https://example.com' };
+        const templateStart = source.indexOf('    const menuTemplate = `');
+        const templateEnd = source.indexOf('    //#endregion', templateStart);
+        const template = new Function('menuSections', source.slice(templateStart, templateEnd) + ';return menuTemplate;')(menuSections);
         const root = document.createElement('div');
-        root.innerHTML = '<section id="interfaceSidebar"><button data-interface-dialog="scripts">Scripts</button></section><dialog id="interfaceDialog"><h2></h2><button class="interface-dialog-close">Close</button><div class="interface-dialog-body"></div></dialog><div class="sidebar__overlay"></div>';
-        const dialog = root.querySelector('dialog');
-        const header = document.createElement('div');
-        header.className = 'interface-dialog-header';
-        header.append(dialog.querySelector('h2'), dialog.querySelector('.interface-dialog-close'));
-        dialog.prepend(header);
-        const style = document.createElement('style');
-        style.textContent = source.match(/<style>([\s\S]*?)<\/style>/)[1];
-        root.append(style);
+        root.innerHTML = '<div id="interfaceNav"><button type="button">Menu</button></div><div class="sidebar__overlay"></div>'
+            + template.replace(/\{\{(.*?)\}\}/g, (_, expression) => new Function('I18N', 'manifest', 'return '+ expression)(I18N, manifest));
         document.body.append(root);
+        assert(!root.querySelector('dialog'));
+        assert(!root.querySelector('.interface-profile'));
+        const MessageLog = new Function(source.slice(source.indexOf('    class MessageLog {'),
+            source.indexOf("    const message = document.createElement('div');")) + ';return MessageLog;')();
         const message = document.createElement('div');
-        const { engine, calls, storage } = fixture({ bossGetAll: { bosses: [] } });
-        const navigate = [];
-        const execute = new Function('automation', 'I18N', 'i18n', 'message', 'menuSections', 'gameNavigationSections', 'navigateToGameSection', 'userStorage', source.slice(start, end));
-        execute(engine, key => dictionary[key] || key, { translations: dictionary }, message,
-            [{ id: 'scripts', title: 'MENU_SCRIPTS' }, { id: 'navigation', title: 'MENU_NAVIGATION' }], ['EXPEDITIONS', 'TOWER', 'BOSS', 'CHAT'], section => navigate.push(section), storage);
-        const navigation = document.createElement('button');
-        navigation.dataset.interfaceDialog = 'navigation';
-        root.querySelector('#interfaceSidebar').append(navigation);
-        const open = root.querySelector('[data-interface-dialog="scripts"]');
-        open.click();
-        let rows = root.querySelectorAll('li');
-        equal(rows.length, 3);
-        equal(rows[0].querySelectorAll('button').length, 3);
-        assert(!rows[0].querySelectorAll('button')[1].disabled);
-        assert(rows[0].querySelector('button').classList.contains('interface-script-link'));
-        rows[0].querySelectorAll('button')[1].click();
-        const inputs = root.querySelectorAll('form input');
-        equal(inputs.length, 2);
-        inputs[0].checked = false;
-        root.querySelector('form').requestSubmit();
-        equal(engine.settings('EXPEDITIONS'), { collect: false, send: true });
-        rows = root.querySelectorAll('li');
-        rows[2].querySelectorAll('button')[2].click();
+        message.id = 'interfaceMessage';
+        root.querySelector('#interfaceNav').before(message);
+        const currentLog = new MessageLog(message, 0, { overwrite: false, limit: 20 });
+        message.addEventListener('click', () => currentLog.clear());
+        const { engine, calls, storage } = fixture({ bossGetAll: { bosses: [] }, dailyBonusGetInfo: { availableToday: false } });
+        const navigated = [];
+        const start = source.indexOf("    const interfaceSidebar = document.getElementById('interfaceSidebar');");
+        const end = source.indexOf("    phase('Sidebar rendered');", start);
+        const pilot = new Function('automation', 'I18N', 'i18n', 'menuSections', 'gameNavigationSections', 'navigateToGameSection',
+            'userStorage', 'MessageLog', 'currentLog', 'valkyriesBlessing', 'gameApi', 'theGame', 'memoryStorage', source.slice(start, end) + ';return pilot;')(
+            engine, I18N, { translations: dictionary }, menuSections, ['EXPEDITIONS', 'TOWER', 'BOSS', 'CHAT'],
+            section => navigated.push(section), storage, MessageLog, currentLog, false, {}, {}, { memoryStorage: { user: { info: {} } } });
+        const sidebar = root.querySelector('#interfaceSidebar');
+        const panel = root.querySelector('#interfacePanel');
+        const main = sidebar.querySelector('.interface-menu-actions');
+        const log = root.querySelector('#interfaceLog');
+        const open = section => sidebar.querySelector(`[data-interface-dialog="${section}"]`).click();
+        const accept = () => panel.querySelector('.interface-confirm').click();
+        const cancel = () => panel.querySelector('.interface-cancel').click();
+        root.querySelector('#interfaceNav button').click();
+        assert(sidebar.classList.contains('sidebar_open'));
+        open('settings');
+        assert(main.hidden && !panel.hidden);
+        const numbers = () => panel.querySelectorAll('input[type="number"]');
+        equal([...numbers()].map(input => input.value), ['0', '20', '5']);
+        numbers()[0].value = '30';
+        numbers()[1].value = '2';
+        cancel();
+        equal(storage.get('messageTTL'), null);
+        open('settings');
+        equal([...numbers()].map(input => input.value), ['0', '20', '5']);
+        numbers()[0].value = '30';
+        numbers()[1].value = '2';
+        accept();
+        equal(storage.get('messageTTL'), '30');
+        equal(storage.get('messageLimit'), '2');
+        assert(!main.hidden && panel.hidden);
+        open('scripts');
+        assert(!log.hidden);
+        equal(panel.querySelectorAll('li').length, 7);
+        for (const section of Object.keys(engine.definitions)) {
+            const input = panel.querySelector(`[data-sequence-script="${section}"]`);
+            assert(input.parentElement.matches('li'), 'Selection must be separate from the navigation button');
+            assert(!input.disabled);
+            const bounds = input.getBoundingClientRect();
+            assert(document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2) === input,
+                `${section} checkbox is covered by another element`);
+            input.click();
+            assert(input.checked);
+            assert(engine.settings(section).enabled);
+            input.click();
+            assert(!input.checked);
+            assert(!engine.settings(section).enabled);
+            const caption = panel.querySelector(`label[for="${input.id}"]`);
+            assert(caption, `${section} must have an associated label`);
+            caption.click();
+            assert(input.checked && engine.settings(section).enabled, `${section} label must enable the script`);
+            const restored = new InterfaceAutomation({}, {}, storage);
+            assert(restored.settings(section).enabled, `${section} permission must survive reconstruction`);
+            caption.click();
+            assert(!input.checked && !engine.settings(section).enabled);
+        }
+        const row = section => panel.querySelector(`[data-script="${section}"]`);
+        row('EXPEDITIONS').querySelector('.interface-script-actions button').click();
+        panel.querySelector('input').checked = false;
+        cancel();
+        equal(engine.settings('EXPEDITIONS').collect, true);
+        row('EXPEDITIONS').querySelector('.interface-script-actions button').click();
+        panel.querySelector('input').checked = false;
+        accept();
+        equal(engine.settings('EXPEDITIONS').collect, false);
+        row('BOSS').querySelector('[data-interface-run]').click();
         await new Promise(resolve => setTimeout(resolve, 0));
         equal(calls.map(call => call.name), ['bossGetAll']);
-        assert(rows[2].textContent.includes(dictionary.SCRIPT_DONE));
-        assert(rows[2].querySelector('.interface-script-name').textContent.includes(` (${dictionary.SCRIPT_DONE})`));
-        const list = root.querySelector('ul');
-        const dragged = rows[0];
-        const target = rows[2];
-        const transfer = new DataTransfer();
-        dragged.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: transfer }));
-        const bounds = target.getBoundingClientRect();
-        target.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: transfer, clientY: bounds.bottom }));
-        target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer }));
-        dragged.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: transfer }));
-        equal(JSON.parse(storage.get('scriptOrder:scripts')), ['TOWER', 'BOSS', 'EXPEDITIONS']);
-        open.click();
-        equal([...root.querySelectorAll('li')].map(row => row.dataset.script), ['TOWER', 'BOSS', 'EXPEDITIONS']);
-        // Cancelled drags restore the saved order.
-        const first = root.querySelector('li');
-        first.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: transfer }));
-        root.querySelector('ul').append(first);
-        first.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: transfer }));
-        equal([...root.querySelectorAll('li')].map(row => row.dataset.script), ['TOWER', 'BOSS', 'EXPEDITIONS']);
-        rows = root.querySelectorAll('li');
-        const scrollBody = root.querySelector('.interface-dialog-body');
-        for (let index = 0; index < 60; index++) root.querySelector('ul').append(rows[0].cloneNode(true));
-        const headerTop = header.getBoundingClientRect().top;
-        scrollBody.scrollTop = 150;
-        assert(scrollBody.scrollTop > 0, 'Dialog body must scroll');
-        equal(header.getBoundingClientRect().top, headerTop);
-        equal(dialog.scrollTop, 0);
-        rows[2].querySelector('button').click();
-        equal(navigate, ['EXPEDITIONS']);
-        assert(!root.querySelector('dialog').open);
-        navigation.click();
-        equal([...root.querySelectorAll('li')].map(row => row.dataset.script), ['CHAT']);
-        equal(root.querySelector('li').querySelectorAll('button').length, 1);
-        equal(JSON.parse(storage.get('scriptOrder:scripts')), ['TOWER', 'BOSS', 'EXPEDITIONS']);
-        // Adding an automation moves its section out of navigation into scripts.
-        engine.definitions.CHAT = engine.definitions.BOSS;
-        navigation.click();
-        equal(root.querySelectorAll('li').length, 0);
-        open.click();
-        equal([...root.querySelectorAll('li')].map(row => row.dataset.script), ['TOWER', 'BOSS', 'EXPEDITIONS', 'CHAT']);
-        root.querySelector('dialog').close();
+        equal(message.children.length, 2);
+        equal(log.children.length, 2);
+        assert(message.textContent.includes(I18N('NAV_BOSS')));
+        row('DAILY_BONUS').querySelector('[data-interface-run]').click();
+        await new Promise(resolve => setTimeout(resolve, 0));
+        equal(message.children.length, 2);
+        assert(!message.textContent.includes(I18N('NAV_BOSS')));
+        assert(message.textContent.includes(I18N('NAV_DAILY_BONUS')));
+        equal(log.children.length, 4);
+        message.click();
+        equal(message.children.length, 0);
+        equal(log.children.length, 4);
+        engine.definitions.BOSS.run = async (_, report) => {
+            for (let index = 0; index < 5; index++) report('SCRIPT_BOSS_CHEST', index);
+        };
+        row('BOSS').querySelector('[data-interface-run]').click();
+        await new Promise(resolve => setTimeout(resolve, 0));
+        equal(message.children.length, 2);
+        assert(!message.textContent.includes(': 0'));
+        assert(message.textContent.includes(': 4'));
+        // Sequence selection persists, follows current row order and stops on errors or cancellation.
+        const select = section => {
+            const input = row(section).querySelector('[data-sequence-script]');
+            input.checked = true;
+            input.dispatchEvent(new Event('change'));
+        };
+        select('BOSS');
+        select('DAILY_BONUS');
+        assert(engine.settings('BOSS').enabled && engine.settings('DAILY_BONUS').enabled);
+        const order = [];
+        pilot.state.completed = {};
+        engine.definitions.BOSS.run = async () => { order.push('BOSS'); };
+        engine.definitions.DAILY_BONUS.run = async () => { order.push('DAILY_BONUS'); };
+        row('BOSS').parentElement.insertBefore(row('DAILY_BONUS'), row('BOSS'));
+        cancel();
+        equal(order, []);
+        assert(panel.hidden);
+        const savedOrder = JSON.parse(storage.get('scriptOrder:scripts'));
+        assert(savedOrder.indexOf('DAILY_BONUS') < savedOrder.indexOf('BOSS'));
+        assert(engine.settings('BOSS').enabled && engine.settings('DAILY_BONUS').enabled);
+        open('scripts');
+        assert(row('DAILY_BONUS').querySelector('[data-sequence-script]').checked);
+        assert(row('BOSS').querySelector('[data-sequence-script]').checked);
+        accept();
+        accept();
+        await new Promise(resolve => setTimeout(resolve, 0));
+        equal(order, ['DAILY_BONUS', 'BOSS']);
+        assert(!panel.hidden, 'Sequence keeps the scripts panel open');
+        engine.definitions.DAILY_BONUS.run = async () => { order.push('failure'); throw new Error('test failure'); };
+        pilot.state.completed = {};
+        order.length = 0;
+        accept();
+        await new Promise(resolve => setTimeout(resolve, 0));
+        equal(order, ['failure']);
+        engine.definitions.DAILY_BONUS.run = async () => { order.push('stop'); engine.stop(); };
+        pilot.state.completed = {};
+        order.length = 0;
+        accept();
+        await new Promise(resolve => setTimeout(resolve, 0));
+        equal(order, ['stop']);
+        cancel();
+        open('scripts');
+        assert(row('BOSS').querySelector('[data-sequence-script]').checked);
+        assert(row('DAILY_BONUS').querySelector('[data-sequence-script]').checked);
+        // Scrollable content stays below the panel header.
+        const body = panel.querySelector('.interface-panel-body');
+        const header = panel.querySelector('.interface-panel-header');
+        for (let index = 0; index < 60; index++) body.querySelector('ul').append(row('BOSS').cloneNode(true));
+        const top = header.getBoundingClientRect().top;
+        body.scrollTop = 150;
+        assert(body.scrollTop > 0);
+        equal(header.getBoundingClientRect().top, top);
+        cancel();
+        assert(log.hidden && panel.hidden && !main.hidden);
+        open('navigation');
+        equal(panel.querySelectorAll('li').length, 1);
+        panel.querySelector('.interface-script-link').click();
+        equal(navigated, ['CHAT']);
+        assert(!sidebar.classList.contains('sidebar_open'));
+        // Switching TTL to zero affects only the left log, not the current script output.
+        root.querySelector('#interfaceNav button').click();
+        open('settings');
+        numbers()[0].value = '0';
+        accept();
+        equal(log.children.length, 1);
+        equal(message.children.length, 2);
+        open('autopilot');
+        const autoIdle = panel.querySelector('input[type="number"]');
+        const autoEnabled = panel.querySelector('input[type="checkbox"]');
+        equal(autoIdle.min, '5');
+        autoEnabled.checked = true;
+        autoIdle.value = '4';
+        accept();
+        assert(!pilot.options.enabled, 'Invalid inactivity must not be saved');
+        autoIdle.value = '6';
+        accept();
+        equal(pilot.options.idleMinutes, 6);
+        assert(pilot.options.enabled);
+        open('autopilot');
+        panel.querySelector('input[type="checkbox"]').checked = false;
+        accept();
+        assert(!pilot.options.enabled);
+        currentLog.clear();
+        pilot.dispose();
         root.remove();
     });
     document.getElementById('result').textContent = results.join('\n') + `\n${results.filter(result => result.startsWith('PASS')).length}/${results.length} passed`;
