@@ -318,6 +318,20 @@
         equal(reloaded.settings('TOWER').battles, false);
         pilot.dispose();
     });
+    await test('outland diagnostics expose loaded rule tables without invoking game methods', async () => {
+        const source = await (await fetch('../interface.js')).text();
+        const start = source.indexOf("    Object.defineProperty(window, 'interfaceOutlandData'");
+        const end = source.indexOf('    theGame.libraryReady', start);
+        const target = {};
+        const game = { lib: null, registry: { 'game.model.boss.BossData': {}, unrelated: {} } };
+        new Function('window', 'theGame', source.slice(start, end))(target, game);
+        assert(!target.interfaceOutlandData().ready);
+        game.lib = { boss: { 10: { heroes: [1, 2] } }, hero: { 1: { id: 1 } }, unrelated: {} };
+        const data = target.interfaceOutlandData();
+        equal(data.bossTables, { boss: { 10: { heroes: [1, 2] } } });
+        equal(data.heroes, { 1: { id: 1 } });
+        equal(data.relatedClasses, ['game.model.boss.BossData']);
+    });
     await test('MD5 standard vectors and padding', () => {
         equal(InterfaceGameApi.md5(''), 'd41d8cd98f00b204e9800998ecf8427e');
         equal(InterfaceGameApi.md5('abc'), '900150983cd24fb0d6963f7d28e17f72');
@@ -403,7 +417,7 @@
         const { engine } = fixture();
         engine.save('EXPEDITIONS', { collect: false, send: true });
         equal(engine.settings('EXPEDITIONS'), { enabled: false, collect: false, send: true, openArtifactChest: false });
-        equal(engine.settings('BOSS'), { enabled: false, raid: true, openChests: true });
+        equal(engine.settings('BOSS'), { enabled: false, raid: true, openChests: true, battles: false, autoTeam: true });
     });
     await test('outland raids and free chests only', async () => {
         const { engine, calls } = fixture({ bossGetAll: { bosses: [
@@ -412,6 +426,96 @@
         await engine.run('BOSS', () => {});
         equal(calls.map(call => call.name), ['bossGetAll', 'bossRaid', 'bossOpenChest', 'bossOpenChest']);
         assert(calls.filter(call => call.name === 'bossOpenChest').every(call => call.args.starmoney === 0 && call.args.amount === 1));
+    });
+    await test('outland battles use saved teams and submit calculated results before refreshed raids and chests', async () => {
+        let reads = 0;
+        const { engine, calls } = fixture({
+            bossGetAll: () => ({ bosses: ++reads === 1
+                ? [{ id: 10, mayRaid: false, chestId: 2 }, { id: 11, mayRaid: true, chestId: 2 }, { id: 12, mayRaid: false, chestId: 2 }]
+                : [{ id: 10, mayRaid: false, chestId: 1 }, { id: 11, mayRaid: true, chestId: 2 }, { id: 12, mayRaid: false, chestId: 2 }] }),
+            teamGetAll: { boss_10: [10, 58, 66, 12, 4, 6006] },
+            teamGetFavor: { boss_10: { 4: 6001, 10: 6006, 99: 6002 } },
+            bossAttack: { type: 'boss_10', seed: 42 }, bossEndBattle: null
+        });
+        const result = { win: true, stars: 3 };
+        const progress = [{ seed: 42 }];
+        engine.battleCalculator = { assertAvailable: config => equal(config, 'get_boss'),
+            calculate: async (battle, config) => {
+                equal(battle, { type: 'boss_10', seed: 42 });
+                equal(config, 'get_boss');
+                return { result, progress, waitSeconds: 0 };
+            } };
+        engine.save('BOSS', { battles: true, autoTeam: false });
+        const reports = [];
+        await engine.run('BOSS', (...args) => reports.push(args));
+        equal(calls.map(call => call.name), ['bossGetAll', 'teamGetAll', 'teamGetFavor', 'bossAttack',
+            'bossEndBattle', 'bossGetAll', 'bossOpenChest', 'bossRaid', 'bossOpenChest']);
+        equal(calls[3].args, { bossId: 10, heroes: [10, 58, 66, 12, 4], favor: { 4: 6001, 10: 6006 }, pet: 6006 });
+        equal(calls[4].args, { result, progress });
+        assert(reports.some(([key, id]) => key === 'SCRIPT_BOSS_NO_TEAM' && id === 12));
+        assert(reports.some(([key]) => key === 'SCRIPT_BOSS_WON'));
+    });
+    await test('outland submits genuine losses and stops before ending a battle when player returns', async () => {
+        for (const stop of [false, true]) {
+            const { engine, calls } = fixture({ bossGetAll: { bosses: [{ id: 10, mayRaid: false, chestId: 2 }] },
+                teamGetAll: { boss_10: [10, 6006] }, teamGetFavor: {}, bossAttack: { seed: 42 }, bossEndBattle: null });
+            const result = { win: false, stars: 0 };
+            engine.battleCalculator = { assertAvailable() {},
+                calculate: async () => ({ result, progress: [{ seed: 42 }], waitSeconds: stop ? 30 : 0 }) };
+            engine.save('BOSS', { battles: true, raid: false, openChests: false, autoTeam: false });
+            const reports = [];
+            await engine.run('BOSS', (key, detail, options) => {
+                reports.push({ key, options });
+                if (stop && key === 'SCRIPT_BOSS_WAIT') engine.stop();
+            });
+            const ends = calls.filter(call => call.name === 'bossEndBattle');
+            equal(ends.length, stop ? 0 : 1);
+            if (!stop) equal(ends[0].args.result, result);
+            else assert(reports.some(item => item.key === 'SCRIPT_STOPPED' && item.options?.pending === false));
+        }
+    });
+    await test('outland checks calculator availability before opening a server battle', async () => {
+        const { engine, calls } = fixture({ bossGetAll: { bosses: [{ id: 10, mayRaid: false }] } });
+        engine.battleCalculator = { assertAvailable() { throw new Error('SCRIPT_BATTLE_UNAVAILABLE'); } };
+        engine.save('BOSS', { battles: true, autoTeam: false });
+        let failed = false;
+        try { await engine.run('BOSS', () => {}); } catch (error) { failed = error.message === 'SCRIPT_BATTLE_UNAVAILABLE'; }
+        assert(failed);
+        equal(calls.map(call => call.name), ['bossGetAll']);
+    });
+    await test('outland automatic team uses only owned recommended heroes ranked by power and unique known patrons', async () => {
+        const { engine, calls } = fixture({
+            bossGetAll: { bosses: [{ id: 10, mayRaid: false, chestId: 2 }] },
+            teamGetAll: { boss_10: [6, 6006] },
+            teamGetFavor: { boss_10: { 1: 6001, 2: 6002 }, tower: { 3: 6002, 4: 6004 }, mission: { 3: 6003, 5: 6005 } },
+            heroGetAll: {
+                1: { id: 1, power: 100 }, 2: { id: 2, power: 900 }, 3: { id: 3, power: 800 },
+                4: { id: 4, power: 700 }, 5: { id: 5, power: 600 }, 6: { id: 6, power: 0 },
+                7: { id: 7, power: 99999 }
+            }, bossAttack: { seed: 42 }, bossEndBattle: null
+        }, { lib: { boss: { list: { 10: { recommendedHeroes: [1, 2, 3, 4, 5, 6, 8] } } } } });
+        engine.battleCalculator = { assertAvailable() {},
+            calculate: async () => ({ result: { win: true, stars: 3 }, progress: [{ seed: 42 }], waitSeconds: 0 }) };
+        engine.save('BOSS', { battles: true, raid: false, openChests: false });
+        await engine.run('BOSS', () => {});
+        const attack = calls.find(call => call.name === 'bossAttack');
+        equal(attack.args, { bossId: 10, heroes: [2, 3, 4, 5, 1],
+            favor: { 1: 6001, 2: 6002, 3: 6003, 4: 6004, 5: 6005 }, pet: 6006 });
+        equal(calls.filter(call => call.name === 'heroGetAll').length, 1);
+    });
+    await test('outland automatic team works without a saved team and skips unknown boss rules', async () => {
+        for (const known of [true, false]) {
+            const { engine, calls } = fixture({ bossGetAll: { bosses: [{ id: 10, mayRaid: false, chestId: 2 }] },
+                teamGetAll: {}, teamGetFavor: {}, heroGetAll: { 4: { id: 4, power: 1000 } }, bossAttack: {} },
+                { lib: { boss: { list: known ? { 10: { recommendedHeroes: [4] } } : {} } } });
+            engine.battleCalculator = { assertAvailable() {},
+                calculate: async () => ({ result: { win: false, stars: 0 }, progress: [], waitSeconds: 0 }) };
+            engine.save('BOSS', { battles: true, raid: false, openChests: false });
+            await engine.run('BOSS', () => {});
+            const attacks = calls.filter(call => call.name === 'bossAttack');
+            equal(attacks.length, known ? 1 : 0);
+            if (known) equal(attacks[0].args, { bossId: 10, heroes: [4], favor: {} });
+        }
     });
     await test('outland respects disabled actions', async () => {
         const { engine, calls } = fixture({ bossGetAll: { bosses: [{ id: 1, mayRaid: true, chestId: 1 }] } });

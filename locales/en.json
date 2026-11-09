@@ -1,4 +1,13 @@
 {
+    "SCRIPT_OPTION_AUTOTEAM": "Automatically select the 5 strongest eligible heroes",
+    "SCRIPT_BOSS_NO_RULES": "Battle skipped: no boss hero list in the library",
+    "SCRIPT_BOSS_TEAM": "Boss team, hero IDs",
+    "SCRIPT_OPTION_OUTLANDBATTLES": "Try battles before raids",
+    "SCRIPT_BOSS_NO_TEAM": "Battle skipped: no suitable team for this boss",
+    "SCRIPT_BOSS_ATTACK": "Starting boss battle",
+    "SCRIPT_BOSS_WAIT": "Waiting for battle completion, boss / seconds",
+    "SCRIPT_BOSS_WON": "Boss defeated",
+    "SCRIPT_BOSS_LOST": "Boss not defeated",
     "AUTOPILOT_ENABLED": "Autopilot after inactivity",
     "AUTOPILOT_IDLE_MINUTES": "Inactivity before starting, minutes (minimum 5)",
     "AUTOPILOT_INTERVAL": "recheck interval, minutes",

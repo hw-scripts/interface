@@ -1,4 +1,13 @@
 {
+    "SCRIPT_OPTION_AUTOTEAM": "Автоматически выбирать 5 сильнейших разрешённых героев",
+    "SCRIPT_BOSS_NO_RULES": "Бой пропущен: в библиотеке нет списка героев для босса",
+    "SCRIPT_BOSS_TEAM": "Команда босса, ID героев",
+    "SCRIPT_OPTION_OUTLANDBATTLES": "Попробовать бои перед рейдами",
+    "SCRIPT_BOSS_NO_TEAM": "Бой пропущен: нет подходящей команды для босса",
+    "SCRIPT_BOSS_ATTACK": "Начало боя с боссом",
+    "SCRIPT_BOSS_WAIT": "Ожидание завершения боя, босс / секунд",
+    "SCRIPT_BOSS_WON": "Босс побеждён",
+    "SCRIPT_BOSS_LOST": "Босс не побеждён",
     "AUTOPILOT_ENABLED": "Автопилот после неактивности",
     "AUTOPILOT_IDLE_MINUTES": "Неактивность до запуска, мин (минимум 5)",
     "AUTOPILOT_INTERVAL": "интервал повторной проверки, мин",

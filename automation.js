@@ -128,7 +128,7 @@ class InterfaceAutomation {
                 run: (settings, report, token) => this.tower(settings, report, token)
             },
             BOSS: {
-                fields: { raid: true, openChests: true },
+                fields: { raid: true, openChests: true, battles: false, autoTeam: true },
                 run: (settings, report, token) => this.outland(settings, report, token)
             },
             RESTART: {
@@ -333,7 +333,74 @@ class InterfaceAutomation {
     }
 
     async outland(settings, report, token) {
-        const { bosses } = await this.api.call('bossGetAll');
+        let { bosses } = await this.api.call('bossGetAll');
+        if (settings.battles && Object.values(bosses).some(boss => !boss.mayRaid)) {
+            this.battleCalculator.assertAvailable('get_boss');
+            const teams = await this.api.call('teamGetAll');
+            const favors = await this.api.call('teamGetFavor');
+            const owned = settings.autoTeam ? await this.api.call('heroGetAll') : null;
+            for (const boss of Object.values(bosses)) {
+                if (token.stopped) return;
+                if (boss.mayRaid) continue;
+                const key = `boss_${boss.id}`;
+                const team = teams?.[key];
+                let heroes;
+                if (settings.autoTeam) {
+                    const allowed = this.game.lib?.boss?.list?.[boss.id]?.recommendedHeroes;
+                    if (!Array.isArray(allowed) || !allowed.length) {
+                        report('SCRIPT_BOSS_NO_RULES', boss.id);
+                        continue;
+                    }
+                    const candidates = new Set(allowed.map(Number));
+                    heroes = [...new Map(Object.values(owned ?? {})
+                        .filter(hero => candidates.has(Number(hero.id)) && Number(hero.power) > 0)
+                        .map(hero => [Number(hero.id), hero])).values()]
+                        .sort((a, b) => Number(b.power) - Number(a.power) || Number(a.id) - Number(b.id))
+                        .slice(0, 5).map(hero => Number(hero.id));
+                } else heroes = Array.isArray(team) ? team.filter(id => Number.isInteger(id) && id > 0 && id < 6000) : [];
+                if (!heroes.length) { report('SCRIPT_BOSS_NO_TEAM', boss.id); continue; }
+                const favor = {};
+                const patrons = new Set();
+                for (const mapping of [favors?.[key], ...(settings.autoTeam ? Object.values(favors ?? {}) : [])]) {
+                    for (const hero of heroes) {
+                        const patron = Number(mapping?.[hero]);
+                        if (!favor[hero] && Number.isInteger(patron) && patron >= 6000 && !patrons.has(patron)) {
+                            favor[hero] = patron;
+                            patrons.add(patron);
+                        }
+                    }
+                }
+                const args = { bossId: boss.id, heroes, favor };
+                const pet = Array.isArray(team) ? team.find(id => Number.isInteger(id) && id >= 6000) : undefined;
+                if (pet != null) args.pet = pet;
+                report('SCRIPT_BOSS_TEAM', `${boss.id}: ${heroes.join(', ')}`);
+                report('SCRIPT_BOSS_ATTACK', boss.id);
+                const started = performance.now();
+                const battle = await this.api.call('bossAttack', args);
+                if (token.stopped) return;
+                const calculated = await this.battleCalculator.calculate(battle, 'get_boss');
+                if (token.stopped) return;
+                if (!calculated?.result || !Array.isArray(calculated.progress)) throw new Error('SCRIPT_BATTLE_UNAVAILABLE');
+                const waitUntil = started + Math.max(0, Number(calculated.waitSeconds) || 0) * 1000;
+                const timerId = Symbol();
+                let shown;
+                while (performance.now() < waitUntil && !token.stopped) {
+                    const seconds = Math.ceil((waitUntil - performance.now()) / 1000);
+                    if (seconds !== shown) {
+                        report('SCRIPT_BOSS_WAIT', `${boss.id}: ${seconds}`, { id: timerId, pending: true });
+                        shown = seconds;
+                    }
+                    if (!token.stopped) await new Promise(resolve => setTimeout(resolve, Math.min(250, waitUntil - performance.now())));
+                }
+                if (shown != null) report(token.stopped ? 'SCRIPT_STOPPED' : 'SCRIPT_BOSS_WAIT',
+                    token.stopped ? boss.id : `${boss.id}: 0`, { id: timerId, pending: false });
+                if (token.stopped) return;
+                await this.api.call('bossEndBattle', { result: calculated.result, progress: calculated.progress });
+                report(calculated.result.win ? 'SCRIPT_BOSS_WON' : 'SCRIPT_BOSS_LOST', boss.id);
+            }
+            if (token.stopped) return;
+            ({ bosses } = await this.api.call('bossGetAll'));
+        }
         for (const boss of Object.values(bosses)) {
             if (token.stopped) return;
             let raided = false;

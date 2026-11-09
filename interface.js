@@ -208,6 +208,19 @@
     });
     phase('Game hooks installed');
     theGame.lib = null;
+    // Read-only diagnostics for the already loaded Outland rules; no game requests or battles.
+    Object.defineProperty(window, 'interfaceOutlandData', {
+        configurable: true,
+        value: () => ({
+            ready: theGame.lib != null,
+            libraryKeys: Object.keys(theGame.lib ?? {}),
+            bossTables: Object.fromEntries(Object.entries(theGame.lib ?? {})
+                .filter(([name]) => /boss/i.test(name))),
+            heroes: theGame.lib?.hero,
+            relatedClasses: Object.keys(theGame.registry ?? {})
+                .filter(name => /boss|teamgather/i.test(name))
+        })
+    });
     theGame.libraryReady = new Promise(resolve => { theGame.resolveLibrary = resolve; });
     theGame.setFunction('GameModel', GameModel => {
         const hook = () => {
@@ -1703,7 +1716,8 @@
         const settings = automation.settings(section);
         const inputs = {};
         for (const name of Object.keys(automation.definitions[section].fields))
-            inputs[name] = settingInput(I18N(`SCRIPT_OPTION_${name.toUpperCase()}`), 'checkbox', settings[name] === true);
+            inputs[name] = settingInput(I18N(section === 'BOSS' && name === 'battles'
+                ? 'SCRIPT_OPTION_OUTLANDBATTLES' : `SCRIPT_OPTION_${name.toUpperCase()}`), 'checkbox', settings[name] === true);
         savePanel = () => {
             automation.save(section, Object.fromEntries(Object.entries(inputs).map(([name, input]) => [name, input.checked])));
             showSection('scripts');

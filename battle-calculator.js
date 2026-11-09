@@ -4,10 +4,14 @@ class InterfaceBattleCalculator {
         this.game = game;
     }
 
-    assertAvailable() {
+    assertAvailable(config) {
         const game = this.game.classes;
         for (const name of ['BattlePresets', 'BattleConfigStorage', 'DataStorage', 'BattleInstantPlay', 'MultiBattleResult', 'BattleLogEncoder', 'BattleLogReader']) {
             if (!game[name]) throw new Error('SCRIPT_BATTLE_UNAVAILABLE');
+        }
+        if (config) {
+            const getter = this.property(game.BattleConfigStorage, config);
+            if (typeof game.BattleConfigStorage.prototype[getter] !== 'function') throw new Error('SCRIPT_BATTLE_UNAVAILABLE');
         }
     }
 
