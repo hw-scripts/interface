@@ -50,7 +50,7 @@ class InterfaceAutopilot {
         const info = { ...this.userInfo(), ...this.automation.userInfo };
         const boundaries = [info.nextDayTs, info.nextServerDayTs]
             .map(value => Number(value) * 1000).filter(time => time > now);
-        const daily = ['DAILY_BONUS', 'TOWER', 'BOSS'].includes(section);
+        const daily = ['DAILY_BONUS', 'TOWER', 'BOSS', 'CLAN_DUNGEON'].includes(section);
         if (!daily || !boundaries.length) boundaries.push(now + this.interval(section));
         boundaries.push(...(this.automation.lastResult?.boundaries ?? []).filter(time => time > now));
         this.state.completed[section] = { settings,

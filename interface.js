@@ -518,6 +518,24 @@
     //#endregion
     const ajax = new AJAX();
     const gameApi = new InterfaceGameApi(ajax.original);
+    // Explicit read-only export for inspecting current pet eligibility rules.
+    Object.defineProperty(window, 'interfacePetData', {
+        configurable: true,
+        value: async () => {
+            if (!theGame.lib || !gameApi.headers) throw new Error('Game data is not ready; wait for the game to load.');
+            const library = theGame.lib;
+            return {
+                pets: await gameApi.call('pet_getAll'),
+                petLibrary: library.pet,
+                relatedTables: Object.fromEntries(Object.entries(library)
+                    .filter(([name]) => /pet|favor|patron/i.test(name))),
+                relatedRules: Object.fromEntries(Object.entries(library.rule ?? {})
+                    .filter(([name, rule]) => /pet|favor|patron/i.test(name + ' ' + JSON.stringify(rule)))),
+                relatedClasses: Object.keys(theGame.registry ?? {})
+                    .filter(name => /pet|favor|patron/i.test(name))
+            };
+        }
+    });
     ajax.gameApi = gameApi;
     phase('AJAX hooks installed');
 
@@ -1642,6 +1660,21 @@
     let sequenceRunning = false;
     let sequenceView = false;
     let pilot;
+    const syncOverlay = document.querySelector('.sidebar__overlay');
+    const reloadNotice = document.createElement('button');
+    reloadNotice.type = 'button';
+    reloadNotice.textContent = I18N('SCRIPT_RELOAD_REQUIRED');
+    reloadNotice.style.cssText = 'position:absolute;bottom:24px;left:24px;padding:16px;background:#fff8d6;color:#49270e;border:2px solid #c89445;border-radius:8px;font-size:16px;cursor:pointer;';
+    reloadNotice.hidden = true;
+    reloadNotice.addEventListener('click', event => {
+        event.stopPropagation();
+        location.reload();
+    });
+    syncOverlay?.append(reloadNotice);
+    automation.onRequiresReload = () => {
+        syncOverlay?.classList.add('sidebar__overlay_show');
+        reloadNotice.hidden = false;
+    };
     const returnToMenu = () => {
         panel.hidden = true;
         mainMenu.hidden = false;
@@ -1654,7 +1687,7 @@
     const closeMenu = () => {
         returnToMenu();
         interfaceSidebar.classList.remove('sidebar_open');
-        document.querySelector('.sidebar__overlay')?.classList.remove('sidebar__overlay_show');
+        if (!automation.requiresReload) syncOverlay?.classList.remove('sidebar__overlay_show');
     };
     const openPanel = (title, scripts = false) => {
         mainMenu.hidden = true;
@@ -1715,11 +1748,20 @@
         openPanel(`${I18N(`NAV_${section}`)} — ${I18N('SCRIPT_CONFIGURE')}`, true);
         const settings = automation.settings(section);
         const inputs = {};
-        for (const name of Object.keys(automation.definitions[section].fields))
+        for (const [name, initial] of Object.entries(automation.definitions[section].fields))
             inputs[name] = settingInput(I18N(section === 'BOSS' && name === 'battles'
-                ? 'SCRIPT_OPTION_OUTLANDBATTLES' : `SCRIPT_OPTION_${name.toUpperCase()}`), 'checkbox', settings[name] === true);
+                ? 'SCRIPT_OPTION_OUTLANDBATTLES' : `SCRIPT_OPTION_${name.toUpperCase()}`),
+                typeof initial === 'number' ? 'number' : 'checkbox', typeof initial === 'number' ? settings[name] : settings[name] === true, section === 'HERO_UPGRADE' ? 0 : 1);
+        if (section === 'HERO_UPGRADE') {
+            const note = document.createElement('p');
+            note.textContent = I18N('SCRIPT_UPGRADE_STAGE');
+            panelBody.append(note);
+        }
         savePanel = () => {
-            automation.save(section, Object.fromEntries(Object.entries(inputs).map(([name, input]) => [name, input.checked])));
+            if (section === 'HERO_UPGRADE' && Object.values(inputs).some(input =>
+                !Number.isSafeInteger(Number(input.value)) || Number(input.value) < 0)) return;
+            automation.save(section, Object.fromEntries(Object.entries(inputs).map(([name, input]) =>
+                [name, input.type === 'number' ? Number(input.value) : input.checked])));
             showSection('scripts');
         };
         cancelPanel = () => showSection('scripts');
@@ -1797,6 +1839,11 @@
             const limit = settingInput(I18N('MESSAGE_LIMIT'), 'number', currentLog.limit, 1);
             const autoEnabled = settingInput(I18N('AUTOPILOT_ENABLED'), 'checkbox', pilot.options.enabled);
             const idle = settingInput(I18N('AUTOPILOT_IDLE_MINUTES'), 'number', pilot.options.idleMinutes, 5);
+            const battles = document.createElement('h3');
+            battles.textContent = I18N('SETTINGS_BATTLES');
+            panelBody.append(battles);
+            const dungeonAvoidDeaths = settingInput(I18N('SETTING_DUNGEON_AVOID_DEATHS'), 'checkbox',
+                automation.settings('CLAN_DUNGEON').avoidDeaths);
             savePanel = () => {
                 valkyriesBlessing = blessing.checked;
                 userStorage.set('valkyriesBlessing', String(valkyriesBlessing));
@@ -1804,6 +1851,7 @@
                 userStorage.set('messageTTL', String(messageLog.ttl));
                 currentLog.setLimit(limit.value);
                 userStorage.set('messageLimit', String(currentLog.limit));
+                userStorage.set('battle:dungeonAvoidDeaths', String(dungeonAvoidDeaths.checked));
                 pilot.configure({ ...pilot.options, enabled: autoEnabled.checked, idleMinutes: Number(idle.value) });
                 returnToMenu();
             };
@@ -1913,7 +1961,7 @@
                         navigateToGameSection(section);
                         closeMenu();
                         interfaceSidebar.classList.remove('sidebar_open');
-                        document.querySelector('.sidebar__overlay')?.classList.remove('sidebar__overlay_show');
+                        if (!automation.requiresReload) syncOverlay?.classList.remove('sidebar__overlay_show');
                     } catch (error) {
                         console.error('Unable to open game section:', section, error);
                         button.textContent = `${I18N(`NAV_${section}`)} — ${I18N('NAV_UNAVAILABLE')}`;

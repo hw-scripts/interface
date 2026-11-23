@@ -3,6 +3,8 @@
 <title>Interface automation tests</title>
 <pre id="result">RUNNING</pre>
 <script src="../battle-calculator.js"></script>
+<script src="../dungeon.js"></script>
+<script src="../hero-upgrade.js"></script>
 <script src="../automation.js"></script>
 <script src="../autopilot.js"></script>
 <script>
@@ -26,8 +28,32 @@
         } };
         return { engine: new InterfaceAutomation(game, api, storage), calls, storage };
     };
+    await test('canvas lock starts before mutations, survives failures and ignores reads', async () => {
+        const { engine } = fixture({ mailFarm: () => { throw new Error('lost response'); } });
+        let locked = false;
+        engine.onRequiresReload = () => { locked = true; };
+        await engine.api.call('mailGetAll');
+        assert(!locked && !engine.requiresReload);
+        for (const name of ['expeditionFarm', 'expeditionSendHeroes', 'artifactChestOpen']) {
+            await engine.api.call(name);
+            assert(!locked && !engine.requiresReload, `${name} must not lock synchronized canvas`);
+        }
+        try { await engine.api.call('mailFarm', { letterIds: [1] }); } catch {}
+        assert(locked && engine.requiresReload);
+        await engine.api.call('userGetInfo');
+        assert(engine.requiresReload);
+        await engine.api.call('expeditionFarm');
+        assert(engine.requiresReload, 'synchronized actions must not clear an existing lock');
+        const shop = fixture().engine;
+        await shop.api.call('shopBuy');
+        assert(shop.requiresReload, 'shop changes require synchronization');
+        const stopped = fixture().engine;
+        stopped.running = { stopped: true };
+        try { await stopped.api.call('mailFarm'); } catch {}
+        assert(!stopped.requiresReload);
+    });
     await test('syntax of interface and automation', async () => {
-        for (const file of ['../interface.js', '../automation.js', '../autopilot.js', '../battle-calculator.js']) {
+        for (const file of ['../interface.js', '../automation.js', '../autopilot.js', '../battle-calculator.js', '../dungeon.js']) {
             const response = await fetch(file);
             new Function(await response.text());
         }
@@ -365,8 +391,10 @@
         const main = manifest.content_scripts.find(item => item.world === 'MAIN');
         assert(main.js.indexOf('automation.js') >= 0 && main.js.indexOf('automation.js') < main.js.indexOf('interface.js'));
         assert(main.js.indexOf('battle-calculator.js') >= 0 && main.js.indexOf('battle-calculator.js') < main.js.indexOf('automation.js'));
+        assert(main.js.indexOf('dungeon.js') >= 0 && main.js.indexOf('dungeon.js') < main.js.indexOf('automation.js'));
         assert(main.js.indexOf('autopilot.js') > main.js.indexOf('automation.js') && main.js.indexOf('autopilot.js') < main.js.indexOf('interface.js'));
-        const source = await (await fetch('../automation.js')).text() + await (await fetch('../battle-calculator.js')).text();
+        const source = await (await fetch('../automation.js')).text() + await (await fetch('../battle-calculator.js')).text()
+            + await (await fetch('../dungeon.js')).text();
         const keys = [...new Set(source.match(/SCRIPT_[A-Z_]+/g))];
         const { engine } = fixture();
         for (const language of ['uk', 'en', 'ru']) {
@@ -433,10 +461,13 @@
             bossGetAll: () => ({ bosses: ++reads === 1
                 ? [{ id: 10, mayRaid: false, chestId: 2 }, { id: 11, mayRaid: true, chestId: 2 }, { id: 12, mayRaid: false, chestId: 2 }]
                 : [{ id: 10, mayRaid: false, chestId: 1 }, { id: 11, mayRaid: true, chestId: 2 }, { id: 12, mayRaid: false, chestId: 2 }] }),
+            pet_getAll: [6001, 6006].map(id => ({ id, color: 4, level: 1, star: 1 })),
             teamGetAll: { boss_10: [10, 58, 66, 12, 4, 6006] },
             teamGetFavor: { boss_10: { 4: 6001, 10: 6006, 99: 6002 } },
             bossAttack: { type: 'boss_10', seed: 42 }, bossEndBattle: null
-        });
+        }, { lib: { rule: { petFavorUnlockColor: '4' }, pet: {
+            6001: { favorHeroes: [4] }, 6006: { favorHeroes: [10] }
+        } } });
         const result = { win: true, stars: 3 };
         const progress = [{ seed: 42 }];
         engine.battleCalculator = { assertAvailable: config => equal(config, 'get_boss'),
@@ -448,12 +479,44 @@
         engine.save('BOSS', { battles: true, autoTeam: false });
         const reports = [];
         await engine.run('BOSS', (...args) => reports.push(args));
-        equal(calls.map(call => call.name), ['bossGetAll', 'teamGetAll', 'teamGetFavor', 'bossAttack',
+        equal(calls.map(call => call.name), ['bossGetAll', 'teamGetAll', 'teamGetFavor', 'pet_getAll', 'bossAttack',
             'bossEndBattle', 'bossGetAll', 'bossOpenChest', 'bossRaid', 'bossOpenChest']);
-        equal(calls[3].args, { bossId: 10, heroes: [10, 58, 66, 12, 4], favor: { 4: 6001, 10: 6006 }, pet: 6006 });
-        equal(calls[4].args, { result, progress });
+        equal(calls[4].args, { bossId: 10, heroes: [10, 58, 66, 12, 4], favor: { 4: 6001, 10: 6006 }, pet: 6006 });
+        equal(calls[5].args, { result, progress });
         assert(reports.some(([key, id]) => key === 'SCRIPT_BOSS_NO_TEAM' && id === 12));
         assert(reports.some(([key]) => key === 'SCRIPT_BOSS_WON'));
+    });
+    await test('patron eligibility uses owned pet rank, valid level/stars and library compatibility', async () => {
+        const { engine } = fixture({}, { lib: { rule: { petFavorUnlockColor: '4' },
+            pet: { 6006: { favorHeroes: [1, 4] } } } });
+        const pet = { id: 6006, color: 4, level: 1, star: 1 };
+        assert(engine.canPatron(pet, 1), 'blue pet need not be violet or high level');
+        assert(!engine.canPatron(pet, 2), 'incompatible hero');
+        assert(!engine.canPatron(undefined, 1), 'unowned pet');
+        for (const invalid of [{ color: 3 }, { level: 0 }, { star: 0 }, { id: 6000 }])
+            assert(!engine.canPatron({ ...pet, ...invalid }, 1));
+        delete engine.game.lib.rule.petFavorUnlockColor;
+        assert(!engine.canPatron(pet, 1), 'unknown rules must not allow patronage');
+    });
+    await test('outland filters ineligible patrons before starting battle without retry', async () => {
+        const f = fixture({
+            bossGetAll: { bosses: [{ id: 10, mayRaid: false }] },
+            teamGetAll: { boss_10: [1, 2, 3, 4, 6006] },
+            teamGetFavor: { boss_10: { 1: 6000, 2: 6001, 3: 6002, 4: 6006 } },
+            pet_getAll: [{ id: 6000, color: 2, level: 64, star: 3 },
+                { id: 6001, color: 4, level: 50, star: 2 },
+                { id: 6006, color: 8, level: 107, star: 2 }],
+            bossAttack: args => { equal(args.favor, { 4: 6006 }); return {}; }, bossEndBattle: {}
+        }, { lib: { rule: { petFavorUnlockColor: '4' }, pet: {
+            6000: { favorHeroes: [1] }, 6001: { favorHeroes: [1] },
+            6002: { favorHeroes: [3] }, 6006: { favorHeroes: [4] }
+        } } });
+        f.engine.save('BOSS', { battles: true, autoTeam: false, raid: false, openChests: false });
+        f.engine.battleCalculator = { assertAvailable() {}, calculate: async () => ({
+            result: { win: true }, progress: [{}], waitSeconds: 0
+        }) };
+        await f.engine.run('BOSS', () => {});
+        equal(f.calls.filter(c => c.name === 'bossAttack').length, 1);
     });
     await test('outland submits genuine losses and stops before ending a battle when player returns', async () => {
         for (const stop of [false, true]) {
@@ -486,6 +549,7 @@
     await test('outland automatic team uses only owned recommended heroes ranked by power and unique known patrons', async () => {
         const { engine, calls } = fixture({
             bossGetAll: { bosses: [{ id: 10, mayRaid: false, chestId: 2 }] },
+            pet_getAll: [6001, 6002, 6003, 6004, 6005, 6006].map(id => ({ id, color: 4, level: 1, star: 1 })),
             teamGetAll: { boss_10: [6, 6006] },
             teamGetFavor: { boss_10: { 1: 6001, 2: 6002 }, tower: { 3: 6002, 4: 6004 }, mission: { 3: 6003, 5: 6005 } },
             heroGetAll: {
@@ -493,7 +557,9 @@
                 4: { id: 4, power: 700 }, 5: { id: 5, power: 600 }, 6: { id: 6, power: 0 },
                 7: { id: 7, power: 99999 }
             }, bossAttack: { seed: 42 }, bossEndBattle: null
-        }, { lib: { boss: { list: { 10: { recommendedHeroes: [1, 2, 3, 4, 5, 6, 8] } } } } });
+        }, { lib: { rule: { petFavorUnlockColor: '4' }, pet: Object.fromEntries(
+            [6001, 6002, 6003, 6004, 6005].map(id => [id, { favorHeroes: [id - 6000] }])),
+            boss: { list: { 10: { recommendedHeroes: [1, 2, 3, 4, 5, 6, 8] } } } } });
         engine.battleCalculator = { assertAvailable() {},
             calculate: async () => ({ result: { win: true, stars: 3 }, progress: [{ seed: 42 }], waitSeconds: 0 }) };
         engine.save('BOSS', { battles: true, raid: false, openChests: false });
@@ -649,6 +715,143 @@
         assert(complete);
         equal(calls.find(call => call.name === 'towerEndBattle').args.progress, ['calculated']);
     });
+    const dungeonFixture = (extra = {}, choices = { 5: { attackerType: 'water' } }) => {
+        const floor = { floorNumber: 1, floorType: 'battle', floor: { state: 1, userData: choices },
+            states: { titans: { 4001: { isDead: true } } } };
+        const f = fixture({ dungeonGetInfo: floor,
+            teamGetAll: { dungeon_hero: [1, 2, 6001] }, teamGetFavor: { dungeon_hero: { 1: 6002 } },
+            clanGetInfo: { stat: { todayDungeonActivity: 140 } },
+            titanGetAll: { 4000: { id: 4000, power: 100 }, 4001: { id: 4001, power: 1000 },
+                4010: { id: 4010, power: 200 }, 4020: { id: 4020, power: 300 } },
+            inventoryGet: { consumable: { 81: 1 } },
+            dungeonStartBattle: args => ({ type: args.heroes[0] < 4000 ? 'clan_dungeon' : 'dungeon_titan',
+                attackers: Object.fromEntries(args.heroes.map(id => [id, { hp: 100, state: { hp: 50, energy: 0 } }])), door: args.teamNum }),
+            dungeonEndBattle: { dungeon: { ...floor, floorNumber: 2 }, reward: { dungeonActivity: 10 } },
+            ...extra });
+        f.engine.battleCalculator = { assertAvailable() {}, calculate: async (data, config) => {
+            equal(data.progress, [{ attackers: { input: ['auto', 0, 0, 'auto', 0, 0] } }]);
+            equal(config, data.type === 'dungeon_titan' ? 'get_titan' : 'get_tower');
+            return { result: { win: true, stars: 3 }, waitSeconds: 0,
+                progress: [{ attackers: { heroes: Object.fromEntries(Object.keys(data.attackers).map(id =>
+                    [id, { hp: data.type === 'dungeon_titan' ? 80 : 60, energy: 0, isDead: false }])) } }] };
+        } };
+        return { ...f, floor };
+    };
+    await test('dungeon excludes dead titans, preserves door keys, does not spend cards and stops at daily target', async () => {
+        const { engine, calls } = dungeonFixture();
+        await engine.run('CLAN_DUNGEON', () => {});
+        equal(calls.find(call => call.name === 'dungeonStartBattle').args, { heroes: [4000], favor: {}, teamNum: '5' });
+        const ends = calls.filter(call => call.name === 'dungeonEndBattle');
+        equal(ends.length, 1);
+        assert(!('isRaid' in ends[0].args));
+        equal(engine.lastResult.completed, true);
+    });
+    await test('dungeon collects available oracle card rewards before entering', async () => {
+        let farmed = false;
+        const { engine, calls } = dungeonFixture({
+            mailGetAll: { letters: { 1: { id: 1, reward: { consumable: { 81: 2 } } },
+                2: { id: 2, reward: { consumable: { 80: 1 } } } } },
+            questGetAll: () => farmed ? [] : [{ id: 12, state: 2, reward: { consumable: { 81: 1 } } },
+                { id: 13, state: 2, reward: { consumable: { 80: 1 } } }],
+            questFarm: () => { farmed = true; return {}; }
+        });
+        await engine.run('CLAN_DUNGEON', () => {});
+        equal(calls.filter(call => call.name === 'mailFarm').map(call => call.args), [{ letterIds: [1] }]);
+        equal(calls.filter(call => call.name === 'questFarm').map(call => call.args), [{ questId: 12 }]);
+        assert(calls.findIndex(call => call.name === 'questFarm') < calls.findIndex(call => call.name === 'dungeonGetInfo'));
+    });
+    await test('dungeon compares doors by recovery and reopens the selected door before submitting', async () => {
+        const { engine, calls } = dungeonFixture({}, { 2: { attackerType: 'hero' }, 7: { attackerType: 'water' } });
+        await engine.run('CLAN_DUNGEON', () => {});
+        const starts = calls.filter(call => call.name === 'dungeonStartBattle');
+        equal(starts.map(call => call.args.teamNum), ['2', '7', '7']);
+        equal(starts[0].args, { heroes: [1, 2], favor: { 1: 6002 }, pet: 6001, teamNum: '2' });
+        equal(calls.filter(call => call.name === 'dungeonEndBattle').length, 1);
+    });
+    await test('dungeon saves cleared floors and collects talent without emerald rerolls', async () => {
+        const f = dungeonFixture({ dungeonSaveProgress: { floorNumber: 2, floorType: 'battle',
+            floor: { state: 1, userData: { 5: { attackerType: 'water' } } },
+            talent: { floorRandValue: 2, conditions: { doorsAmount: 3, farmedDoors: {} } }, states: {} } });
+        let ended = false;
+        const original = f.engine.api.call;
+        f.engine.api.call = async (name, args) => {
+            if (name === 'dungeonGetInfo') return { floorNumber: 1, floor: { state: 2 } };
+            if (name === 'dungeonEndBattle') ended = true;
+            return original(name, args);
+        };
+        await f.engine.run('CLAN_DUNGEON', () => {});
+        assert(ended);
+        equal(f.calls.filter(call => call.name === 'dungeonSaveProgress').length, 1);
+        equal(f.calls.find(call => call.name === 'heroTalent_getReward').args, { talentType: 'tmntDungeonTalent', reroll: false });
+        equal(f.calls.filter(call => call.name === 'heroTalent_farmReward').length, 1);
+    });
+    await test('dungeon death protection prevents submitting casualties and can be disabled', async () => {
+        for (const avoidDeaths of [true, false]) {
+            const { engine, calls } = dungeonFixture();
+            engine.save('CLAN_DUNGEON', { avoidDeaths });
+            engine.battleCalculator.calculate = async () => ({ result: { win: true, stars: 1 }, waitSeconds: 0,
+                progress: [{ attackers: { heroes: { 4000: { hp: 0, isDead: true } } } }] });
+            const reports = [];
+            await engine.run('CLAN_DUNGEON', key => reports.push(key));
+            equal(calls.filter(call => call.name === 'dungeonEndBattle').length, avoidDeaths ? 0 : 1);
+            if (avoidDeaths) {
+                assert(reports.includes('SCRIPT_DUNGEON_NO_SAFE_WIN'));
+                assert(!engine.lastResult.completed);
+            }
+        }
+    });
+    await test('dungeon stops during countdown even when prediction cards are available', async () => {
+        const { engine, calls } = dungeonFixture();
+        engine.battleCalculator.calculate = async () => ({ result: { win: true, stars: 3 }, waitSeconds: 10,
+            progress: [{ attackers: { heroes: { 4000: { hp: 100, isDead: false } } } }] });
+        await engine.run('CLAN_DUNGEON', key => { if (key === 'SCRIPT_DUNGEON_WAIT') engine.stop(); });
+        assert(!calls.some(call => call.name === 'dungeonEndBattle'));
+        assert(!engine.lastResult.completed);
+    });
+    await test('tower preserves manual team, replaces casualties and remembers only confirmed wins', async () => {
+        const f = fixture({
+            towerGetInfo: { floorNumber: 1, floorType: 'battle', floor: { state: 1 },
+                states: { heroes: { 6: { hp: 0 } } } },
+            inventoryGet: {},
+            heroGetAll: Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map(id => [id, { id, power: 100 - id }])),
+            teamGetAll: { tower: [2, 3, 4, 5, 7, 6001] }, teamGetFavor: { tower: {} },
+            towerStartBattle: args => structuredClone(args), towerEndBattle: {},
+            towerNextFloor: { floorNumber: 50, floorType: 'chest', floor: { chests: [{ opened: true }] } }
+        });
+        f.engine.save('TOWER', { collectRewards: false });
+        f.engine.battleCalculator = { assertAvailable() {}, calculate: async battle => ({
+            result: { win: true, stars: battle.heroes.includes(7) ? 2 : 3 }, waitSeconds: 0,
+            progress: [{ attackers: { heroes: Object.fromEntries(battle.heroes.map(id => [id, { hp: id === 7 ? 0 : 100 }])) } }]
+        }) };
+        await f.engine.run('TOWER', () => {});
+        equal(f.calls.filter(c => c.name === 'towerStartBattle').map(c => c.args.heroes),
+            [[2, 3, 4, 5, 7], [2, 3, 4, 5, 1]]);
+        equal(JSON.parse(f.storage.get('tower:lastWinningTeam')).heroes, [2, 3, 4, 5, 1]);
+        f.calls.length = 0;
+        await f.engine.run('TOWER', () => {});
+        equal(f.calls.find(c => c.name === 'towerStartBattle').args.heroes, [2, 3, 4, 5, 1]);
+        f.storage.set('tower:lastWinningTeam', JSON.stringify({ heroes: [1], gameSelection: 'old manual selection' }));
+        f.calls.length = 0;
+        await f.engine.run('TOWER', () => {});
+        equal(f.calls.find(c => c.name === 'towerStartBattle').args.heroes, [2, 3, 4, 5, 7]);
+    });
+    await test('tower death protection allows only safe wins unless explicitly disabled', async () => {
+        for (const avoidDeaths of [true, false]) {
+            const { engine, calls } = fixture({
+                towerGetInfo: { floorNumber: 1, floorType: 'battle', floor: { state: 1 }, maySkipFloor: 0 },
+                inventoryGet: { coin: {} }, heroGetAll: { 1: { id: 1, power: 100 } }, teamGetAll: {}, teamGetFavor: {},
+                towerStartBattle: {}, towerEndBattle: {},
+                towerNextFloor: { floorNumber: 50, floorType: 'chest', floor: { chests: [{ opened: true }] } }
+            });
+            engine.save('TOWER', { avoidDeaths, collectRewards: false });
+            engine.battleCalculator = { assertAvailable() {}, calculate: async () => ({
+                result: { win: true, stars: 2 }, progress: [{ attackers: { heroes: { 1: { hp: 0, isDead: true } } } }], waitSeconds: 0 }) };
+            const reports = [];
+            await engine.run('TOWER', key => reports.push(key));
+            equal(calls.filter(call => call.name === 'towerEndBattle').length, avoidDeaths ? 0 : 1);
+            if (avoidDeaths) assert(reports.includes('SCRIPT_TOWER_UNSAFE_BATTLE'));
+        }
+    });
     await test('API error stops automation and releases running state', async () => {
         const { engine, calls } = fixture({ bossGetAll: { bosses: [{ id: 1, mayRaid: true }] }, bossRaid: () => { throw new Error('server refused'); } });
         let rejected = false;
@@ -734,19 +937,27 @@
         equal(storage.get('messageTTL'), null);
         open('settings');
         equal([...numbers()].map(input => input.value), ['0', '20', '5']);
+        const dungeonDeath = [...panel.querySelectorAll('label')].find(label => label.textContent.includes(I18N('SETTING_DUNGEON_AVOID_DEATHS')))?.querySelector('input');
+        assert(dungeonDeath?.checked);
+        dungeonDeath.checked = false;
         numbers()[0].value = '30';
         numbers()[1].value = '2';
         accept();
         equal(storage.get('messageTTL'), '30');
         equal(storage.get('messageLimit'), '2');
+        equal(engine.settings('CLAN_DUNGEON').avoidDeaths, false);
+        open('settings');
+        [...panel.querySelectorAll('label')].find(label => label.textContent.includes(I18N('SETTING_DUNGEON_AVOID_DEATHS'))).querySelector('input').checked = true;
+        accept();
         assert(!main.hidden && panel.hidden);
         open('scripts');
         assert(!log.hidden);
-        equal(panel.querySelectorAll('li').length, 7);
+        equal(panel.querySelectorAll('li').length, Object.keys(engine.definitions).length);
         for (const section of Object.keys(engine.definitions)) {
             const input = panel.querySelector(`[data-sequence-script="${section}"]`);
             assert(input.parentElement.matches('li'), 'Selection must be separate from the navigation button');
             assert(!input.disabled);
+            input.scrollIntoView({ block: 'nearest' });
             const bounds = input.getBoundingClientRect();
             assert(document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2) === input,
                 `${section} checkbox is covered by another element`);
@@ -774,6 +985,18 @@
         panel.querySelector('input').checked = false;
         accept();
         equal(engine.settings('EXPEDITIONS').collect, false);
+        row('CLAN_DUNGEON').querySelector('.interface-script-actions button').click();
+        const titanite = panel.querySelector('input[type="number"]');
+        equal(titanite.value, '150');
+        equal(titanite.min, '1');
+        titanite.value = '0';
+        accept();
+        assert(panel.querySelector('input[type="number"]'), 'Invalid titanite target must not be saved');
+        equal(engine.settings('CLAN_DUNGEON').targetTitanite, 150);
+        titanite.value = '200';
+        accept();
+        equal(engine.settings('CLAN_DUNGEON').targetTitanite, 200);
+        assert(engine.settings('CLAN_DUNGEON').avoidDeaths);
         row('BOSS').querySelector('[data-interface-run]').click();
         await new Promise(resolve => setTimeout(resolve, 0));
         equal(calls.map(call => call.name), ['bossGetAll']);

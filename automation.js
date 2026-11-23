@@ -90,6 +90,18 @@ class InterfaceAutomation {
         this.battleCalculator = battleCalculator;
         this.api = { call: async (name, args) => {
             if (this.running?.stopped) throw new Error('SCRIPT_STOPPED');
+            // Expedition and inventory changes synchronize with the canvas.
+            // Other mutations lock before sending: a lost response can still
+            // follow a successful server change. Keep an existing lock intact.
+            const readOnly = new Set(['userGetInfo', 'expeditionGet', 'dailyBonusGetInfo',
+                'mailGetAll', 'questGetAll', 'battlePass_getInfo', 'battlePass_getSpecial',
+                'bossGetAll', 'heroGetAll', 'pet_getAll', 'teamGetAll', 'teamGetFavor', 'inventoryGet',
+                'towerGetInfo', 'dungeonGetInfo', 'clanGetInfo', 'titanGetAll']);
+            const synchronized = new Set(['expeditionFarm', 'expeditionSendHeroes', 'artifactChestOpen']);
+            if (!readOnly.has(name) && !synchronized.has(name)) {
+                this.requiresReload = true;
+                this.onRequiresReload?.();
+            }
             const response = await api.call(name, args);
             if (name === 'userGetInfo') this.userInfo = response;
             if (name === 'expeditionGet') {
@@ -124,12 +136,21 @@ class InterfaceAutomation {
                 run: (settings, report, token) => this.expeditions(settings, report, token)
             },
             TOWER: {
-                fields: { buyBuffs: true, collectRewards: true, battles: true },
+                fields: { buyBuffs: true, collectRewards: true, battles: true, avoidDeaths: true },
                 run: (settings, report, token) => this.tower(settings, report, token)
             },
             BOSS: {
                 fields: { raid: true, openChests: true, battles: false, autoTeam: true },
                 run: (settings, report, token) => this.outland(settings, report, token)
+            },
+            CLAN_DUNGEON: {
+                fields: { targetTitanite: 150, collectTalent: true },
+                run: (settings, report, token) => new InterfaceDungeon(this.api, this.battleCalculator,
+                    (report, token) => this.collectDungeonCards(report, token)).run(settings, report, token)
+            },
+            HERO_UPGRADE: {
+                fields: { energyBudget: 0, reserveEnergy: 0, reserveGold: 0 },
+                run: (settings, report, token) => new InterfaceHeroUpgrade(this.api).run(settings, report, token)
             },
             RESTART: {
                 fields: {},
@@ -152,7 +173,12 @@ class InterfaceAutomation {
     settings(section) {
         let saved;
         try { saved = JSON.parse(this.storage.get(`script:${section}`)); } catch {}
-        return { enabled: false, ...this.definitions[section].fields, ...saved };
+        const settings = { enabled: false, ...this.definitions[section].fields, ...saved };
+        if (section === 'CLAN_DUNGEON') {
+            const value = this.storage.get('battle:dungeonAvoidDeaths');
+            settings.avoidDeaths = value === null ? saved?.avoidDeaths !== false : value === 'true';
+        }
+        return settings;
     }
 
     save(section, settings) {
@@ -191,7 +217,7 @@ class InterfaceAutomation {
             || (reward.exp || reward.teamExp) && !settings.collectExperience);
     }
 
-    async mail(settings, report, token) {
+    async mail(settings, report, token, rewardFilter = reward => this.rewardAllowed(reward, settings)) {
         const result = await this.api.call('mailGetAll');
         if (token.stopped) return;
         const now = Date.now() / 1000;
@@ -199,7 +225,7 @@ class InterfaceAutomation {
             if (!letter?.reward || !Object.keys(letter.reward).length) return false;
             const expires = Number(letter.availableUntil);
             if (expires && expires <= now) return false;
-            return this.rewardAllowed(letter.reward, settings)
+            return rewardFilter(letter.reward)
                 || settings.collectExpiring && expires > now && expires - now < 86400;
         }).map(letter => Number(letter.id)).filter(Number.isSafeInteger);
         if (!letterIds.length) return 'SCRIPT_NOTHING_TO_COLLECT';
@@ -207,14 +233,14 @@ class InterfaceAutomation {
         report('SCRIPT_MAIL_COLLECTED', letterIds.length);
     }
 
-    async questRewards(settings, report, token) {
+    async questRewards(settings, report, token, rewardFilter = reward => this.rewardAllowed(reward, settings)) {
         const collected = new Set();
         let passes;
         do {
             const quests = await this.api.call('questGetAll');
             if (token.stopped) return;
             const ready = Object.values(quests ?? {}).filter(quest => quest.state == 2
-                && !collected.has(Number(quest.id)) && this.rewardAllowed(quest.reward, settings));
+                && !collected.has(Number(quest.id)) && rewardFilter(quest.reward));
             const eligible = [];
             for (const quest of ready) {
                 const questId = Number(quest.id);
@@ -254,6 +280,13 @@ class InterfaceAutomation {
             }
         } while (settings.followChains && !token.stopped);
         if (!collected.size) return 'SCRIPT_NOTHING_TO_COLLECT';
+    }
+
+    async collectDungeonCards(report, token) {
+        const hasCards = reward => Number(reward?.consumable?.[81]) > 0;
+        await this.mail({ collectExpiring: false }, report, token, hasCards);
+        if (token.stopped) return;
+        await this.questRewards({ followChains: true }, report, token, hasCards);
     }
 
     async dailyBonus(token) {
@@ -332,12 +365,27 @@ class InterfaceAutomation {
         }
     }
 
+    canPatron(pet, heroId) {
+        const unlockColor = Number(this.game.lib?.rule?.petFavorUnlockColor);
+        const definition = this.game.lib?.pet?.[pet?.id];
+        // Color is the promotion rank. No separate level/star unlock is present
+        // in the captured rules; require a summoned, valid pet, not invented thresholds.
+        return Boolean(pet && Number.isInteger(Number(pet.id))
+            && Number.isInteger(Number(pet.level)) && Number(pet.level) > 0
+            && Number.isInteger(Number(pet.star)) && Number(pet.star) > 0
+            && Number.isFinite(unlockColor) && unlockColor > 0
+            && Number.isInteger(Number(pet.color)) && Number(pet.color) >= unlockColor
+            && Array.isArray(definition?.favorHeroes)
+            && definition.favorHeroes.some(id => Number(id) === Number(heroId)));
+    }
+
     async outland(settings, report, token) {
         let { bosses } = await this.api.call('bossGetAll');
         if (settings.battles && Object.values(bosses).some(boss => !boss.mayRaid)) {
             this.battleCalculator.assertAvailable('get_boss');
             const teams = await this.api.call('teamGetAll');
             const favors = await this.api.call('teamGetFavor');
+            const pets = new Map(Object.values(await this.api.call('pet_getAll') ?? {}).map(pet => [Number(pet.id), pet]));
             const owned = settings.autoTeam ? await this.api.call('heroGetAll') : null;
             for (const boss of Object.values(bosses)) {
                 if (token.stopped) return;
@@ -364,7 +412,7 @@ class InterfaceAutomation {
                 for (const mapping of [favors?.[key], ...(settings.autoTeam ? Object.values(favors ?? {}) : [])]) {
                     for (const hero of heroes) {
                         const patron = Number(mapping?.[hero]);
-                        if (!favor[hero] && Number.isInteger(patron) && patron >= 6000 && !patrons.has(patron)) {
+                        if (!favor[hero] && this.canPatron(pets.get(patron), hero) && !patrons.has(patron)) {
                             favor[hero] = patron;
                             patrons.add(patron);
                         }
@@ -372,7 +420,7 @@ class InterfaceAutomation {
                 }
                 const args = { bossId: boss.id, heroes, favor };
                 const pet = Array.isArray(team) ? team.find(id => Number.isInteger(id) && id >= 6000) : undefined;
-                if (pet != null) args.pet = pet;
+                if (pet != null && pets.has(pet)) args.pet = pet;
                 report('SCRIPT_BOSS_TEAM', `${boss.id}: ${heroes.join(', ')}`);
                 report('SCRIPT_BOSS_ATTACK', boss.id);
                 const started = performance.now();
@@ -428,6 +476,11 @@ class InterfaceAutomation {
             teams = await this.api.call('teamGetAll');
             favors = await this.api.call('teamGetFavor');
         }
+        let savedTeam;
+        try { savedTeam = JSON.parse(this.storage.get('tower:lastWinningTeam')); } catch {}
+        // A changed game selection takes precedence over our last automatic team.
+        const gameSelection = JSON.stringify([teams?.tower, favors?.tower]);
+        let preferred = savedTeam?.gameSelection === gameSelection ? savedTeam.heroes : teams?.tower;
         const update = response => {
             skulls += (response?.reward?.coin?.[7] || 0) + (response?.skullReward?.coin?.[7] || 0);
             info = response?.tower || response;
@@ -468,21 +521,72 @@ class InterfaceAutomation {
                 }
                 if (info.floor.state != 2) {
                     if (!settings.battles) return 'SCRIPT_TOWER_NEEDS_BATTLE';
-                    const selected = heroes.filter(hero => !info.states?.heroes?.[hero.id]?.isDead).slice(0, 5).map(hero => hero.id);
+                    const living = heroes.filter(hero => {
+                        const state = info.states?.heroes?.[hero.id];
+                        return !state?.isDead && !(state?.hp != null && Number(state.hp) <= 0);
+                    });
+                    const available = new Set(living.map(hero => Number(hero.id)));
+                    const selected = [...new Set((preferred || []).map(Number))].filter(id => available.has(id)).slice(0, 5);
+                    // Fill only missing slots; never displace a living member of the chosen team.
+                    for (const hero of living) {
+                        if (selected.length >= 5) break;
+                        if (!selected.includes(Number(hero.id))) selected.push(Number(hero.id));
+                    }
                     if (!selected.length) throw new Error('SCRIPT_TOWER_NO_HEROES');
-                    // Check calculator availability before starting a server-side battle.
                     this.battleCalculator.assertAvailable();
-                    const favor = Object.fromEntries(Object.entries(favors.tower || {}).filter(([hero]) => selected.includes(Number(hero))));
-                    const args = { heroes: selected, favor };
-                    const pet = teams.tower?.filter(id => id >= 6000).pop();
-                    if (pet) args.pet = pet;
-                    const started = performance.now();
-                    const battle = await this.api.call('towerStartBattle', args);
-                    const calculated = await this.battleCalculator.calculate(battle, 'get_tower');
-                    if (calculated.result.stars < 3) throw new Error('SCRIPT_TOWER_BATTLE_LOST');
-                    const remaining = calculated.waitSeconds * 1000 - (performance.now() - started);
-                    if (remaining > 0) await new Promise(resolve => setTimeout(resolve, remaining));
+                    const queue = [selected];
+                    const seen = new Set([selected.slice().sort((a, b) => a - b).join(',')]);
+                    let accepted;
+                    let won = false;
+                    // Bound the search on large rosters. Each attempt is sequential and cancellable.
+                    for (let attempt = 0; attempt < queue.length && attempt < 80; attempt++) {
+                        if (token.stopped) return;
+                        const lineup = queue[attempt];
+                        const favor = Object.fromEntries(Object.entries(favors.tower || {})
+                            .filter(([hero]) => lineup.includes(Number(hero))));
+                        const args = { heroes: lineup, favor };
+                        const pet = teams.tower?.filter(id => id >= 6000).pop();
+                        if (pet) args.pet = pet;
+                        const started = performance.now();
+                        const battle = await this.api.call('towerStartBattle', args);
+                        if (token.stopped) return;
+                        const calculated = await this.battleCalculator.calculate(battle, 'get_tower');
+                        if (token.stopped) return;
+                        const victory = calculated.result.win !== false && Number(calculated.result.stars) > 0;
+                        won ||= victory;
+                        const finalStates = calculated.progress?.[calculated.progress.length - 1]?.attackers?.heroes;
+                        const endangered = finalStates ? lineup.filter(id => !finalStates[id]
+                            || finalStates[id].isDead || Number(finalStates[id].hp) <= 0) : [];
+                        if (victory && (!settings.avoidDeaths || (Number(calculated.result.stars) >= 3 && !endangered.length))) {
+                            accepted = { lineup, calculated, started };
+                            break;
+                        }
+                        if (!settings.avoidDeaths) break;
+                        // Prefer replacing predicted casualties while retaining everyone else.
+                        for (const id of endangered.length ? endangered : lineup) {
+                            for (const hero of living) {
+                                const replacement = Number(hero.id);
+                                if (lineup.includes(replacement)) continue;
+                                const candidate = lineup.map(member => member === id ? replacement : member);
+                                const key = candidate.slice().sort((a, b) => a - b).join(',');
+                                if (seen.has(key)) continue;
+                                seen.add(key);
+                                queue.push(candidate);
+                            }
+                        }
+                    }
+                    if (!accepted) {
+                        if (!won) throw new Error('SCRIPT_TOWER_BATTLE_LOST');
+                        return 'SCRIPT_TOWER_UNSAFE_BATTLE';
+                    }
+                    const { lineup, calculated, started } = accepted;
+                    const end = started + calculated.waitSeconds * 1000;
+                    while (!token.stopped && performance.now() < end)
+                        await new Promise(resolve => setTimeout(resolve, Math.min(250, end - performance.now())));
+                    if (token.stopped) return;
                     const result = await this.api.call('towerEndBattle', { result: calculated.result, progress: calculated.progress });
+                    preferred = lineup;
+                    this.storage.set('tower:lastWinningTeam', JSON.stringify({ heroes: lineup, gameSelection }));
                     skulls += result?.reward?.coin?.[7] || 0;
                 }
             } else throw new Error('SCRIPT_TOWER_UNKNOWN_FLOOR');

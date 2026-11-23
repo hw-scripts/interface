@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Interface",
-  "version": "3.3.6",
+  "version": "3.3.11",
   "description": "Extension interface testing",
   "author": "Miish",
   "homepage_url": "https://github.com/hw-scripts/interface",
@@ -15,6 +15,8 @@
       ],
       "js": [
         "battle-calculator.js",
+        "dungeon.js",
+        "hero-upgrade.js",
         "automation.js",
         "autopilot.js",
         "interface.js"
