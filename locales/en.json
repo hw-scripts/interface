@@ -602,5 +602,11 @@
     "SCRIPT_UPGRADE_HERO_COUNT": "Heroes loaded",
     "SCRIPT_UPGRADE_NEEDS_QUEUE": "Configure the hero queue; upgrades are not connected yet",
     "SCRIPT_UPGRADE_INVALID_LIMIT": "Limits must be non-negative integers",
-    "SCRIPT_UPGRADE_NO_DATA": "Could not load hero or account data"
+    "SCRIPT_UPGRADE_NO_DATA": "Could not load hero or account data",
+    "NAV_ITEM_EXCHANGE": "Exchange items",
+    "SCRIPT_OPTION_TARGETACTIVITY": "Target activity",
+    "SCRIPT_OPTION_ITEMRESERVES": "Reserve per item: gray / green / blue / violet / orange / red / brown",
+    "SCRIPT_EXCHANGE_PROGRESS": "Activity received",
+    "SCRIPT_EXCHANGE_COUNTER": "Item activity counter did not advance",
+    "SCRIPT_EXCHANGE_INVALID_RESERVES": "Enter seven non-negative reserves separated by non-numeric characters"
 }

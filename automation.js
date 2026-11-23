@@ -1,3 +1,102 @@
+	function exchangeColorGroup(item, colorDefinitions) {
+		const tier = [item?.color, item?.tier, item?.heroColor]
+			.map(Number).find(value => Number.isInteger(value) && value > 0);
+		if (!tier || !colorDefinitions?.[tier]) return null;
+		const ident = String(colorDefinitions[tier].ident ?? '').toLowerCase();
+		const names = ['white', 'green', 'blue', 'violet', 'orange', 'red', 'brown'];
+		const index = names.findIndex(name => ident.includes(name) || (name === 'white' && /gray|grey/.test(ident)) || (name === 'violet' && ident.includes('purple')));
+		return index < 0 ? null : index;
+	}
+
+	function calculateHeroEquipmentProtection(heroes, heroLibrary, items, inventory) {
+		if (!heroes || typeof heroes !== 'object' || !heroLibrary || !items) throw new Error('Missing hero or equipment data');
+		const demand = new Map();
+		const ownedHeroes = Object.values(heroes).filter(hero => hero && Number(hero.id) > 0 && Number(hero.id) < 6000);
+		if (!ownedHeroes.length) throw new Error('No owned heroes available for equipment calculation');
+		if (ownedHeroes.some(hero => hero.power == null || !Number.isFinite(Number(hero.power)))) {
+			throw new Error('Missing hero power for equipment calculation');
+		}
+		ownedHeroes.sort((a, b) => Number(b.power) - Number(a.power) || Number(a.id) - Number(b.id));
+		for (const hero of ownedHeroes.slice(0, 15)) {
+			const current = Number(hero.color);
+			const tiers = heroLibrary[hero.id]?.color;
+			if (!Number.isInteger(current) || !tiers || !tiers[current]) throw new Error(`Missing equipment tiers for hero ${hero.id}`);
+			for (const [tierId, tier] of Object.entries(tiers)) {
+				const level = Number(tierId);
+				if (!Number.isInteger(level) || level < current) continue;
+				if (!tier?.items || typeof tier.items !== 'object') throw new Error(`Missing equipment slots for hero ${hero.id}, tier ${tierId}`);
+				for (const [slotId, itemId] of Object.entries(tier.items)) {
+					if (level === current && Object.prototype.hasOwnProperty.call(hero.slots ?? {}, slotId)) continue;
+					if (!(Number(itemId) > 0)) continue;
+					const key = `gear:${itemId}`;
+					demand.set(key, (demand.get(key) || 0) + 1);
+				}
+			}
+		}
+		const protectedItems = {};
+		function reserve(type, id, amount, parents = new Set()) {
+			const key = `${type}:${id}`;
+			if (parents.has(key)) throw new Error(`Circular equipment recipe: ${key}`);
+			if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error(`Invalid equipment demand: ${key}`);
+			const available = Math.max(0, (Number(inventory[type]?.[id]) || 0) - (protectedItems[type]?.[id] || 0));
+			const used = Math.min(available, amount);
+			if (used) {
+				protectedItems[type] ??= {};
+				protectedItems[type][id] = (protectedItems[type][id] || 0) + used;
+			}
+			const missing = amount - used;
+			if (!missing || type === 'fragmentGear' || type === 'fragmentScroll') return;
+			if (type !== 'gear' && type !== 'scroll') throw new Error(`Unknown equipment component: ${key}`);
+			const item = items[type]?.[id];
+			if (!item) throw new Error(`Missing equipment definition: ${key}`);
+			const next = new Set(parents).add(key);
+			const recipe = item.craftRecipe;
+			const components = Object.entries(recipe ?? {}).filter(([componentType]) => componentType !== 'gold');
+			if (components.length) {
+				for (const [componentType, entries] of components) {
+					if (!entries || typeof entries !== 'object') throw new Error(`Invalid equipment recipe: ${key}`);
+					for (const [componentId, quantity] of Object.entries(entries)) reserve(componentType, componentId, missing * Number(quantity), next);
+				}
+			} else if (item.fragmentMergeCost?.fragmentCount != null) {
+				const fragments = Number(item.fragmentMergeCost.fragmentCount);
+				if (!Number.isSafeInteger(fragments) || fragments <= 0) throw new Error(`Invalid fragment recipe: ${key}`);
+				reserve(type === 'gear' ? 'fragmentGear' : 'fragmentScroll', id, missing * fragments, next);
+			}
+		}
+		for (const [key, count] of demand) reserve('gear', key.slice(5), count);
+		return protectedItems;
+	}
+
+	function planActivityExchange(inventory, items, colors, reserves, target, maxActivity, protectedItems = {}) {
+		const candidates = [];
+		for (const type of ['gear', 'scroll']) {
+			for (const [inventoryType, valueKey] of [[type, 'enchantValue'], [type === 'gear' ? 'fragmentGear' : 'fragmentScroll', 'fragmentEnchantValue']]) {
+				for (const [id, count] of Object.entries(inventory[inventoryType] ?? {})) {
+					const item = items[type]?.[id];
+					const group = exchangeColorGroup(item, colors);
+					const value = Number(item?.[valueKey]);
+					const available = Math.max(0, Math.floor(Number(count)) - (protectedItems[inventoryType]?.[id] || 0) - (reserves[group] ?? Infinity));
+					if (group === null || !Number.isFinite(value) || value <= 0 || !Number.isSafeInteger(available) || !available) continue;
+					candidates.push({ id, type: inventoryType, group, value, available });
+				}
+			}
+		}
+		candidates.sort((a, b) => a.group - b.group || b.available - a.available || a.type.localeCompare(b.type) || Number(a.id) - Number(b.id));
+		const selected = {};
+		let activity = 0;
+		for (const item of candidates) {
+			if (activity >= target) break;
+			const desired = Math.ceil((target - activity) / item.value);
+			const allowed = Math.floor((maxActivity - activity) / item.value);
+			const amount = Math.min(item.available, desired, allowed);
+			if (amount <= 0) continue;
+			(selected[item.type] ??= {})[item.id] = amount;
+			activity += amount * item.value;
+		}
+		return { items: selected, activity, eligibleCount: candidates.length,
+			minItemValue: candidates.length ? Math.min(...candidates.map(item => item.value)) : null };
+	}
+
 // Game request signing and automation adapted from ignored/HWrunner.js.
 class InterfaceGameApi {
     constructor(original) {
@@ -96,7 +195,7 @@ class InterfaceAutomation {
             const readOnly = new Set(['userGetInfo', 'expeditionGet', 'dailyBonusGetInfo',
                 'mailGetAll', 'questGetAll', 'battlePass_getInfo', 'battlePass_getSpecial',
                 'bossGetAll', 'heroGetAll', 'pet_getAll', 'teamGetAll', 'teamGetFavor', 'inventoryGet',
-                'towerGetInfo', 'dungeonGetInfo', 'clanGetInfo', 'titanGetAll']);
+                'towerGetInfo', 'dungeonGetInfo', 'clanGetInfo', 'titanGetAll', 'specialOffer_getAll']);
             const synchronized = new Set(['expeditionFarm', 'expeditionSendHeroes', 'artifactChestOpen']);
             if (!readOnly.has(name) && !synchronized.has(name)) {
                 this.requiresReload = true;
@@ -120,15 +219,11 @@ class InterfaceAutomation {
                 run: (settings, report, token) => this.dailyBonus(token)
             },
             QUEST_REWARDS: {
-                fields: { collectStamina: false, collectPortals: false, collectBuffs: false,
-                    collectVipPoints: false, collectHeroSouls: false, collectHeroes: false,
-                    collectExperience: true, followChains: true },
-                run: (settings, report, token) => this.questRewards(settings, report, token)
+                fields: {},
+                run: (settings, report, token) => this.allRewards(report, token)
             },
             MAIL: {
-                fields: { collectStamina: false, collectPortals: false, collectBuffs: false,
-                    collectVipPoints: false, collectHeroSouls: false, collectHeroes: false,
-                    collectExperience: true, collectExpiring: true },
+                fields: {},
                 run: (settings, report, token) => this.mail(settings, report, token)
             },
             EXPEDITIONS: {
@@ -147,6 +242,10 @@ class InterfaceAutomation {
                 fields: { targetTitanite: 150, collectTalent: true },
                 run: (settings, report, token) => new InterfaceDungeon(this.api, this.battleCalculator,
                     (report, token) => this.collectDungeonCards(report, token)).run(settings, report, token)
+            },
+            ITEM_EXCHANGE: {
+                fields: { targetActivity: 2000, itemReserves: '200/200/200/200/200/200/200' },
+                run: (settings, report, token) => this.exchangeItems(settings, report, token)
             },
             HERO_UPGRADE: {
                 fields: { energyBudget: 0, reserveEnergy: 0, reserveGold: 0 },
@@ -217,7 +316,7 @@ class InterfaceAutomation {
             || (reward.exp || reward.teamExp) && !settings.collectExperience);
     }
 
-    async mail(settings, report, token, rewardFilter = reward => this.rewardAllowed(reward, settings)) {
+    async mail(settings, report, token, rewardFilter = reward => Boolean(reward && Object.keys(reward).length), collected = new Set()) {
         const result = await this.api.call('mailGetAll');
         if (token.stopped) return;
         const now = Date.now() / 1000;
@@ -227,24 +326,24 @@ class InterfaceAutomation {
             if (expires && expires <= now) return false;
             return rewardFilter(letter.reward)
                 || settings.collectExpiring && expires > now && expires - now < 86400;
-        }).map(letter => Number(letter.id)).filter(Number.isSafeInteger);
+        }).map(letter => Number(letter.id)).filter(id => Number.isSafeInteger(id) && !collected.has(id));
         if (!letterIds.length) return 'SCRIPT_NOTHING_TO_COLLECT';
         await this.api.call('mailFarm', { letterIds });
+        letterIds.forEach(id => collected.add(id));
         report('SCRIPT_MAIL_COLLECTED', letterIds.length);
     }
 
-    async questRewards(settings, report, token, rewardFilter = reward => this.rewardAllowed(reward, settings)) {
-        const collected = new Set();
+    async questRewards(settings, report, token, rewardFilter = reward => Boolean(reward && Object.keys(reward).length), collected = new Set()) {
         let passes;
         do {
             const quests = await this.api.call('questGetAll');
             if (token.stopped) return;
             const ready = Object.values(quests ?? {}).filter(quest => quest.state == 2
-                && !collected.has(Number(quest.id)) && rewardFilter(quest.reward));
+                && !collected.has(`${quest.id}:${quest.createTime ?? ''}:${quest.farmCount ?? 0}`) && rewardFilter(quest.reward));
             const eligible = [];
             for (const quest of ready) {
                 const questId = Number(quest.id);
-                if (!Number.isSafeInteger(questId) || questId >= 2001e4 && questId < 14e8) continue;
+                if (!Number.isSafeInteger(questId) || questId >= 20010100 && questId < 14e8) continue;
                 if (quest.reward?.battlePassExp && !this.game.lib?.quest?.special?.[questId]) {
                     const library = this.game.lib;
                     const info = library?.quest?.battlePass?.[questId];
@@ -267,19 +366,69 @@ class InterfaceAutomation {
                         .map(entry => Number(entry.level)));
                     if (chain.requirement?.battlePassLevel && level < chain.requirement.battlePassLevel) continue;
                 }
-                eligible.push(questId);
+                eligible.push(quest);
             }
             if (!eligible.length) break;
-            for (const questId of eligible) {
+            const claimKey = quest => `${quest.id}:${quest.createTime ?? ''}:${quest.farmCount ?? 0}`;
+            const nonClan = eligible.filter(quest => Number(quest.id) < 1e6);
+            if (nonClan.length) {
                 if (token.stopped) return;
-                if (questId >= 2e7 && questId < 14e8)
-                    await this.api.call('quest_questsFarm', { questIds: [questId] });
-                else await this.api.call('questFarm', { questId });
-                collected.add(questId);
+                await this.api.call('quest_farmNonClan', { questIds: nonClan.map(quest => Number(quest.id)) });
+                nonClan.forEach(quest => collected.add(claimKey(quest)));
                 report('SCRIPT_QUESTS_COLLECTED', collected.size);
             }
-        } while (settings.followChains && !token.stopped);
+            for (const quest of eligible.filter(quest => Number(quest.id) >= 1e6)) {
+                if (token.stopped) return;
+                const questId = Number(quest.id);
+                if (questId >= 2e7 && questId < 14e8 && questId !== 20000181)
+                    await this.api.call('quest_questsFarm', { questIds: [questId] });
+                else await this.api.call('questFarm', { questId });
+                collected.add(claimKey(quest));
+                report('SCRIPT_QUESTS_COLLECTED', collected.size);
+            }
+        } while (settings.followChains !== false && !token.stopped);
         if (!collected.size) return 'SCRIPT_NOTHING_TO_COLLECT';
+    }
+
+    async allRewards(report, token) {
+        await this.dailyBonus(token);
+        if (token.stopped) return;
+        const claimedOffers = new Set();
+        const claimedPrestige = new Set();
+        const claimedQuests = new Set();
+        const claimedLetters = new Set();
+        while (!token.stopped) {
+            let advanced = false;
+            try {
+                const result = await this.api.call('clan_prestigeFarmAllRewards');
+                const levels = [...(result?.farmedPrestigeLevels ?? []).map(id => `free:${id}`),
+                    ...(result?.farmedPrestigeLevelsPaid ?? []).map(id => `paid:${id}`)];
+                for (const level of levels) if (!claimedPrestige.has(level)) { claimedPrestige.add(level); advanced = true; }
+            } catch (error) {
+                if (error?.message !== 'Level reward not available') throw error;
+            }
+            if (token.stopped) return;
+            const offers = await this.api.call('specialOffer_getAll');
+            for (const offer of Object.values(offers ?? {})) {
+                if (token.stopped) return;
+                if (offer.offerType !== 'dailyReward' || offer.type !== 'reward' || !offer.reward || claimedOffers.has(String(offer.id))) continue;
+                try {
+                    await this.api.call('specialOffer_farmReward', { offerId: offer.id });
+                    advanced = true;
+                } catch (error) {
+                    if (error?.message !== 'Reward has been farmed') throw error;
+                }
+                claimedOffers.add(String(offer.id));
+            }
+            if (token.stopped) return;
+            const before = claimedQuests.size;
+            await this.questRewards({ followChains: true }, report, token, undefined, claimedQuests);
+            if (token.stopped) return;
+            const mailOutcome = await this.mail({}, report, token, undefined, claimedLetters);
+            if (token.stopped) return;
+            if (claimedQuests.size > before || mailOutcome !== 'SCRIPT_NOTHING_TO_COLLECT') advanced = true;
+            if (!advanced) break;
+        }
     }
 
     async collectDungeonCards(report, token) {
@@ -306,6 +455,42 @@ class InterfaceAutomation {
             vip: availableVip && vipLevel >= Number(day.vipLevelDouble) ? 1 : 0
         });
         return 'SCRIPT_DAILY_BONUS_COLLECTED';
+    }
+
+    async exchangeItems(settings, report, token) {
+        const input = String(settings.itemReserves ?? '').trim();
+        if (!/^\d+(?:\D+\d+){6}$/.test(input)) throw new Error('SCRIPT_EXCHANGE_INVALID_RESERVES');
+        const reserves = input.split(/\D+/).map(Number);
+        const requested = Number(settings.targetActivity);
+        if (!reserves.every(Number.isSafeInteger) || !Number.isSafeInteger(requested) || requested < 1)
+            throw new Error('SCRIPT_EXCHANGE_INVALID_RESERVES');
+        const items = this.game.lib?.inventoryItem;
+        const colors = this.game.lib?.enum?.heroColor;
+        const heroLibrary = this.game.lib?.hero;
+        if (!items || !colors || !heroLibrary) throw new Error('SCRIPT_LIBRARY_NOT_READY');
+        let inventory = await this.api.call('inventoryGet');
+        let clan = await this.api.call('clanGetInfo');
+        let heroes = await this.api.call('heroGetAll');
+        const initial = Number(clan?.stat?.todayItemsActivity);
+        if (!Number.isFinite(initial)) throw new Error('SCRIPT_EXCHANGE_COUNTER');
+        const target = Math.min(requested, Math.max(0, 2000 - initial));
+        let current = initial;
+        while (!token.stopped && current - initial < target && current < 2000) {
+            const protectedItems = calculateHeroEquipmentProtection(heroes, heroLibrary, items, inventory);
+            const plan = planActivityExchange(inventory, items, colors, reserves,
+                target - (current - initial), 2000 - current, protectedItems);
+            if (!(plan.activity > 0)) break;
+            await this.api.call('clanItemsForActivity', { items: plan.items });
+            if (token.stopped) return;
+            inventory = await this.api.call('inventoryGet');
+            clan = await this.api.call('clanGetInfo');
+            heroes = await this.api.call('heroGetAll');
+            const next = Number(clan?.stat?.todayItemsActivity);
+            if (!Number.isFinite(next) || next <= current) throw new Error('SCRIPT_EXCHANGE_COUNTER');
+            current = next;
+            report('SCRIPT_EXCHANGE_PROGRESS', `${current - initial}/${target}`);
+        }
+        if (!token.stopped) report('SCRIPT_EXCHANGE_PROGRESS', `${current - initial}/${target}`);
     }
 
     async expeditions(settings, report, token) {

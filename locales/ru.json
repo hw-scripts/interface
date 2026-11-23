@@ -11,7 +11,7 @@
     "SCRIPT_DUNGEON_NO_TEAM": "Нет живой команды для доступных дверей",
     "SCRIPT_DUNGEON_NO_SAFE_WIN": "Нет победного варианта без гибели бойцов",
     "SCRIPT_DUNGEON_NO_WIN": "Расчёт не нашёл победного варианта",
-    "SCRIPT_DUNGEON_CARDS": "???? ??????? ? ?????????",
+    "SCRIPT_DUNGEON_CARDS": "Карты оракула в инвентаре",
     "SCRIPT_DUNGEON_PROGRESS": "Титанит за сегодня",
     "SCRIPT_DUNGEON_DOOR": "Выбрана дверь",
     "SCRIPT_DUNGEON_WAIT": "Ожидание завершения боя, секунд",
@@ -602,5 +602,11 @@
     "SCRIPT_UPGRADE_HERO_COUNT": "Загружено героев",
     "SCRIPT_UPGRADE_NEEDS_QUEUE": "Нужно настроить очередь героев; прокачка ещё не подключена",
     "SCRIPT_UPGRADE_INVALID_LIMIT": "Лимиты должны быть целыми неотрицательными числами",
-    "SCRIPT_UPGRADE_NO_DATA": "Не удалось получить данные героев или аккаунта"
+    "SCRIPT_UPGRADE_NO_DATA": "Не удалось получить данные героев или аккаунта",
+    "NAV_ITEM_EXCHANGE": "Обмен предметов",
+    "SCRIPT_OPTION_TARGETACTIVITY": "Цель активности",
+    "SCRIPT_OPTION_ITEMRESERVES": "Остаток каждого предмета: серый / зелёный / синий / фиолетовый / оранжевый / красный / коричневый",
+    "SCRIPT_EXCHANGE_PROGRESS": "Получено активности",
+    "SCRIPT_EXCHANGE_COUNTER": "Счётчик активности не изменился",
+    "SCRIPT_EXCHANGE_INVALID_RESERVES": "Введите семь неотрицательных остатков через нецифровые символы"
 }

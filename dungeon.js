@@ -46,15 +46,19 @@ class InterfaceDungeon {
         return fighters && Number.isFinite(score) ? score : -Infinity;
     }
 
-    async simulate(args, token) {
+    async simulate(args, token, avoidDeaths) {
         const started = performance.now();
         const battle = await this.api.call('dungeonStartBattle', args);
         if (token.stopped) return null;
         if (!battle?.attackers) throw new Error('SCRIPT_DUNGEON_INVALID_BATTLE');
-        const input = structuredClone(battle);
-        input.progress = [{ attackers: { input: ['auto', 0, 0, 'auto', 0, 0] } }];
         const config = battle.type === 'dungeon_titan' ? 'get_titan' : 'get_tower';
-        const calculated = await this.calculator.calculate(input, config);
+        let calculated;
+        for (let attempt = 0; attempt < 20 && !token.stopped; attempt++) {
+            const input = structuredClone(battle);
+            input.progress = [{ attackers: { input: ['auto', 0, 0, 'auto', 0, attempt ? 1 + Math.random() * 14 : 0] } }];
+            calculated = await this.calculator.calculate(input, config);
+            if (Number.isFinite(this.assess(battle, calculated, avoidDeaths))) break;
+        }
         return { args, battle, calculated, started };
     }
 
@@ -123,7 +127,7 @@ class InterfaceDungeon {
                 if (!args?.heroes.length) continue;
                 this.calculator.assertAvailable(choice.attackerType === 'hero' ? 'get_tower' : 'get_titan');
                 args.teamNum = teamNum;
-                const candidate = await this.simulate(args, token);
+                const candidate = await this.simulate(args, token, settings.avoidDeaths);
                 if (token.stopped) return;
                 candidate.score = this.assess(candidate.battle, candidate.calculated, settings.avoidDeaths);
                 candidates.push(candidate);
@@ -134,7 +138,7 @@ class InterfaceDungeon {
             if (!Number.isFinite(best.score)) return settings.avoidDeaths ? 'SCRIPT_DUNGEON_NO_SAFE_WIN' : 'SCRIPT_DUNGEON_NO_WIN';
             // Previewing another door changes the active server battle. Reopen the chosen door and recalculate its actual seed.
             if (candidates.length > 1) {
-                best = await this.simulate(best.args, token);
+                best = await this.simulate(best.args, token, settings.avoidDeaths);
                 if (token.stopped) return;
                 if (!Number.isFinite(this.assess(best.battle, best.calculated, settings.avoidDeaths)))
                     return settings.avoidDeaths ? 'SCRIPT_DUNGEON_NO_SAFE_WIN' : 'SCRIPT_DUNGEON_NO_WIN';

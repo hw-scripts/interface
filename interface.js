@@ -1751,7 +1751,7 @@
         for (const [name, initial] of Object.entries(automation.definitions[section].fields))
             inputs[name] = settingInput(I18N(section === 'BOSS' && name === 'battles'
                 ? 'SCRIPT_OPTION_OUTLANDBATTLES' : `SCRIPT_OPTION_${name.toUpperCase()}`),
-                typeof initial === 'number' ? 'number' : 'checkbox', typeof initial === 'number' ? settings[name] : settings[name] === true, section === 'HERO_UPGRADE' ? 0 : 1);
+                typeof initial === 'number' ? 'number' : typeof initial === 'string' ? 'text' : 'checkbox', typeof initial === 'boolean' ? settings[name] === true : settings[name], section === 'HERO_UPGRADE' || section === 'ITEM_EXCHANGE' ? 0 : 1);
         if (section === 'HERO_UPGRADE') {
             const note = document.createElement('p');
             note.textContent = I18N('SCRIPT_UPGRADE_STAGE');
@@ -1761,7 +1761,7 @@
             if (section === 'HERO_UPGRADE' && Object.values(inputs).some(input =>
                 !Number.isSafeInteger(Number(input.value)) || Number(input.value) < 0)) return;
             automation.save(section, Object.fromEntries(Object.entries(inputs).map(([name, input]) =>
-                [name, input.type === 'number' ? Number(input.value) : input.checked])));
+                [name, input.type === 'number' ? Number(input.value) : input.type === 'checkbox' ? input.checked : input.value])));
             showSection('scripts');
         };
         cancelPanel = () => showSection('scripts');

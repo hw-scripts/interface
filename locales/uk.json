@@ -11,7 +11,7 @@
     "SCRIPT_DUNGEON_NO_TEAM": "Немає живої команди для доступних дверей",
     "SCRIPT_DUNGEON_NO_SAFE_WIN": "Немає переможного варіанта без загибелі бійців",
     "SCRIPT_DUNGEON_NO_WIN": "Розрахунок не знайшов переможного варіанта",
-    "SCRIPT_DUNGEON_CARDS": "???? ??????? ? ?????????",
+    "SCRIPT_DUNGEON_CARDS": "Карти оракула в інвентарі",
     "SCRIPT_DUNGEON_PROGRESS": "Титаніт за сьогодні",
     "SCRIPT_DUNGEON_DOOR": "Вибрано двері",
     "SCRIPT_DUNGEON_WAIT": "Очікування завершення бою, секунд",
@@ -602,5 +602,11 @@
     "SCRIPT_UPGRADE_HERO_COUNT": "Завантажено героїв",
     "SCRIPT_UPGRADE_NEEDS_QUEUE": "Потрібно налаштувати чергу героїв; прокачка ще не підключена",
     "SCRIPT_UPGRADE_INVALID_LIMIT": "Ліміти мають бути цілими невід’ємними числами",
-    "SCRIPT_UPGRADE_NO_DATA": "Не вдалося отримати дані героїв або акаунта"
+    "SCRIPT_UPGRADE_NO_DATA": "Не вдалося отримати дані героїв або акаунта",
+    "NAV_ITEM_EXCHANGE": "Обмін предметів",
+    "SCRIPT_OPTION_TARGETACTIVITY": "Ціль активності",
+    "SCRIPT_OPTION_ITEMRESERVES": "Залишок кожного предмета: сірий / зелений / синій / фіолетовий / помаранчевий / червоний / коричневий",
+    "SCRIPT_EXCHANGE_PROGRESS": "Отримано активності",
+    "SCRIPT_EXCHANGE_COUNTER": "Лічильник активності не змінився",
+    "SCRIPT_EXCHANGE_INVALID_RESERVES": "Введіть сім невід’ємних залишків через нецифрові символи"
 }
