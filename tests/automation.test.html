@@ -247,6 +247,25 @@
         await resumed.run(['A', 'RESTART', 'B']);
         equal(f.executed, ['A', 'RESTART', 'B', 'A', 'RESTART']);
     });
+    await test('autopilot resumes its own reload without idle wait but real activity cancels it', async () => {
+        const f = pilotFixture(['A', 'RESTART', 'B']);
+        f.pilot.configure({ enabled: true, idleMinutes: 5 });
+        f.engine.definitions.RESTART.endsSequence = true;
+        await f.pilot.run(['A', 'RESTART', 'B'], 'auto');
+        assert(f.pilot.state.pending.internalReload);
+        const resumed = new InterfaceAutopilot(f.engine, f.storage, f.dependencies);
+        await resumed.tick();
+        equal(f.executed, ['A', 'RESTART', 'B']);
+        const g = pilotFixture(['RESTART', 'B']);
+        g.pilot.configure({ enabled: true, idleMinutes: 5 });
+        g.engine.definitions.RESTART.endsSequence = true;
+        await g.pilot.run(['RESTART', 'B'], 'auto');
+        const interrupted = new InterfaceAutopilot(g.engine, g.storage, g.dependencies);
+        interrupted.activity();
+        await interrupted.tick();
+        equal(g.executed, ['RESTART']);
+        assert(!interrupted.state.pending);
+    });
     await test('autopilot uses the nearest day, expedition or configured time boundary', async () => {
         const f = pilotFixture(['DAILY_BONUS', 'EXPEDITIONS']);
         f.dependencies.userInfo = () => ({ nextDayTs: (f.now() + 180000) / 1000,
@@ -412,7 +431,7 @@
     await test('settings persist per script', () => {
         const { engine } = fixture();
         engine.save('EXPEDITIONS', { collect: false, send: true });
-        equal(engine.settings('EXPEDITIONS'), { enabled: false, collect: false, send: true, openArtifactChest: false });
+        equal(engine.settings('EXPEDITIONS'), { enabled: false, collect: false, send: true });
         equal(engine.settings('BOSS'), { enabled: false, raid: true, openChests: true, battles: false, autoTeam: true });
     });
     await test('outland raids and free chests only', async () => {
@@ -593,32 +612,27 @@
         equal(sent[0].args.heroes.length, 5);
         assert(!sent[0].args.heroes.includes(1) && !sent[0].args.heroes.includes(2));
     });
-    await test('expeditions use all artifact keys only when the option is enabled', async () => {
-        const game = { lib: { expedition: { slot: {} } } };
-        for (const [enabled, keys, expected] of [[true, 3, [1, 1, 1]], [true, 1, [1]],
-            [true, 10, Array(10).fill(1)], [true, '12', [10, 1, 1]], [true, 21, [10, 10, 1]],
-            [true, 100, [100]], [true, 110, [100, ...Array(10).fill(1)]],
-            [true, 256, [100, 100, 10, 10, 10, 10, 10, 1, 1, 1, 1, 1, 1]],
-            [true, 0, []], [true, undefined, []], [true, -1, []], [true, 1.5, []], [false, 3, []]]) {
-            const { engine, calls } = fixture({ expeditionGet: {}, inventoryGet: { consumable: { 45: keys } } }, game);
-            engine.save('EXPEDITIONS', { collect: false, send: false, openArtifactChest: enabled });
-            await engine.run('EXPEDITIONS', () => {});
-            const opens = calls.filter(call => call.name === 'artifactChestOpen');
-            equal(opens.map(call => call.args), expected.map(amount => ({ amount, free: true })));
-            equal(calls.filter(call => call.name === 'inventoryGet').length, enabled ? 1 : 0);
+    await test('resource scripts open available amounts in 100/10/1 batches', async () => {
+        for (const [section, type, id, rpc, base] of [
+            ['HERO_ARTIFACT_CHESTS', 'consumable', 45, 'artifactChestOpen', { free: true }],
+            ['TITAN_ARTIFACT_CHESTS', 'consumable', 55, 'titanArtifactChestOpen', { free: true }],
+            ['TITAN_SUMMONS', 'coin', 13, 'titanUseSummonCircle', { circleId: 1, paid: false }],
+            ['PET_EGGS', 'consumable', 90, 'pet_chestOpen', { paid: false }]
+        ]) {
+            const { engine, calls } = fixture({ inventoryGet: { [type]: { [id]: 111 } } });
+            await engine.run(section, () => {});
+            equal(calls.filter(call => call.name === rpc).map(call => call.args), [100,10,1].map(amount => ({ ...base, amount })));
         }
-        const stopped = fixture({ expeditionGet: {}, inventoryGet: () => {
-            stopped.engine.stop();
-            return { consumable: { 45: 1 } };
-        } }, game);
-        stopped.engine.save('EXPEDITIONS', { collect: false, send: false, openArtifactChest: true });
-        await stopped.engine.run('EXPEDITIONS', () => {});
-        equal(stopped.calls.some(call => call.name === 'artifactChestOpen'), false);
-        const midBatch = fixture({ expeditionGet: {}, inventoryGet: { consumable: { 45: 25 } },
-            artifactChestOpen: () => { midBatch.engine.stop(); } }, game);
-        midBatch.engine.save('EXPEDITIONS', { collect: false, send: false, openArtifactChest: true });
-        await midBatch.engine.run('EXPEDITIONS', () => {});
-        equal(midBatch.calls.filter(call => call.name === 'artifactChestOpen').map(call => call.args.amount), [10]);
+        const asc = fixture({ userGetInfo: { refillable: [{ id: 47, amount: 2 }] } });
+        await asc.engine.run('ASCENSION_FREE', () => {});
+        equal(asc.calls.filter(c => c.name === 'ascensionChest_open').map(c => c.args), [{paid:false,amount:1},{paid:false,amount:1}]);
+        const limited = fixture({ inventoryGet: { consumable: { 90: 25 } } });
+        limited.engine.save('PET_EGGS', { limit: 11 });
+        await limited.engine.run('PET_EGGS', () => {});
+        equal(limited.calls.filter(c => c.name === 'pet_chestOpen').map(c => c.args.amount), [10,1]);
+        const stopped = fixture({ inventoryGet: { consumable: {55:256} }, titanArtifactChestOpen: () => stopped.engine.stop() });
+        await stopped.engine.run('TITAN_ARTIFACT_CHESTS', () => {});
+        equal(stopped.calls.filter(c => c.name === 'titanArtifactChestOpen').map(c => c.args.amount), [100]);
     });
     await test('expeditions do not send insufficient teams', async () => {
         const { engine, calls } = fixture({ expeditionGet: { 1: { id: 1, slotId: 1, status: 1, power: 1000 } },
@@ -1107,6 +1121,219 @@
             progress: [{ attackers: { heroes: Object.fromEntries(Object.keys(battle.attackers).map(id => [id, { hp: 80, energy: 0, isDead: false }])) } }] });
         await engine.run('CLAN_DUNGEON', () => {});
         assert(count === 2 && calls.some(call => call.name === 'dungeonEndBattle'));
+    });
+    await test('reward collection excludes mail and resource use', async () => {
+        const { engine, calls } = fixture({ dailyBonusGetInfo: { availableToday: false },
+            clan_prestigeFarmAllRewards: () => { throw new Error('Level reward not available'); },
+            specialOffer_getAll: [], questGetAll: [] });
+        await engine.run('QUEST_REWARDS', () => {});
+        assert(calls.some(c => c.name === 'questGetAll'));
+        assert(!calls.some(c => ['mailGetAll','inventoryGet','artifactChestOpen','titanArtifactChestOpen','titanUseSummonCircle','pet_chestOpen','ascensionChest_open'].includes(c.name)));
+    });
+    await test('accumulated guild quests unlock later threshold rewards', async () => {
+        let guildClaimed = false, thresholdClaimed = false;
+        const { engine, calls } = fixture({
+            questGetAll: () => guildClaimed
+                ? (thresholdClaimed ? [] : [{ id: 20010009, state: 2, reward: { consumable: {81: 5} } }])
+                : [{ id: 20000186, state: 1, farmCount: 3, reward: { clanQuestsPoints: 9 } },
+                    { id: 20000185, state: 1, farmCount: 0, reward: { clanQuestsPoints: 6 } },
+                    { id: 20000197, state: 1, farmCount: 123, reward: { clanQuestsPoints: 492 } }],
+            questFarm: () => { guildClaimed = true; return {}; },
+            quest_questsFarm: () => { thresholdClaimed = true; return {}; }
+        });
+        await engine.questRewards({ followChains: true }, () => {}, { stopped: false });
+        equal(calls.filter(call => call.name !== 'questGetAll'), [
+            { name: 'questFarm', args: { questId: 20000186 } },
+            { name: 'quest_questsFarm', args: { questIds: [20010009] } }
+        ]);
+    });
+    await test('split actions preserve legacy sequence choices once', () => {
+        const values = { 'script:QUEST_REWARDS': JSON.stringify({enabled:true, collectMail:true, collectTitanArtifacts:true}),
+            'script:EXPEDITIONS': JSON.stringify({enabled:true, openArtifactChest:true}) };
+        const storage = { get: key => values[key] ?? null, set: (key, value) => { values[key] = value; } };
+        const first = new InterfaceAutomation({}, {call: async () => {}}, storage);
+        assert(first.settings('MAIL').enabled && first.settings('TITAN_ARTIFACT_CHESTS').enabled && first.settings('HERO_ARTIFACT_CHESTS').enabled);
+        first.save('MAIL', {enabled:false});
+        const next = new InterfaceAutomation({}, {call: async () => {}}, storage);
+        assert(!next.settings('MAIL').enabled, 'migration must not restore a disabled action');
+    });
+    await test('only exhausted hero artifact keys stop quietly', async () => {
+        const exhausted = fixture({ inventoryGet: {consumable: {45: 1}}, artifactChestOpen: () => {
+            const error = new Error('No keys'); error.rpcErrorName = 'NotEnough'; throw error;
+        } });
+        const reports = []; await exhausted.engine.run('HERO_ARTIFACT_CHESTS', key => reports.push(key));
+        assert(reports.includes('SCRIPT_NOTHING_TO_COLLECT'));
+        const failed = fixture({ inventoryGet: {consumable: {45: 1}}, artifactChestOpen: () => { throw new Error('network failed'); } });
+        let rejected = false; try { await failed.engine.run('HERO_ARTIFACT_CHESTS', () => {}); } catch { rejected = true; }
+        assert(rejected, 'unrelated errors must propagate');
+    });
+    await test('collect all uses selected scripts with their settings and repeats unlocked mail', async () => {
+        let opened = 0, questClaimed = false, letterClaimed = false;
+        const { engine, calls } = fixture({
+            inventoryGet: () => ({ consumable: { 55: 50 - opened } }),
+            titanArtifactChestOpen: args => { opened += args.amount; },
+            questGetAll: () => opened && !questClaimed ? [{id: 1, state: 2, reward: {gold: 1}}] : [],
+            quest_farmNonClan: () => { questClaimed = true; },
+            mailGetAll: () => ({letters: questClaimed && !letterClaimed ? [{id: 1, reward: {gold: 1}}] : []}),
+            mailFarm: () => { letterClaimed = true; }
+        });
+        engine.save('TITAN_ARTIFACT_CHESTS', {limit: 1});
+        engine.save('QUEST_REWARDS', {collectDailyBonus:false, collectGuildPrestige:false, collectDailyOffers:false});
+        engine.save('COLLECT_ALL', {includeTitanArtifacts:true});
+        await engine.run('COLLECT_ALL', () => {});
+        equal(calls.filter(c => c.name === 'titanArtifactChestOpen').map(c => c.args), [{free:true, amount:1}]);
+        assert(questClaimed && letterClaimed, 'mail unlocked by quest must be collected');
+        assert(!calls.some(c => ['pet_chestOpen','titanUseSummonCircle','artifactChestOpen'].includes(c.name)));
+    });
+    await test('collect all respects selection and stop', async () => {
+        const f = fixture({ inventoryGet: {consumable:{90:25}}, pet_chestOpen: () => f.engine.stop() });
+        f.engine.save('COLLECT_ALL', {includeRewards:false, includeMail:false, includePetEggs:true});
+        await f.engine.run('COLLECT_ALL', () => {});
+        equal(f.calls.filter(c => c.name === 'pet_chestOpen').map(c => c.args.amount), [10]);
+        assert(!f.calls.some(c => ['questGetAll','mailGetAll'].includes(c.name)));
+    });
+    await test('soul exchanges use one game batch only for six-star units', async () => {
+        for (const [section, type, units, getUnits, rpc, coin] of [
+            ['HERO_SOUL_EXCHANGE', 'fragmentHero', {1:{star:6},2:{star:5}}, 'heroGetAll', 'inventoryExchangeStones', 5],
+            ['TITAN_SOUL_EXCHANGE', 'fragmentTitan', {1:{star:6},2:{star:5}}, 'titanGetAll', 'inventoryExchangeTitanStones', 15]
+        ]) {
+            const f = fixture({inventoryGet:{[type]:{1:10,2:3}}, [getUnits]:units, [rpc]:{reward:{coin:{[coin]:100}}}});
+            await f.engine.run(section, () => {});
+            equal(f.calls.filter(c => c.name === rpc).map(c => c.args), [{}]);
+            const no = fixture({inventoryGet:{[type]:{2:3}}, [getUnits]:units});
+            await no.engine.run(section, () => {});
+            assert(!no.calls.some(c => c.name === rpc));
+        }
+    });
+    await test('offer gifts skip collected or paid offers and obey stop', async () => {
+        const f = fixture({offerGetAll:[{id:1,type:'reward',reward:{gold:1}}, {id:2,type:'reward',freeRewardObtained:true,reward:{gold:1}}, {id:3,type:'bundle',reward:{gold:1}}]});
+        await f.engine.run('OFFER_GIFTS', () => {});
+        equal(f.calls.filter(c => c.name === 'offerFarmReward').map(c => c.args), [{offerId:1}]);
+        const stopped = fixture({offerGetAll:()=>{stopped.engine.stop();return [{id:1,type:'reward',reward:{gold:1}}];}});
+        await stopped.engine.run('OFFER_GIFTS', () => {});
+        assert(!stopped.calls.some(c => c.name === 'offerFarmReward'));
+    });
+    await test('offer stages stop before the first paid stage and obey cancellation', async () => {
+        const offers = [{id: 9557, offerType:'stagesOffer', farmedStage:-1, offerData:{stages:[{}, {}, {billingId:123}, {}]}},
+            {id: 2, offerType:'stagesOffer', farmedStage:0, offerData:{stages:[{}]}}];
+        const f=fixture({specialOffer_getAll:offers}); await f.engine.run('FREE_OFFER_STAGES', () => {});
+        equal(f.calls.filter(c=>c.name==='specialOffer_farmReward').map(c=>c.args), [{offerId:9557},{offerId:9557}]);
+        const stopped=fixture({specialOffer_getAll:offers,specialOffer_farmReward:()=>stopped.engine.stop()});
+        await stopped.engine.run('FREE_OFFER_STAGES',()=>{});
+        equal(stopped.calls.filter(c=>c.name==='specialOffer_farmReward').length,1);
+    });
+    await test('artifact and skin upgrades protect full cost and prioritize strongest 15', async () => {
+        const heroes = {}, hero = {}, skin = {}, artifactId = {};
+        for (let id=1; id<=16; id++) {
+            heroes[id] = { id, power:100-id, level:100, skins:{[id]:id===16?0:10}, artifacts:{0:{star:1,level:id===16?0:10}} };
+            hero[id]={artifacts:{0:id}}; artifactId[id]={type:1};
+            skin[id]={statData:{levels:{11:{cost:{gold:4,consumable:{1:2,2:1}}},12:{cost:{gold:4,consumable:{1:2,2:1}}}}}};
+        }
+        const levels={11:{cost:{gold:4,consumable:{1:2,2:1}}},12:{cost:{gold:4,consumable:{1:2,2:1}}}};
+        const game={lib:{hero,skin,artifact:{id:artifactId,type:{1:{levels}}}}};
+        for (const [section,rpc] of [['HERO_ARTIFACT_UPGRADE','heroArtifactLevelUp'],['HERO_SKIN_UPGRADE','heroSkinUpgrade']]) {
+            const f=fixture({heroGetAll:heroes,inventoryGet:{consumable:{1:10,2:1}},userGetInfo:{gold:20}},game);
+            f.engine.save(section,{levels:5});await f.engine.run(section,()=>{});
+            const calls=f.calls.filter(c=>c.name===rpc);equal(calls.length,1);equal(calls[0].args.heroId,1);
+        }
+        const titanGame={lib:{titan:{1:{artifacts:{0:1,1:2}},2:{artifacts:{0:1}}},titanArtifact:{id:{1:{type:1},2:{type:1}},type:{1:{levels}}}}};
+        const titan=fixture({titanGetAll:{1:{id:1,power:10,artifacts:{0:{star:1,level:10},1:{star:1,level:10}}},2:{id:2,power:20,artifacts:{0:{star:1,level:10}}}},inventoryGet:{consumable:{1:10,2:1}},userGetInfo:{gold:20}},titanGame);
+        await titan.engine.run('TITAN_ARTIFACT_UPGRADE',()=>{});
+        equal(titan.calls.filter(c=>c.name==='titanArtifactLevelUp').map(c=>c.args),[{titanId:2,slotId:'0'}]);
+    });
+    await test('shop actions buy only eligible affordable goods and respect remaining funds', async () => {
+        const shops={4:{slots:{1:{id:1,reward:{fragmentHero:{1:5}},cost:{coin:{1:60}}},2:{id:2,reward:{fragmentHero:{2:5}},cost:{coin:{1:60}}},3:{id:3,reward:{fragmentHero:{3:5}},cost:{starmoney:1}}}},
+            1:{slots:{4:{reward:{gear:{1:1}},cost:{gold:60}},5:{reward:{gear:{2:1}},cost:{gold:60}},6:{reward:{gear:{3:1}},cost:{starmoney:1}}}}};
+        const f=fixture({shopGetAll:shops, inventoryGet:{coin:{1:100}}, userGetInfo:{gold:100}});
+        await f.engine.run('BUY_HERO_SOULS',()=>{});await f.engine.run('BUY_GOLD_SHOPS',()=>{});
+        equal(f.calls.filter(c=>c.name==='shopBuy').map(c=>[c.args.shopId,c.args.slot]),[[4,1],[1,4]]);
+        const stopped=fixture({shopGetAll:()=>{stopped.engine.stop();return shops;}});
+        await stopped.engine.run('BUY_GOLD_SHOPS',()=>{});assert(!stopped.calls.some(c=>c.name==='shopBuy'));
+    });
+    await test('gold shop buys experience potions only for underlevelled heroes', async () => {
+        const shops={1:{slots:{2:{reward:{consumable:{11:90}},cost:{gold:90}},4:{reward:{gear:{1:1}},cost:{gold:20}}}}};
+        for (const [level, heroes, expected] of [[130,{1:{level:129}},[2]],[130,{1:{level:130}},[4]],[undefined,{1:{level:1}},[4]],[130,{},[4]]]) {
+            const f=fixture({shopGetAll:shops,userGetInfo:{gold:100,level},heroGetAll:heroes});
+            await f.engine.run('BUY_GOLD_SHOPS',()=>{});
+            equal(f.calls.filter(c=>c.name==='shopBuy').map(c=>c.args.slot),expected);
+        }
+    });
+    await test('battle pass rewards respect unlocked level, ticket and excluded rewards', async () => {
+        const levels={a:{battlePass:10,level:1,experience:0,freeReward:{gold:1},paidReward:{gold:2}},
+            b:{battlePass:10,level:2,experience:100,experienceByLevel:100,freeReward:{fragmentHero:{1:5}},paidReward:{gold:3}}};
+        const f=fixture({battlePass_getInfo:{battlePass:{id:10,exp:100,ticket:1,rewards:{1:{free:1,paid:0}}}},battlePass_getSpecial:{}}, {lib:{battlePass:{level:levels}}});
+        await f.engine.run('BATTLE_PASS_REWARDS',()=>{});
+        equal(f.calls.filter(c=>c.name==='battlePass_farmReward').map(c=>c.args),[{level:1,free:false},{level:2,free:false}]);
+        const noTicket=fixture({battlePass_getInfo:{battlePass:{id:10,exp:0,ticket:0,rewards:{}}},battlePass_getSpecial:{}},{lib:{battlePass:{level:levels}}});
+        await noTicket.engine.run('BATTLE_PASS_REWARDS',()=>{});
+        equal(noTicket.calls.filter(c=>c.name==='battlePass_farmReward').map(c=>c.args),[{level:1,free:true}]);
+    });
+    await test('subscription and zeppelin gifts check availability and stop before claiming', async () => {
+        for (const [section,info,rpc,value] of [
+            ['SUBSCRIPTION_GIFT','subscriptionGetInfo','subscriptionFarm',{dailyReward:{availableFarm:true}}],
+            ['ZEPPELIN_GIFT','zeppelinGiftGet','zeppelinGiftFarm',{available:true}]
+        ]) {
+            const f=fixture({[info]:value}); await f.engine.run(section,()=>{});
+            equal(f.calls.map(c=>c.name),[info,rpc]);
+            const unavailable=fixture({[info]:{}});await unavailable.engine.run(section,()=>{});
+            assert(!unavailable.calls.some(c=>c.name===rpc));
+            const stopped=fixture({[info]:()=>{stopped.engine.stop();return value;}});
+            await stopped.engine.run(section,()=>{});assert(!stopped.calls.some(c=>c.name===rpc));
+        }
+    });
+    await test('collect all revisits offers unlocked by rewards without claiming twice', async () => {
+        let questClaimed=false, offerClaimed=false;
+        const f=fixture({questGetAll:()=>questClaimed?[]:[{id:1,state:2,reward:{gold:1}}],
+            quest_farmNonClan:()=>{questClaimed=true;},
+            offerGetAll:()=>questClaimed?[{id:7,type:'reward',reward:{gold:1}}]:[],
+            offerFarmReward:()=>{offerClaimed=true;}});
+        f.engine.save('QUEST_REWARDS',{collectDailyBonus:false,collectGuildPrestige:false,collectDailyOffers:false});
+        f.engine.save('COLLECT_ALL',{includeMail:false,includeOfferGifts:true});
+        await f.engine.run('COLLECT_ALL',()=>{});
+        assert(questClaimed && offerClaimed);
+        equal(f.calls.filter(c=>c.name==='offerFarmReward').length,1);
+    });
+    await test('collect-all autopilot fingerprint follows selected child settings', () => {
+        const f = fixture();
+        const pilot = new InterfaceAutopilot(f.engine, f.storage, {now:()=>1000,setTimer:()=>0,clearTimer:()=>{}});
+        const before = pilot.fingerprint('COLLECT_ALL');
+        f.engine.save('TITAN_ARTIFACT_CHESTS', {limit:1});
+        equal(pilot.fingerprint('COLLECT_ALL'), before);
+        f.engine.save('COLLECT_ALL', {includeTitanArtifacts:true});
+        const selected = pilot.fingerprint('COLLECT_ALL');
+        f.engine.save('TITAN_ARTIFACT_CHESTS', {limit:2});
+        assert(pilot.fingerprint('COLLECT_ALL') !== selected);
+        const changed = pilot.fingerprint('COLLECT_ALL');
+        f.engine.save('TITAN_ARTIFACT_CHESTS', {enabled:true});
+        equal(pilot.fingerprint('COLLECT_ALL'), changed);
+        pilot.dispose();
+    });
+    await test('adventure raids use highest available adventure and stop between portals', async () => {
+        const f=fixture({userGetInfo:{refillable:[{id:45,amount:3}]},adventure_raidGetInfo:{raid:{2:true,11:true,12:false}}});
+        f.engine.save('ADVENTURE_RAID',{limit:2});await f.engine.run('ADVENTURE_RAID',()=>{});
+        equal(f.calls.filter(c=>c.name==='adventure_raid').map(c=>c.args),[{adventureId:'11'},{adventureId:'11'}]);
+        const stopped=fixture({userGetInfo:{refillable:[{id:45,amount:3}]},adventure_raidGetInfo:{raid:{11:true}},adventure_raid:()=>stopped.engine.stop()});
+        await stopped.engine.run('ADVENTURE_RAID',()=>{});equal(stopped.calls.filter(c=>c.name==='adventure_raid').length,1);
+    });
+    await test('grand coins and Soul Atrium refill are distinct free actions', async () => {
+        const f=fixture({grandFarmCoins:{reward:{coin:{2:42}}},gacha_refill:{coin:{38:1}}});
+        await f.engine.run('GRAND_ARENA_COINS',()=>{});await f.engine.run('SOUL_ATRIUM_REFILL',()=>{});
+        equal(f.calls.map(c=>[c.name,c.args]),[['grandFarmCoins',{}],['gacha_refill',{ident:'heroGacha'}]]);
+    });
+    await test('inventory boxes use selected groups, confirmed choice and 100/10/1 batches', async () => {
+        const f=fixture({inventoryGet:{consumable:{362:111,169:2,62:11}}});
+        f.engine.save('INVENTORY_BOXES',{randomBoxes:false});await f.engine.run('INVENTORY_BOXES',()=>{});
+        equal(f.calls.filter(c=>c.name==='consumableUseLootBox').map(c=>c.args),[
+            {libId:362,amount:100},{libId:362,amount:10},{libId:362,amount:1},
+            {libId:62,amount:10,playerRewardChoiceIndex:4},{libId:62,amount:1,playerRewardChoiceIndex:4}]);
+        const stopped=fixture({inventoryGet:{consumable:{362:111}},consumableUseLootBox:()=>stopped.engine.stop()});
+        await stopped.engine.run('INVENTORY_BOXES',()=>{});equal(stopped.calls.filter(c=>c.name==='consumableUseLootBox').length,1);
+    });
+    await test('hero power compares current owned heroes with recorded peak', async () => {
+        const f=fixture({userGetInfo:{maxSumPower:{heroes:1000}},heroGetAll:{1:{power:400},2:{power:250}}});
+        const reports=[];await f.engine.run('HERO_POWER',(key,detail)=>reports.push([key,detail]));
+        assert(reports.some(([key,value])=>key==='SCRIPT_HERO_POWER'&&value==='650 / 1000 (350)'));
+        assert(!f.calls.some(c=>!['userGetInfo','heroGetAll'].includes(c.name)));
     });
     document.getElementById('result').textContent = results.join('\n') + `\n${results.filter(result => result.startsWith('PASS')).length}/${results.length} passed`;
 })();

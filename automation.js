@@ -174,7 +174,9 @@ class InterfaceGameApi {
                 const result = response?.results?.find(item => item.ident === 'body');
                 const error = response?.error || result?.error || result?.result?.error || result?.result?.response?.error;
                 if (xhr.status !== 200 || error || !result?.result || !('response' in result.result)) {
-                    reject(new Error(error?.description || error?.name || 'SCRIPT_API_ERROR'));
+                    const failure = new Error(error?.description || error?.name || 'SCRIPT_API_ERROR');
+                    if (error?.name) failure.rpcErrorName = error.name;
+                    reject(failure);
                 } else resolve(result.result.response);
             };
             for (const [key, value] of Object.entries(headers)) this.original.setRequestHeader.call(xhr, key, value);
@@ -195,7 +197,7 @@ class InterfaceAutomation {
             const readOnly = new Set(['userGetInfo', 'expeditionGet', 'dailyBonusGetInfo',
                 'mailGetAll', 'questGetAll', 'battlePass_getInfo', 'battlePass_getSpecial',
                 'bossGetAll', 'heroGetAll', 'pet_getAll', 'teamGetAll', 'teamGetFavor', 'inventoryGet',
-                'towerGetInfo', 'dungeonGetInfo', 'clanGetInfo', 'titanGetAll', 'specialOffer_getAll']);
+                'towerGetInfo', 'dungeonGetInfo', 'clanGetInfo', 'titanGetAll', 'specialOffer_getAll', 'offerGetAll', 'shopGetAll', 'subscriptionGetInfo', 'zeppelinGiftGet', 'adventure_raidGetInfo']);
             const synchronized = new Set(['expeditionFarm', 'expeditionSendHeroes', 'artifactChestOpen']);
             if (!readOnly.has(name) && !synchronized.has(name)) {
                 this.requiresReload = true;
@@ -218,16 +220,45 @@ class InterfaceAutomation {
                 fields: {},
                 run: (settings, report, token) => this.dailyBonus(token)
             },
+            COLLECT_ALL: {
+                fields: { includeRewards: true, includeMail: true, includeHeroArtifacts: false,
+                    includeTitanArtifacts: false, includeTitanSummons: false, includePetEggs: false, includeAscension: false,
+                    includeHeroSouls: false, includeTitanSouls: false, includeOfferGifts: false, includeStageOffers: false, includeBattlePass: false,
+                    includeSubscription: false, includeZeppelin: false, includeGrandCoins: false, includeSoulAtrium: false, includeInventoryBoxes: false },
+                run: (settings, report, token) => this.collectAll(settings, report, token)
+            },
             QUEST_REWARDS: {
-                fields: {},
-                run: (settings, report, token) => this.allRewards(report, token)
+                fields: { collectDailyBonus: true, collectGuildPrestige: true, collectDailyOffers: true, collectQuests: true },
+                run: (settings, report, token, context) => this.allRewards(settings, report, token, context)
             },
             MAIL: {
                 fields: {},
-                run: (settings, report, token) => this.mail(settings, report, token)
+                run: (settings, report, token, context) => this.mail(settings, report, token, undefined, context?.letters)
             },
+            HERO_POWER: { fields: {}, run: (s, r, t) => this.heroPower(r, t) },
+            INVENTORY_BOXES: { fields: { equipmentBoxes: true, randomBoxes: true, artifactBoxes: true }, run: (s, r, t) => this.openInventoryBoxes(s, r, t) },
+            HERO_ARTIFACT_UPGRADE: { fields: { levels: 10 }, run: (s, r, t) => this.upgradeCosmetics('heroArtifact', s, r, t) },
+            TITAN_ARTIFACT_UPGRADE: { fields: { levels: 1 }, run: (s, r, t) => this.upgradeCosmetics('titanArtifact', s, r, t) },
+            HERO_SKIN_UPGRADE: { fields: { levels: 10 }, run: (s, r, t) => this.upgradeCosmetics('heroSkin', s, r, t) },
+            ADVENTURE_RAID: { fields: { limit: 0 }, run: (s, r, t) => this.adventureRaid(s, r, t) },
+            BUY_HERO_SOULS: { fields: {}, run: (s, r, t) => this.buyHeroSouls(r, t) },
+            BUY_GOLD_SHOPS: { fields: {}, run: (s, r, t) => this.buyGoldShops(r, t) },
+            HERO_SOUL_EXCHANGE: { fields: {}, run: (s, r, t) => this.exchangeSoulStones('hero', r, t) },
+            TITAN_SOUL_EXCHANGE: { fields: {}, run: (s, r, t) => this.exchangeSoulStones('titan', r, t) },
+            OFFER_GIFTS: { fields: {}, run: (s, r, t, c) => this.offerGifts(r, t, c) },
+            SUBSCRIPTION_GIFT: { fields: {}, run: (s, r, t, c) => this.dailyFreeGift('subscription', r, t, c) },
+            ZEPPELIN_GIFT: { fields: {}, run: (s, r, t, c) => this.dailyFreeGift('zeppelin', r, t, c) },
+            GRAND_ARENA_COINS: { fields: {}, run: (s, r, t, c) => this.simpleFreeGift('grand', r, t, c) },
+            SOUL_ATRIUM_REFILL: { fields: {}, run: (s, r, t, c) => this.simpleFreeGift('atrium', r, t, c) },
+            BATTLE_PASS_REWARDS: { fields: {}, run: (s, r, t, c) => this.battlePassRewards(r, t, c) },
+            FREE_OFFER_STAGES: { fields: {}, run: (s, r, t, c) => this.freeOfferStages(r, t, c) },
+            HERO_ARTIFACT_CHESTS: { fields: { limit: 0 }, run: (s, r, t) => this.openResources('heroArtifact', s, r, t) },
+            TITAN_ARTIFACT_CHESTS: { fields: { limit: 0 }, run: (s, r, t) => this.openResources('titanArtifact', s, r, t) },
+            TITAN_SUMMONS: { fields: { limit: 0 }, run: (s, r, t) => this.openResources('titanSummon', s, r, t) },
+            PET_EGGS: { fields: { limit: 0 }, run: (s, r, t) => this.openResources('petEgg', s, r, t) },
+            ASCENSION_FREE: { fields: { limit: 0 }, run: (s, r, t) => this.openResources('ascension', s, r, t) },
             EXPEDITIONS: {
-                fields: { collect: true, send: true, openArtifactChest: false },
+                fields: { collect: true, send: true },
                 run: (settings, report, token) => this.expeditions(settings, report, token)
             },
             TOWER: {
@@ -266,6 +297,22 @@ class InterfaceAutomation {
             try { saved = JSON.parse(storage.get(`script:${section}`)) || {}; } catch {}
             if (typeof saved.enabled !== 'boolean')
                 storage.set(`script:${section}`, JSON.stringify({ ...saved, enabled: Array.isArray(legacy) && legacy.includes(section) }));
+        }
+        // Preserve previously enabled sequence actions when separating resources and mail.
+        if (storage.get('resourceScriptsMigration:v1') !== 'done') {
+            const read = section => { try { return JSON.parse(storage.get(`script:${section}`)) || {}; } catch { return {}; } };
+            const enable = section => storage.set(`script:${section}`, JSON.stringify({ ...read(section), enabled: true }));
+            const rewards = read('QUEST_REWARDS');
+            const expeditions = read('EXPEDITIONS');
+            if (rewards.enabled && rewards.collectMail !== false) enable('MAIL');
+            if (rewards.enabled && rewards.collectTitanArtifacts !== false) enable('TITAN_ARTIFACT_CHESTS');
+            if (expeditions.enabled && expeditions.openArtifactChest === true) enable('HERO_ARTIFACT_CHESTS');
+            delete rewards.collectMail;
+            delete rewards.collectTitanArtifacts;
+            delete expeditions.openArtifactChest;
+            storage.set('script:QUEST_REWARDS', JSON.stringify(rewards));
+            storage.set('script:EXPEDITIONS', JSON.stringify(expeditions));
+            storage.set('resourceScriptsMigration:v1', 'done');
         }
     }
 
@@ -335,10 +382,13 @@ class InterfaceAutomation {
 
     async questRewards(settings, report, token, rewardFilter = reward => Boolean(reward && Object.keys(reward).length), collected = new Set()) {
         let passes;
+        // Confirmed by Runner HAR: these quests can hold rewards while state is 1.
+        const accumulatedGuildQuests = new Set([20000182, 20000185, 20000186, 20000188, 20000189, 20000191, 20000901, 20000902]);
         do {
             const quests = await this.api.call('questGetAll');
             if (token.stopped) return;
-            const ready = Object.values(quests ?? {}).filter(quest => quest.state == 2
+            const ready = Object.values(quests ?? {}).filter(quest => (quest.state == 2
+                || quest.state == 1 && accumulatedGuildQuests.has(Number(quest.id)) && Number(quest.farmCount) > 0)
                 && !collected.has(`${quest.id}:${quest.createTime ?? ''}:${quest.farmCount ?? 0}`) && rewardFilter(quest.reward));
             const eligible = [];
             for (const quest of ready) {
@@ -380,7 +430,7 @@ class InterfaceAutomation {
             for (const quest of eligible.filter(quest => Number(quest.id) >= 1e6)) {
                 if (token.stopped) return;
                 const questId = Number(quest.id);
-                if (questId >= 2e7 && questId < 14e8 && questId !== 20000181)
+                if (questId >= 2e7 && questId < 14e8 && questId !== 20000181 && !accumulatedGuildQuests.has(questId))
                     await this.api.call('quest_questsFarm', { questIds: [questId] });
                 else await this.api.call('questFarm', { questId });
                 collected.add(claimKey(quest));
@@ -390,44 +440,437 @@ class InterfaceAutomation {
         if (!collected.size) return 'SCRIPT_NOTHING_TO_COLLECT';
     }
 
-    async allRewards(report, token) {
-        await this.dailyBonus(token);
+    async allRewards(settings, report, token, context = {}) {
+        if (!['collectDailyBonus', 'collectGuildPrestige', 'collectDailyOffers', 'collectQuests'].some(key => settings[key])) return 'SCRIPT_NOTHING_TO_COLLECT';
+        let collected = false;
+        if (settings.collectDailyBonus && !context.dailyChecked) {
+            collected = await this.dailyBonus(token) === 'SCRIPT_DAILY_BONUS_COLLECTED';
+            context.dailyChecked = true;
+        }
         if (token.stopped) return;
-        const claimedOffers = new Set();
-        const claimedPrestige = new Set();
-        const claimedQuests = new Set();
-        const claimedLetters = new Set();
+        const claimedOffers = context.claimedOffers ??= new Set();
+        const claimedPrestige = context.claimedPrestige ??= new Set();
+        const claimedQuests = context.claimedQuests ??= new Set();
         while (!token.stopped) {
             let advanced = false;
-            try {
-                const result = await this.api.call('clan_prestigeFarmAllRewards');
-                const levels = [...(result?.farmedPrestigeLevels ?? []).map(id => `free:${id}`),
-                    ...(result?.farmedPrestigeLevelsPaid ?? []).map(id => `paid:${id}`)];
-                for (const level of levels) if (!claimedPrestige.has(level)) { claimedPrestige.add(level); advanced = true; }
-            } catch (error) {
-                if (error?.message !== 'Level reward not available') throw error;
-            }
-            if (token.stopped) return;
-            const offers = await this.api.call('specialOffer_getAll');
-            for (const offer of Object.values(offers ?? {})) {
-                if (token.stopped) return;
-                if (offer.offerType !== 'dailyReward' || offer.type !== 'reward' || !offer.reward || claimedOffers.has(String(offer.id))) continue;
+            if (settings.collectGuildPrestige) {
                 try {
-                    await this.api.call('specialOffer_farmReward', { offerId: offer.id });
-                    advanced = true;
+                    const result = await this.api.call('clan_prestigeFarmAllRewards');
+                    const levels = [...(result?.farmedPrestigeLevels ?? []).map(id => `free:${id}`),
+                        ...(result?.farmedPrestigeLevelsPaid ?? []).map(id => `paid:${id}`)];
+                    for (const level of levels) if (!claimedPrestige.has(level)) { claimedPrestige.add(level); advanced = true; }
                 } catch (error) {
-                    if (error?.message !== 'Reward has been farmed') throw error;
+                    if (error?.message !== 'Level reward not available') throw error;
                 }
-                claimedOffers.add(String(offer.id));
             }
             if (token.stopped) return;
-            const before = claimedQuests.size;
-            await this.questRewards({ followChains: true }, report, token, undefined, claimedQuests);
+            if (settings.collectDailyOffers) {
+                const offers = await this.api.call('specialOffer_getAll');
+                for (const offer of Object.values(offers ?? {})) {
+                    if (token.stopped) return;
+                    if (offer.offerType !== 'dailyReward' || offer.type !== 'reward' || !offer.reward || claimedOffers.has(String(offer.id))) continue;
+                    try {
+                        await this.api.call('specialOffer_farmReward', { offerId: offer.id });
+                        advanced = true;
+                    } catch (error) {
+                        if (error?.message !== 'Reward has been farmed') throw error;
+                    }
+                    claimedOffers.add(String(offer.id));
+                }
+            }
             if (token.stopped) return;
-            const mailOutcome = await this.mail({}, report, token, undefined, claimedLetters);
-            if (token.stopped) return;
-            if (claimedQuests.size > before || mailOutcome !== 'SCRIPT_NOTHING_TO_COLLECT') advanced = true;
+            if (settings.collectQuests) {
+                const before = claimedQuests.size;
+                await this.questRewards({ followChains: true }, report, token, undefined, claimedQuests);
+                if (token.stopped) return;
+                if (claimedQuests.size > before) advanced = true;
+            }
             if (!advanced) break;
+            collected = true;
+        }
+        if (!collected) return 'SCRIPT_NOTHING_TO_COLLECT';
+    }
+
+    async collectAll(settings, report, token) {
+        const selected = [
+            ['includeHeroArtifacts', 'HERO_ARTIFACT_CHESTS'],
+            ['includeTitanArtifacts', 'TITAN_ARTIFACT_CHESTS'],
+            ['includeTitanSummons', 'TITAN_SUMMONS'],
+            ['includePetEggs', 'PET_EGGS'],
+            ['includeAscension', 'ASCENSION_FREE'],
+            ['includeHeroSouls', 'HERO_SOUL_EXCHANGE'],
+            ['includeTitanSouls', 'TITAN_SOUL_EXCHANGE'],
+            ['includeInventoryBoxes', 'INVENTORY_BOXES']
+        ];
+        let collected = false;
+        for (const [option, section] of selected) {
+            if (token.stopped) return;
+            if (!settings[option]) continue;
+            const result = await this.definitions[section].run(this.settings(section), report, token);
+            if (result !== 'SCRIPT_NOTHING_TO_COLLECT') collected = true;
+        }
+        const context = { letters: new Set() };
+        const repeat = [['includeMail', 'MAIL'], ['includeRewards', 'QUEST_REWARDS'],
+            ['includeOfferGifts', 'OFFER_GIFTS'], ['includeStageOffers', 'FREE_OFFER_STAGES'],
+            ['includeBattlePass', 'BATTLE_PASS_REWARDS'], ['includeSubscription', 'SUBSCRIPTION_GIFT'],
+            ['includeZeppelin', 'ZEPPELIN_GIFT'], ['includeGrandCoins', 'GRAND_ARENA_COINS'],
+            ['includeSoulAtrium', 'SOUL_ATRIUM_REFILL']];
+        while (!token.stopped && repeat.some(([option]) => settings[option])) {
+            let advanced = false;
+            for (const [option, section] of repeat) {
+                if (token.stopped) return;
+                if (!settings[option]) continue;
+                const result = await this.definitions[section].run(this.settings(section), report, token, context);
+                if (token.stopped) return;
+                if (result !== 'SCRIPT_NOTHING_TO_COLLECT') advanced = true;
+            }
+            if (!advanced) break;
+            collected = true;
+        }
+        if (!collected && !token.stopped) return 'SCRIPT_NOTHING_TO_COLLECT';
+    }
+
+    async heroPower(report, token) {
+        const user = await this.api.call('userGetInfo');
+        if (token.stopped) return;
+        const heroes = await this.api.call('heroGetAll');
+        if (token.stopped) return;
+        const peak = Number(user?.maxSumPower?.heroes);
+        if (!Number.isFinite(peak) || !heroes || typeof heroes !== 'object') throw new Error('SCRIPT_API_ERROR');
+        const values = Object.values(heroes).map(hero => Number(hero?.power));
+        if (values.some(value => !Number.isFinite(value))) throw new Error('SCRIPT_API_ERROR');
+        const current = values.reduce((sum, value) => sum + value, 0);
+        report('SCRIPT_HERO_POWER', `${current} / ${peak} (${peak - current})`);
+    }
+
+    async openInventoryBoxes(settings, report, token) {
+        const inventory = await this.api.call('inventoryGet');
+        if (token.stopped) return;
+        const groups = [
+            [settings.equipmentBoxes, Array.from({length: 28}, (_, index) => 362 + index), null],
+            [settings.randomBoxes, [169,170,171,172,173,207,208,209,210,211,271,272], null],
+            [settings.artifactBoxes, [62,63,64], 4]
+        ];
+        let opened = 0;
+        for (const [enabled, ids, choice] of groups) {
+            if (!enabled) continue;
+            for (const libId of ids) {
+                let remaining = Number(inventory?.consumable?.[libId] ?? 0);
+                if (!Number.isSafeInteger(remaining) || remaining < 0) throw new Error('SCRIPT_API_ERROR');
+                while (remaining > 0) {
+                    if (token.stopped) return;
+                    const amount = remaining >= 100 ? 100 : remaining > 10 ? 10 : 1;
+                    const args = { libId, amount };
+                    if (choice !== null) args.playerRewardChoiceIndex = choice;
+                    await this.api.call('consumableUseLootBox', args);
+                    remaining -= amount;
+                    opened += amount;
+                    report('SCRIPT_RESOURCE_OPENED', opened);
+                }
+            }
+        }
+        if (!opened) return 'SCRIPT_NOTHING_TO_COLLECT';
+    }
+
+    async adventureRaid(settings, report, token) {
+        const limit = Number(settings.limit);
+        if (!Number.isSafeInteger(limit) || limit < 0) throw new Error('SCRIPT_RESOURCE_INVALID_LIMIT');
+        const user = await this.api.call('userGetInfo');
+        if (token.stopped) return;
+        const info = await this.api.call('adventure_raidGetInfo');
+        if (token.stopped) return;
+        const portals = Number(Object.values(user?.refillable ?? {}).find(item => Number(item?.id) === 45)?.amount ?? 0);
+        const id = Math.max(0, ...Object.entries(info?.raid ?? {}).filter(([, available]) => available)
+            .map(([id]) => Number(id)).filter(Number.isSafeInteger));
+        if (!Number.isSafeInteger(portals) || portals < 0) throw new Error('SCRIPT_API_ERROR');
+        if (!portals || !id) return 'SCRIPT_NOTHING_TO_COLLECT';
+        const count = limit ? Math.min(portals, limit) : portals;
+        for (let index = 0; index < count; index++) {
+            if (token.stopped) return;
+            await this.api.call('adventure_raid', { adventureId: String(id) });
+            report('SCRIPT_ADVENTURE_RAID_DONE', index + 1);
+        }
+    }
+
+    async buyHeroSouls(report, token) {
+        const inventory = await this.api.call('inventoryGet');
+        if (token.stopped) return;
+        const shops = await this.api.call('shopGetAll');
+        if (token.stopped) return;
+        const coins = { ...inventory?.coin };
+        let count = 0;
+        for (const shopId of [4, 5, 6, 8, 9, 10, 17]) {
+            for (const slot of Object.values(shops?.[shopId]?.slots ?? {})) {
+                if (token.stopped) return;
+                if (!slot || slot.bought || slot.purchaseDisabled || !slot.reward?.fragmentHero) continue;
+                const costs = slot.cost;
+                if (!costs || Object.keys(costs).length !== 1 || !costs.coin || typeof costs.coin !== 'object') continue;
+                const entries = Object.entries(costs.coin);
+                if (!entries.length || entries.some(([id, value]) => !(Number(value) > 0) || !(Number(coins[id]) >= Number(value)))) continue;
+                await this.api.call('shopBuy', { shopId, slot: slot.id, cost: slot.cost, reward: slot.reward });
+                for (const [id, value] of entries) coins[id] = Number(coins[id]) - Number(value);
+                report('SCRIPT_SHOP_BOUGHT', ++count);
+            }
+        }
+        if (!count) return 'SCRIPT_NOTHING_TO_COLLECT';
+    }
+
+    async buyGoldShops(report, token) {
+        const shops = await this.api.call('shopGetAll');
+        if (token.stopped) return;
+        const user = await this.api.call('userGetInfo');
+        if (token.stopped) return;
+        let gold = Number(user?.gold), count = 0;
+        if (!Number.isFinite(gold) || gold < 0) throw new Error('SCRIPT_API_ERROR');
+        const potion = shops?.[1]?.slots?.[2];
+        let needExperience = false;
+        if (potion && !potion.bought && !potion.purchaseDisabled && potion.cost?.gold &&
+            Object.keys(potion.cost).length === 1 && [9, 10, 11, 12].some(id => potion.reward?.consumable?.[id])) {
+            const heroes = await this.api.call('heroGetAll');
+            if (token.stopped) return;
+            const level = Number(user?.level);
+            needExperience = Number.isFinite(level) && level > 0 && Object.values(heroes ?? {}).some(hero =>
+                Number(hero?.level) > 0 && Number(hero.level) < level);
+        }
+        for (const [shopId, ids] of [[17, [1,2]], [1, needExperience ? [2,4,5,6] : [4,5,6]]]) {
+            for (const id of ids) {
+                if (token.stopped) return;
+                const slot = shops?.[shopId]?.slots?.[id];
+                if (!slot || slot.bought || slot.purchaseDisabled || !slot.reward || Object.keys(slot.cost ?? {}).length !== 1) continue;
+                const price = Number(slot.cost?.gold);
+                if (!(price > 0) || price > gold) continue;
+                await this.api.call('shopBuy', { shopId, slot: id, cost: slot.cost, reward: slot.reward });
+                gold -= price;
+                report('SCRIPT_SHOP_BOUGHT', ++count);
+            }
+        }
+        if (!count) return 'SCRIPT_NOTHING_TO_COLLECT';
+    }
+
+    upgradeCost(cost, inventory, user) {
+        if (!cost || typeof cost !== 'object' || Array.isArray(cost) || !Object.keys(cost).length) return null;
+        const entries = [];
+        for (const [type, value] of Object.entries(cost)) {
+            if (value && typeof value === 'object' && !Array.isArray(value)) {
+                if (!Object.keys(value).length) return null;
+                for (const [id, amount] of Object.entries(value)) {
+                    const required = Number(amount), available = Number(inventory?.[type]?.[id]);
+                    if (!Number.isFinite(required) || required < 0 || !Number.isFinite(available) || available < required) return null;
+                    entries.push({ owner: inventory, type, id, amount: required });
+                }
+            } else {
+                const required = Number(value), available = Number(user?.[type]);
+                if (!Number.isFinite(required) || required < 0 || !Number.isFinite(available) || available < required) return null;
+                entries.push({ owner: user, type, id: null, amount: required });
+            }
+        }
+        return entries;
+    }
+
+    async upgradeCosmetics(kind, settings, report, token) {
+        const count = Number(settings.levels);
+        if (!Number.isSafeInteger(count) || count <= 0) throw new Error('SCRIPT_UPGRADE_INVALID_LIMIT');
+        const titan = kind === 'titanArtifact', skin = kind === 'heroSkin';
+        const library = this.game.lib;
+        const unitDefinitions = titan ? library?.titan : library?.hero;
+        const definitions = skin ? library?.skin : titan ? library?.titanArtifact : library?.artifact;
+        if (!unitDefinitions || !definitions) throw new Error('SCRIPT_LIBRARY_NOT_READY');
+        const units = await this.api.call(titan ? 'titanGetAll' : 'heroGetAll');
+        if (token.stopped) return;
+        const inventory = await this.api.call('inventoryGet');
+        if (token.stopped) return;
+        const user = await this.api.call('userGetInfo');
+        if (token.stopped) return;
+        if (!units || !inventory || !user) throw new Error('SCRIPT_UPGRADE_NO_DATA');
+        const ranked = Object.values(units).filter(unit => unit && Number(unit.id) > 0 &&
+            (titan || Number(unit.id) < 6000) && unit.power != null && Number.isFinite(Number(unit.power)))
+            .sort((a, b) => Number(b.power) - Number(a.power) || Number(a.id) - Number(b.id));
+        const selected = titan ? ranked : ranked.slice(0, 15);
+        let done = 0;
+        while (done < count && !token.stopped) {
+            let best = null;
+            for (const unit of selected) {
+                if (!titan && Number(unit.level) < 20) continue;
+                for (const [slot, data] of Object.entries((skin ? unit.skins : unit.artifacts) ?? {})) {
+                    if (!skin && !data?.star) continue;
+                    const level = Number(skin ? data : data?.level);
+                    if (!Number.isInteger(level) || level < 0 || level >= (skin ? 60 : titan ? 120 : 100) || best && level >= best.level) continue;
+                    const definition = skin ? definitions?.[slot]?.statData?.levels?.[level + 1]
+                        : definitions?.type?.[definitions?.id?.[unitDefinitions?.[unit.id]?.artifacts?.[slot]]?.type]?.levels?.[level + 1];
+                    const cost = this.upgradeCost(definition?.cost, inventory, user);
+                    if (cost) best = { unit, slot, level, cost };
+                }
+            }
+            if (!best) break;
+            const args = titan ? { titanId: best.unit.id, slotId: best.slot }
+                : skin ? { heroId: best.unit.id, skinId: best.slot } : { heroId: best.unit.id, slotId: best.slot };
+            await this.api.call(titan ? 'titanArtifactLevelUp' : skin ? 'heroSkinUpgrade' : 'heroArtifactLevelUp', args);
+            for (const cost of best.cost) {
+                if (cost.id === null) cost.owner[cost.type] -= cost.amount;
+                else cost.owner[cost.type][cost.id] -= cost.amount;
+            }
+            if (skin) best.unit.skins[best.slot] = best.level + 1;
+            else best.unit.artifacts[best.slot].level = best.level + 1;
+            report('SCRIPT_COSMETIC_UPGRADED', ++done);
+        }
+        if (!done && !token.stopped) return 'SCRIPT_NOTHING_TO_COLLECT';
+    }
+
+    async exchangeSoulStones(kind, report, token) {
+        const titan = kind === 'titan';
+        const inventory = await this.api.call('inventoryGet');
+        if (token.stopped) return;
+        const stones = inventory?.[titan ? 'fragmentTitan' : 'fragmentHero'] ?? {};
+        if (!Object.values(stones).some(count => Number(count) > 0)) return 'SCRIPT_NOTHING_TO_COLLECT';
+        const heroes = await this.api.call(titan ? 'titanGetAll' : 'heroGetAll');
+        if (token.stopped) return;
+        if (!Object.entries(stones).some(([id, count]) => Number(count) > 0 && Number(heroes?.[id]?.star) === 6))
+            return 'SCRIPT_NOTHING_TO_COLLECT';
+        const result = await this.api.call(titan ? 'inventoryExchangeTitanStones' : 'inventoryExchangeStones');
+        const coins = Number(result?.reward?.coin?.[titan ? 15 : 5]);
+        if (!Number.isFinite(coins) || coins <= 0) throw new Error('SCRIPT_SOUL_EXCHANGE_INVALID');
+        report('SCRIPT_SOUL_EXCHANGE_COINS', coins);
+    }
+
+    async simpleFreeGift(kind, report, token, context = {}) {
+        const claimed = context.simpleGifts ??= new Set();
+        if (claimed.has(kind)) return 'SCRIPT_NOTHING_TO_COLLECT';
+        if (token.stopped) return;
+        const args = kind === 'atrium' ? { ident: 'heroGacha' } : {};
+        const result = await this.api.call(kind === 'atrium' ? 'gacha_refill' : 'grandFarmCoins', args);
+        claimed.add(kind);
+        const amount = kind === 'atrium' ? Number(result?.coin?.[38] ?? 0) : Number(result?.reward?.coin?.[2] ?? 0);
+        if (!(amount > 0)) return 'SCRIPT_NOTHING_TO_COLLECT';
+        report('SCRIPT_FREE_GIFT_AMOUNT', amount);
+    }
+
+    async dailyFreeGift(kind, report, token, context = {}) {
+        const claimed = context.dailyGifts ??= new Set();
+        if (claimed.has(kind)) return 'SCRIPT_NOTHING_TO_COLLECT';
+        const subscription = kind === 'subscription';
+        const info = await this.api.call(subscription ? 'subscriptionGetInfo' : 'zeppelinGiftGet');
+        if (token.stopped) return;
+        const available = subscription ? info?.dailyReward?.availableFarm : info?.available;
+        if (!available) return 'SCRIPT_NOTHING_TO_COLLECT';
+        await this.api.call(subscription ? 'subscriptionFarm' : 'zeppelinGiftFarm');
+        claimed.add(kind);
+        report('SCRIPT_FREE_GIFT_COLLECTED');
+    }
+
+    async battlePassRewards(report, token, context = {}) {
+        const claimed = context.battlePassRewards ??= new Set();
+        const definitions = this.game.lib?.battlePass?.level;
+        if (!definitions) throw new Error('SCRIPT_LIBRARY_NOT_READY');
+        const regular = await this.api.call('battlePass_getInfo');
+        if (token.stopped) return;
+        const special = await this.api.call('battlePass_getSpecial');
+        if (token.stopped) return;
+        const passes = [{ ...regular?.battlePass, regular: true }, ...Object.values(special ?? {})];
+        let count = 0;
+        for (const pass of passes) {
+            if (token.stopped) return;
+            if (!pass?.id) continue;
+            const levels = Object.values(definitions).filter(level => level.battlePass == pass.id)
+                .sort((a, b) => Number(a.level) - Number(b.level));
+            if (!levels.length) continue;
+            const last = levels[levels.length - 1];
+            const exp = Number(pass.exp);
+            if (!Number.isFinite(exp)) continue;
+            let actual = Math.max(0, ...levels.filter(level => exp >= Number(level.experience)).map(level => Number(level.level)));
+            if (exp > Number(last.experience) && Number(last.experienceByLevel) > 0)
+                actual = Number(last.level) + Math.floor((exp - Number(last.experience)) / Number(last.experienceByLevel));
+            if (!Number.isSafeInteger(actual) || actual < 0) throw new Error('SCRIPT_API_ERROR');
+            for (let number = 1; number <= actual; number++) {
+                const def = number >= Number(last.level) ? last : levels.find(level => Number(level.level) === number);
+                if (!def) continue;
+                for (const free of [true, false]) {
+                    if (token.stopped) return;
+                    const claimKey = `${pass.id}:${number}:${free}`;
+                    if (!free && !pass.ticket || pass.rewards?.[number]?.[free ? 'free' : 'paid'] || claimed.has(claimKey)) continue;
+                    const reward = free ? def.freeReward : def.paidReward;
+                    if (!reward || reward.buff || reward.fragmentHero || reward.bundleHeroReward) continue;
+                    const args = { level: number, free };
+                    if (!pass.regular) args.id = pass.id;
+                    await this.api.call('battlePass_farmReward', args);
+                    claimed.add(claimKey);
+                    report('SCRIPT_BATTLE_PASS_COLLECTED', ++count);
+                }
+            }
+        }
+        if (!count) return 'SCRIPT_NOTHING_TO_COLLECT';
+    }
+
+    async offerGifts(report, token, context = {}) {
+        const claimed = context.offerGifts ??= new Set();
+        const offers = await this.api.call('offerGetAll');
+        if (token.stopped) return;
+        let count = 0;
+        for (const offer of Object.values(offers ?? {})) {
+            if (token.stopped) return;
+            if (offer?.type !== 'reward' || offer.freeRewardObtained || !offer.reward || offer.id == null || claimed.has(String(offer.id))) continue;
+            await this.api.call('offerFarmReward', { offerId: offer.id });
+            claimed.add(String(offer.id));
+            report('SCRIPT_OFFER_GIFTS_COLLECTED', ++count);
+        }
+        if (!count) return 'SCRIPT_NOTHING_TO_COLLECT';
+    }
+
+    async freeOfferStages(report, token, context = {}) {
+        const claimed = context.offerStages ??= new Set();
+        const offers = await this.api.call('specialOffer_getAll');
+        if (token.stopped) return;
+        let count = 0;
+        for (const offer of Object.values(offers ?? {})) {
+            if (token.stopped) return;
+            if (offer?.offerType !== 'stagesOffer' || Number(offer.farmedStage) !== -1 || offer.id == null || claimed.has(String(offer.id)) || !Array.isArray(offer.offerData?.stages)) continue;
+            claimed.add(String(offer.id));
+            for (const stage of offer.offerData.stages) {
+                if (token.stopped) return;
+                if (!stage || stage.billingId) break;
+                await this.api.call('specialOffer_farmReward', { offerId: offer.id });
+                report('SCRIPT_STAGE_OFFERS_COLLECTED', ++count);
+            }
+        }
+        if (!count) return 'SCRIPT_NOTHING_TO_COLLECT';
+    }
+
+    async openResources(kind, settings, report, token) {
+        const limit = Number(settings.limit);
+        if (!Number.isSafeInteger(limit) || limit < 0) throw new Error('SCRIPT_RESOURCE_INVALID_LIMIT');
+        const definitions = {
+            heroArtifact: { type: 'consumable', id: 45, rpc: 'artifactChestOpen', args: { free: true } },
+            titanArtifact: { type: 'consumable', id: 55, rpc: 'titanArtifactChestOpen', args: { free: true } },
+            titanSummon: { type: 'coin', id: 13, rpc: 'titanUseSummonCircle', args: { circleId: 1, paid: false } },
+            petEgg: { type: 'consumable', id: 90, rpc: 'pet_chestOpen', args: { paid: false } },
+            ascension: { type: 'refillable', id: 47, rpc: 'ascensionChest_open', args: { paid: false } }
+        };
+        const config = definitions[kind];
+        if (!config) throw new Error('SCRIPT_API_ERROR');
+        const state = await this.api.call(config.type === 'refillable' ? 'userGetInfo' : 'inventoryGet');
+        if (token.stopped) return;
+        const raw = config.type === 'refillable'
+            ? Object.values(state?.refillable ?? {}).find(item => Number(item?.id) === config.id)?.amount
+            : state?.[config.type]?.[config.id];
+        const available = Number(raw ?? 0);
+        if (!Number.isSafeInteger(available) || available < 0) throw new Error('SCRIPT_API_ERROR');
+        let remaining = limit ? Math.min(available, limit) : available;
+        if (!remaining) return 'SCRIPT_NOTHING_TO_COLLECT';
+        let opened = 0;
+        while (remaining > 0) {
+            if (token.stopped) return;
+            const amount = remaining >= 100 ? 100 : remaining > 10 ? 10 : 1;
+            try {
+                await this.api.call(config.rpc, { ...config.args, amount });
+            } catch (error) {
+                if (kind === 'heroArtifact' && /(^|[:\\])NotEnough$/.test(String(error?.rpcErrorName ?? ''))) {
+                    if (!opened) return 'SCRIPT_NOTHING_TO_COLLECT';
+                    break;
+                }
+                throw error;
+            }
+            remaining -= amount;
+            opened += amount;
+            report('SCRIPT_RESOURCE_OPENED', opened);
         }
     }
 
@@ -508,21 +951,6 @@ class InterfaceAutomation {
             }
         }
         if (token.stopped) return;
-        if (settings.openArtifactChest) {
-            const inventory = await this.api.call('inventoryGet');
-            if (token.stopped) return;
-            const keys = Number(inventory?.consumable?.[45]);
-            if (Number.isSafeInteger(keys) && keys > 0) {
-                let remaining = keys;
-                while (remaining > 0) {
-                    if (token.stopped) return;
-                    const amount = remaining >= 100 ? 100 : remaining > 10 ? 10 : 1;
-                    await this.api.call('artifactChestOpen', { amount, free: true });
-                    remaining -= amount;
-                    report('SCRIPT_ARTIFACT_CHEST_OPENED', keys - remaining);
-                }
-            } else report('SCRIPT_ARTIFACT_CHEST_NO_KEY');
-        }
         if (!settings.send || token.stopped) return;
         // Refresh after collecting so heroes and newly available expeditions are current.
         expeditions = await this.api.call('expeditionGet');

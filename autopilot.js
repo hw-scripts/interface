@@ -35,7 +35,24 @@ class InterfaceAutopilot {
 
     fingerprint(section) {
         const { enabled, ...settings } = this.automation.settings(section);
-        return JSON.stringify(settings);
+        if (section !== 'COLLECT_ALL') return JSON.stringify(settings);
+        const children = [
+            ['includeRewards', 'QUEST_REWARDS'], ['includeMail', 'MAIL'],
+            ['includeHeroArtifacts', 'HERO_ARTIFACT_CHESTS'], ['includeTitanArtifacts', 'TITAN_ARTIFACT_CHESTS'],
+            ['includeTitanSummons', 'TITAN_SUMMONS'], ['includePetEggs', 'PET_EGGS'], ['includeAscension', 'ASCENSION_FREE'],
+            ['includeHeroSouls', 'HERO_SOUL_EXCHANGE'], ['includeTitanSouls', 'TITAN_SOUL_EXCHANGE'],
+            ['includeOfferGifts', 'OFFER_GIFTS'], ['includeStageOffers', 'FREE_OFFER_STAGES'],
+            ['includeBattlePass', 'BATTLE_PASS_REWARDS'], ['includeSubscription', 'SUBSCRIPTION_GIFT'],
+            ['includeZeppelin', 'ZEPPELIN_GIFT'], ['includeGrandCoins', 'GRAND_ARENA_COINS'],
+            ['includeSoulAtrium', 'SOUL_ATRIUM_REFILL'], ['includeInventoryBoxes', 'INVENTORY_BOXES']
+        ];
+        const dependencies = {};
+        for (const [option, child] of children) {
+            if (!settings[option]) continue;
+            const { enabled: ignored, ...values } = this.automation.settings(child);
+            dependencies[child] = values;
+        }
+        return JSON.stringify({ settings, dependencies });
     }
 
     due(section) {
@@ -98,12 +115,19 @@ class InterfaceAutopilot {
                     if (this.state.restartSignature === signature) continue;
                     // Write the continuation before reload; no code after reload is required for recovery.
                     this.state.restartSignature = signature;
-                    this.state.pending = { sections: sections.slice(index + 1), mode };
+                    this.state.pending = { sections: sections.slice(index + 1), mode, internalReload: mode === 'auto' };
                     this.save();
-                    if (!await this.execute(section)) {
+                    try {
+                        if (!await this.execute(section)) {
+                            delete this.state.restartSignature;
+                            delete this.state.pending;
+                            this.save();
+                        }
+                    } catch (error) {
                         delete this.state.restartSignature;
                         delete this.state.pending;
                         this.save();
+                        throw error;
                     }
                     return;
                 }
@@ -141,7 +165,7 @@ class InterfaceAutopilot {
         if (!this.ready() || this.automation.running) { this.arm(1000); return; }
         const idleAt = this.state.lastActivity + this.options.idleMinutes * 60000;
         const pending = this.state.pending;
-        if (pending?.mode !== 'manual' && this.now() < idleAt) { this.arm(idleAt - this.now()); return; }
+        if (pending?.mode !== 'manual' && !(pending?.mode === 'auto' && pending?.internalReload) && this.now() < idleAt) { this.arm(idleAt - this.now()); return; }
         if (pending) {
             delete this.state.pending;
             this.save();

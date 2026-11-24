@@ -1,6 +1,6 @@
 # Перенесення скриптів із HWrunner
 
-Джерело: `ignored/HWrunner.js`. Переносимо поступово, по одному скрипту.
+Актуальне джерело: репозиторій Runner, `D:\Google Drive\Runner\HWrunner.js`. Перед перенесенням кожного скрипту перевіряємо поточну реалізацію в Runner; переносимо поступово, по одному скрипту. `ignored/HWrunner.js` — застарілий історичний знімок, не джерело актуальної поведінки.
 Позначаємо пункт виконаним після реалізації та перевірки в грі.
 Не використовуємо жорстко задані обфусковані імена чи індекси членів класів.
 
@@ -27,8 +27,8 @@
 - [x] Отримання щоденного бонусу.
 - [ ] Збір нагород завдань гільдії та скринь за спільний прогрес: HAR підтвердив `questFarm` з `{questId: 20000902}` для завдання (нагорода `clanQuestsPoints` і `prestige`) та `quest_questsFarm` з `{questIds: [...]}` для порогових нагород 20/40/60/80 (ID 20010006–20010009). У записі порогові нагороди збиралися окремими викликами з одним ID; підтримку кількох ID одним запитом ще перевірити. Після збору оновлювати доступність нагород, оскільки виконання завдання збільшує спільний прогрес.
 - [ ] Збір усіх доступних нагород престижу гільдії: HAR підтвердив `clan_prestigeGetInfo` для стану та `clan_prestigeFarmAllRewards` з порожніми `args` для збору. Відповідь містить `reward`, `farmedPrestigeLevels`, `farmedPrestigeLevelsPaid`; підтверджено збір без квитка (`hasTicket: false`), поведінку з квитком ще перевірити.
-- [ ] Збір інших подарунків: підписка, дирижабль, монети Гранд-арени.
-- [ ] Збір безкоштовних і придбаних нагород бойового пропуску.
+- [ ] Збір інших подарунків: підписка, дирижабль, монети Гранд-арени та поповнення Атріуму душ — окремі дії реалізовано й перевірено у браузерному стенді; потрібна перевірка в грі.
+- [ ] Збір безкоштовних і придбаних нагород бойових перепусток — реалізовано з перевіркою квитка; потрібна перевірка в грі.
 - [ ] Безкоштовне відкриття у Провидця.
 
 ## Щоденні дії та інвентар
@@ -38,16 +38,16 @@
 - [ ] Повна чистка інвентарю без повторних ручних кліків: обробляти всі підтримувані скрині та набори, включно з вибірковими. Налаштувати критерії й відсотковий розподіл нагород: сила / інтелект / спритність; титани за стихіями; решта вибіркових наборів — за типом нагороди. Визначити округлення та розподіл залишку, щоб використати всю задану кількість; відкривати послідовно пачками 100/10/1.
 - [ ] Отримання енергії з наборів до заданого ліміту.
 - [ ] Обмін предметів на активність гільдії з контролем кількості.
-- [ ] Покупка фрагментів героїв у магазинах.
-- [ ] Покупка товарів за золото.
+- [ ] Покупка фрагментів героїв у магазинах — реалізовано; потрібна перевірка в грі.
+- [ ] Покупка товарів за золото — реалізовано; потрібна перевірка в грі.
 - [ ] Відкриття скринь Запреділля за валюту з урахуванням знижки.
-- [ ] Покращення артефактів.
-- [ ] Покращення образів.
-- [ ] Продаж каменів душ героїв за золото.
+- [ ] Покращення артефактів героїв і титанів — окремі дії реалізовано; потрібна перевірка в грі.
+- [ ] Покращення образів героїв — реалізовано; потрібна перевірка в грі.
+- [ ] Масовий обмін зайвих каменів душ героїв і титанів на монети магазинів — окремі дії реалізовано; потрібна перевірка в грі.
 
 ## Проходження та фарм
 
-- [ ] Рейди пригод: задана кількість рейдів за доступні портали.
+- [ ] Рейди пригод: задана кількість рейдів за доступні портали — реалізовано; потрібна перевірка в грі.
 - [ ] Проходження звичайних пригод.
 - [ ] Проходження соло-пригод.
 - [ ] Підземелля: поверхи, вибір дверей за станом бійців, команди титанів, карти передбачення, ціль титаніту та збереження прогресу — перенесено; очікує перевірки в грі.
@@ -113,4 +113,15 @@ RPC прокачки додавати після перевірки аргуме
 - [ ] Звірити глобальний збір нагород із Runner: повторювати перевірку після збору, врахувати підтверджені `dailyBonusFarm` та безкоштовну `dailyReward` через `specialOffer_farmReward`, спокійно обробляти відповіді про вже зібрану нагороду та відсутність доступної нагороди престижу. Перевірити поведінку в грі та локальні правила Interface.
 - [ ] Для гільдійського завдання `20000181` перевірити підтверджений HAR запит `questFarm`; не узагальнювати маршрут на інші ID без даних гри.
 - [ ] Під час реалізації обміну предметів звірити варіант Runner: один кумулятивний `clanItemsForActivity`, резерви за кольорами й захист потреб 15 наявних героїв за силою, включно з майбутніми рангами, рецептами та фрагментами. Перевірити фактичні метадані, завершення й ліміти в грі.
+- [ ] Додати до загального збору безкоштовні стадії `stagesOffer`: HAR `mail_prize-www.hero-wars.com.har` підтвердив для пропозиції 9557 два послідовні `specialOffer_farmReward` перед першою стадією з `billingId`. Зчитувати `farmedStage`, перевіряти зупинку між запитами і не переходити платну межу; перевірити в грі.
+- [ ] Перевірити в грі загальний збір скринь артефактів титанів: `altarfull-www.hero-wars.com.har` підтвердив витрату однієї `consumable[55]` та `titanArtifactChestOpen({ amount: 1, free: true })`. Реалізовано послідовні пачки 100/10/1 і зупинку між ними; більші пачки й відповідь при вичерпанні ще не перевірено. Маршрут `questFarm` для `20000191` реалізовано, очікує перевірки в грі.
+- [ ] Runner guild rewards: state 1, positive farmCount, and questFarm handling implemented for 20000182, 20000185, 20000186, 20000188, 20000189, 20000191, 20000901, 20000902; browser fixture confirms follow-up threshold collection. Verify in game; other repeatable guild quest IDs still need validation.
+- [ ] Port Runner summon-sphere and titan stone collection: HAR all2-www.hero-wars.com.har confirms titanUseSummonCircle({circleId:1,paid:false,amount:1}) and one inventoryExchangeTitanStones call with empty args, exchanging surplus stones for max-star titans; Runner uses coin[13], 100/10/1 batches and refreshes inventory after summoning. Also add confirmed questFarm ID 20000186. Validate in game.
+- [ ] Align hero and titan artifact upgrade selection with Runner: among the strongest 15 owned heroes balance artifact levels, using power as tie-breaker; for titans balance across owned titans with the same tie-breaker. Validate every resource in the next-level cost and account for all resources across planned upgrades. Runner 1.1.36 requires live-game verification.
+- [ ] Align hero skin upgrade selection with Runner 1.1.37: balance owned skins across the strongest 15 heroes, use power as a tie-breaker, validate all next-level costs and account for cumulative spending in multi-upgrade plans. Requires live-game verification.
+- [ ] Consider porting hero soul stone exchange: HAR souls-www.hero-wars.com.har confirms one inventoryExchangeStones request with empty args exchanges surplus six-star hero stones for Soul Shop coin[5]. Runner 1.1.38 uses this instead of inventorySell for gold; verify live behavior.
+- [ ] Align equipment farming with Runner 1.1.39: check shops for needed equipment and recipe components before campaign farming; purchase only available slots affordable in gold or shop coins, refresh inventory and recalculate needs after each purchase, and never spend emeralds. Verify shop behavior and reserve policy in game.
+- [ ] Verify in game the Interface 3.3.16 split: mail and quest rewards are separate; hero artifact chests, titan artifact spheres, titan summons, pet eggs and free ascension chest are independent scripts with per-account limits and 100/10/1 batching. Legacy enabled sequence choices migrate once. Titan and hero soul exchange remain separate migration tasks.
+- [ ] Verify Interface 3.3.17 COLLECT_ALL in game: selected child scripts use their own settings and resource limits once; mail and quest rewards repeat until no new claims, with cancellation. Independent sequence enabled flags do not control composite selections.
 
+- [ ] Безкоштовні подарунки й етапи пропозицій перенесено окремими скриптами та складовими «Зібрати все»; перевірити в грі, зокрема зупинку перед платною стадією.

@@ -1,4 +1,1069 @@
 {
+    "NAV_HERO_POWER":  {
+                           "en":  "Hero power record",
+                           "uk":  "Рекорд сили героїв",
+                           "ru":  "Рекорд силы героев"
+                       },
+    "SCRIPT_HERO_POWER":  {
+                              "en":  "Current / record (difference)",
+                              "uk":  "Поточна / рекордна сила (різниця)",
+                              "ru":  "Текущая / рекордная сила (разница)"
+                          },
+    "NAV_INVENTORY_BOXES":  {
+                                "en":  "Open inventory boxes",
+                                "uk":  "Відкрити набори з інвентаря",
+                                "ru":  "Открыть наборы из инвентаря"
+                            },
+    "SCRIPT_OPTION_INCLUDEINVENTORYBOXES":  {
+                                                "en":  "Open inventory boxes",
+                                                "uk":  "Відкрити набори з інвентаря",
+                                                "ru":  "Открыть наборы из инвентаря"
+                                            },
+    "SCRIPT_OPTION_EQUIPMENTBOXES":  {
+                                         "en":  "Equipment fragment boxes",
+                                         "uk":  "Скрині фрагментів спорядження",
+                                         "ru":  "Сундуки фрагментов экипировки"
+                                     },
+    "SCRIPT_OPTION_RANDOMBOXES":  {
+                                      "en":  "Random titan and resource boxes",
+                                      "uk":  "Випадкові набори титанів і ресурсів",
+                                      "ru":  "Случайные наборы титанов и ресурсов"
+                                  },
+    "SCRIPT_OPTION_ARTIFACTBOXES":  {
+                                        "en":  "Artifact resource boxes",
+                                        "uk":  "Скрині ресурсів артефактів",
+                                        "ru":  "Сундуки ресурсов артефактов"
+                                    },
+    "NAV_GRAND_ARENA_COINS":  {
+                                  "en":  "Grand Arena coins",
+                                  "uk":  "Монети Гранд-арени",
+                                  "ru":  "Монеты Гранд-арены"
+                              },
+    "NAV_SOUL_ATRIUM_REFILL":  {
+                                   "en":  "Soul Atrium refill",
+                                   "uk":  "Поповнення Атріуму душ",
+                                   "ru":  "Пополнение Атриума душ"
+                               },
+    "SCRIPT_OPTION_INCLUDEGRANDCOINS":  {
+                                            "en":  "Collect Grand Arena coins",
+                                            "uk":  "Зібрати монети Гранд-арени",
+                                            "ru":  "Собрать монеты Гранд-арены"
+                                        },
+    "SCRIPT_OPTION_INCLUDESOULATRIUM":  {
+                                            "en":  "Collect Soul Atrium refill",
+                                            "uk":  "Забрати поповнення Атріуму душ",
+                                            "ru":  "Забрать пополнение Атриума душ"
+                                        },
+    "SCRIPT_FREE_GIFT_AMOUNT":  {
+                                    "en":  "Collected",
+                                    "uk":  "Отримано",
+                                    "ru":  "Получено"
+                                },
+    "NAV_ADVENTURE_RAID":  {
+                               "en":  "Adventure raids",
+                               "uk":  "Рейди пригод",
+                               "ru":  "Рейды приключений"
+                           },
+    "SCRIPT_ADVENTURE_RAID_DONE":  {
+                                       "en":  "Adventure raids completed",
+                                       "uk":  "Виконано рейдів пригод",
+                                       "ru":  "Выполнено рейдов приключений"
+                                   },
+    "NAV_SUBSCRIPTION_GIFT":  {
+                                  "en":  "Subscription gift",
+                                  "uk":  "Подарунок підписки",
+                                  "ru":  "Подарок подписки"
+                              },
+    "NAV_ZEPPELIN_GIFT":  {
+                              "en":  "Airship gift",
+                              "uk":  "Подарунок дирижабля",
+                              "ru":  "Подарок дирижабля"
+                          },
+    "SCRIPT_OPTION_INCLUDESUBSCRIPTION":  {
+                                              "en":  "Collect subscription gift",
+                                              "uk":  "Зібрати подарунок підписки",
+                                              "ru":  "Собрать подарок подписки"
+                                          },
+    "SCRIPT_OPTION_INCLUDEZEPPELIN":  {
+                                          "en":  "Collect airship gift",
+                                          "uk":  "Зібрати подарунок дирижабля",
+                                          "ru":  "Собрать подарок дирижабля"
+                                      },
+    "SCRIPT_FREE_GIFT_COLLECTED":  {
+                                       "en":  "Gift collected",
+                                       "uk":  "Подарунок зібрано",
+                                       "ru":  "Подарок собран"
+                                   },
+    "NAV_BATTLE_PASS_REWARDS":  {
+                                    "en":  "Battle Pass rewards",
+                                    "uk":  "Нагороди бойових перепусток",
+                                    "ru":  "Награды боевых пропусков"
+                                },
+    "SCRIPT_OPTION_INCLUDEBATTLEPASS":  {
+                                            "en":  "Collect Battle Pass rewards",
+                                            "uk":  "Зібрати нагороди бойових перепусток",
+                                            "ru":  "Собрать награды боевых пропусков"
+                                        },
+    "SCRIPT_BATTLE_PASS_COLLECTED":  {
+                                         "en":  "Battle Pass rewards collected",
+                                         "uk":  "Зібрано нагород перепусток",
+                                         "ru":  "Собрано наград пропусков"
+                                     },
+    "NAV_BUY_HERO_SOULS":  {
+                               "en":  "Buy hero soul stones",
+                               "uk":  "Купити камені душ героїв",
+                               "ru":  "Купить камни душ героев"
+                           },
+    "NAV_BUY_GOLD_SHOPS":  {
+                               "en":  "Buy goods for gold",
+                               "uk":  "Купити товари за золото",
+                               "ru":  "Купить товары за золото"
+                           },
+    "SCRIPT_SHOP_BOUGHT":  {
+                               "en":  "Shop purchases",
+                               "uk":  "Куплено товарів",
+                               "ru":  "Куплено товаров"
+                           },
+    "NAV_HERO_ARTIFACT_UPGRADE":  {
+                                      "en":  "Upgrade hero artifacts",
+                                      "uk":  "Покращення артефактів героїв",
+                                      "ru":  "Улучшение артефактов героев"
+                                  },
+    "NAV_TITAN_ARTIFACT_UPGRADE":  {
+                                       "en":  "Upgrade titan artifacts",
+                                       "uk":  "Покращення артефактів титанів",
+                                       "ru":  "Улучшение артефактов титанов"
+                                   },
+    "NAV_HERO_SKIN_UPGRADE":  {
+                                  "en":  "Upgrade hero skins",
+                                  "uk":  "Покращення скінів героїв",
+                                  "ru":  "Улучшение обликов героев"
+                              },
+    "SCRIPT_OPTION_LEVELS":  {
+                                 "en":  "Maximum levels",
+                                 "uk":  "Максимум рівнів",
+                                 "ru":  "Максимум уровней"
+                             },
+    "SCRIPT_COSMETIC_UPGRADED":  {
+                                     "en":  "Levels upgraded",
+                                     "uk":  "Покращено рівнів",
+                                     "ru":  "Улучшено уровней"
+                                 },
+    "NAV_FREE_OFFER_STAGES":  {
+                                  "en":  "Free offer stages",
+                                  "uk":  "Безкоштовні етапи пропозицій",
+                                  "ru":  "Бесплатные этапы предложений"
+                              },
+    "SCRIPT_OPTION_INCLUDESTAGEOFFERS":  {
+                                             "en":  "Collect free offer stages",
+                                             "uk":  "Зібрати безкоштовні етапи пропозицій",
+                                             "ru":  "Собрать бесплатные этапы предложений"
+                                         },
+    "SCRIPT_STAGE_OFFERS_COLLECTED":  {
+                                          "en":  "Free offer stages collected",
+                                          "uk":  "Зібрано безкоштовних етапів",
+                                          "ru":  "Собрано бесплатных этапов"
+                                      },
+    "NAV_HERO_SOUL_EXCHANGE":  {
+                                   "en":  "Exchange hero soul stones",
+                                   "uk":  "Обмін каменів душ героїв",
+                                   "ru":  "Обмен камней душ героев"
+                               },
+    "NAV_TITAN_SOUL_EXCHANGE":  {
+                                    "en":  "Exchange titan soul stones",
+                                    "uk":  "Обмін каменів душ титанів",
+                                    "ru":  "Обмен камней душ титанов"
+                                },
+    "NAV_OFFER_GIFTS":  {
+                            "en":  "Collect free offer gifts",
+                            "uk":  "Збір безкоштовних подарунків пропозицій",
+                            "ru":  "Сбор бесплатных подарков предложений"
+                        },
+    "SCRIPT_OPTION_INCLUDEHEROSOULS":  {
+                                           "en":  "Exchange hero soul stones",
+                                           "uk":  "Обміняти камені душ героїв",
+                                           "ru":  "Обменять камни душ героев"
+                                       },
+    "SCRIPT_OPTION_INCLUDETITANSOULS":  {
+                                            "en":  "Exchange titan soul stones",
+                                            "uk":  "Обміняти камені душ титанів",
+                                            "ru":  "Обменять камни душ титанов"
+                                        },
+    "SCRIPT_OPTION_INCLUDEOFFERGIFTS":  {
+                                            "en":  "Collect free offer gifts",
+                                            "uk":  "Зібрати безкоштовні подарунки пропозицій",
+                                            "ru":  "Собрать бесплатные подарки предложений"
+                                        },
+    "SCRIPT_SOUL_EXCHANGE_INVALID":  {
+                                         "en":  "Invalid soul exchange response",
+                                         "uk":  "Некоректна відповідь обміну каменів душ",
+                                         "ru":  "Некорректный ответ обмена камней душ"
+                                     },
+    "SCRIPT_SOUL_EXCHANGE_COINS":  {
+                                       "en":  "Coins received",
+                                       "uk":  "Отримано монет",
+                                       "ru":  "Получено монет"
+                                   },
+    "SCRIPT_OFFER_GIFTS_COLLECTED":  {
+                                         "en":  "Offer gifts collected",
+                                         "uk":  "Зібрано подарунків пропозицій",
+                                         "ru":  "Собрано подарков предложений"
+                                     },
+    "NAV_COLLECT_ALL":  {
+                            "en":  "Collect all",
+                            "uk":  "Зібрати все",
+                            "ru":  "Собрать всё"
+                        },
+    "SCRIPT_OPTION_INCLUDEREWARDS":  {
+                                         "en":  "Collect quest rewards",
+                                         "uk":  "Зібрати нагороди завдань",
+                                         "ru":  "Собрать награды заданий"
+                                     },
+    "SCRIPT_OPTION_INCLUDEMAIL":  {
+                                      "en":  "Collect mail",
+                                      "uk":  "Зібрати пошту",
+                                      "ru":  "Собрать почту"
+                                  },
+    "SCRIPT_OPTION_INCLUDEHEROARTIFACTS":  {
+                                               "en":  "Open hero artifact chests",
+                                               "uk":  "Відкрити скрині артефактів героїв",
+                                               "ru":  "Открыть сундуки артефактов героев"
+                                           },
+    "SCRIPT_OPTION_INCLUDETITANARTIFACTS":  {
+                                                "en":  "Open titan artifact spheres",
+                                                "uk":  "Відкрити сфери артефактів титанів",
+                                                "ru":  "Открыть сферы артефактов титанов"
+                                            },
+    "SCRIPT_OPTION_INCLUDETITANSUMMONS":  {
+                                              "en":  "Open titan summoning spheres",
+                                              "uk":  "Відкрити сфери призову титанів",
+                                              "ru":  "Открыть сферы призыва титанов"
+                                          },
+    "SCRIPT_OPTION_INCLUDEPETEGGS":  {
+                                         "en":  "Open pet eggs",
+                                         "uk":  "Відкрити яйця вихованців",
+                                         "ru":  "Открыть яйца питомцев"
+                                     },
+    "SCRIPT_OPTION_INCLUDEASCENSION":  {
+                                           "en":  "Open free Ascension chests",
+                                           "uk":  "Відкрити безкоштовну скриню вознесіння",
+                                           "ru":  "Открыть бесплатный сундук вознесения"
+                                       },
+    "NAV_HERO_ARTIFACT_CHESTS":  {
+                                     "en":  "Hero artifact chests",
+                                     "uk":  "Скрині артефактів героїв",
+                                     "ru":  "Сундуки артефактов героев"
+                                 },
+    "NAV_TITAN_ARTIFACT_CHESTS":  {
+                                      "en":  "Titan artifact spheres",
+                                      "uk":  "Сфери артефактів титанів",
+                                      "ru":  "Сферы артефактов титанов"
+                                  },
+    "NAV_TITAN_SUMMONS":  {
+                              "en":  "Titan summoning spheres",
+                              "uk":  "Сфери призову титанів",
+                              "ru":  "Сферы призыва титанов"
+                          },
+    "NAV_PET_EGGS":  {
+                         "en":  "Pet eggs",
+                         "uk":  "Яйця вихованців",
+                         "ru":  "Яйца питомцев"
+                     },
+    "NAV_ASCENSION_FREE":  {
+                               "en":  "Free Ascension chest",
+                               "uk":  "Безкоштовна скриня вознесіння",
+                               "ru":  "Бесплатный сундук вознесения"
+                           },
+    "SCRIPT_OPTION_LIMIT":  {
+                                "en":  "Maximum openings (0 = all available)",
+                                "uk":  "Максимум відкриттів (0 — усі доступні)",
+                                "ru":  "Максимум открытий (0 — все доступные)"
+                            },
+    "SCRIPT_RESOURCE_OPENED":  {
+                                   "en":  "Opened",
+                                   "uk":  "Відкрито",
+                                   "ru":  "Открыто"
+                               },
+    "SCRIPT_RESOURCE_INVALID_LIMIT":  {
+                                          "en":  "Enter a non-negative whole-number limit",
+                                          "uk":  "Вкажіть цілий невід’ємний ліміт",
+                                          "ru":  "Укажите целый неотрицательный лимит"
+                                      },
+    "SCRIPT_OPTION_COLLECTDAILYBONUS":  {
+                                            "en":  "Collect daily login bonus",
+                                            "uk":  "Збирати щоденний бонус",
+                                            "ru":  "Собирать ежедневный бонус"
+                                        },
+    "SCRIPT_OPTION_COLLECTTITANARTIFACTS":  {
+                                                "en":  "Open Titan Artifact Altar chests using spheres",
+                                                "uk":  "Відкривати скрині артефактів титанів за сфери",
+                                                "ru":  "Открывать сундуки артефактов титанов за сферы"
+                                            },
+    "SCRIPT_OPTION_COLLECTGUILDPRESTIGE":  {
+                                               "en":  "Collect guild prestige rewards",
+                                               "uk":  "Збирати нагороди престижу гільдії",
+                                               "ru":  "Собирать награды престижа гильдии"
+                                           },
+    "SCRIPT_OPTION_COLLECTDAILYOFFERS":  {
+                                             "en":  "Collect available free daily offers",
+                                             "uk":  "Збирати безкоштовні щоденні пропозиції",
+                                             "ru":  "Собирать бесплатные ежедневные предложения"
+                                         },
+    "SCRIPT_OPTION_COLLECTQUESTS":  {
+                                        "en":  "Collect completed quest rewards",
+                                        "uk":  "Збирати нагороди виконаних завдань",
+                                        "ru":  "Собирать награды выполненных заданий"
+                                    },
+    "SCRIPT_OPTION_COLLECTMAIL":  {
+                                      "en":  "Collect mail rewards",
+                                      "uk":  "Збирати нагороди з пошти",
+                                      "ru":  "Собирать награды из почты"
+                                  },
+    "SCRIPT_OPTION_TARGETTITANITE":  {
+                                         "en":  "Titanite target for today",
+                                         "uk":  "Ціль титаніту за сьогодні",
+                                         "ru":  "Цель титанита за сегодня"
+                                     },
+    "SCRIPT_OPTION_AVOIDDEATHS":  {
+                                      "en":  "Prevent titan or hero deaths",
+                                      "uk":  "Не допускати загибелі титана або героя",
+                                      "ru":  "Не допускать гибели титана или героя"
+                                  },
+    "SCRIPT_OPTION_USEPREDICTIONCARDS":  {
+                                             "en":  "Use prediction cards for winning battles",
+                                             "uk":  "Використовувати карти передбачення для переможних боїв",
+                                             "ru":  "Использовать карты предсказания для победных боёв"
+                                         },
+    "SCRIPT_OPTION_COLLECTTALENT":  {
+                                        "en":  "Collect available TMNT dungeon talent rewards",
+                                        "uk":  "Збирати доступні нагороди таланту TMNT у Підземеллі",
+                                        "ru":  "Собирать доступные награды таланта TMNT в Подземелье"
+                                    },
+    "SCRIPT_DUNGEON_INVALID_TARGET":  {
+                                          "en":  "Titanite target must be a positive integer",
+                                          "uk":  "Ціль титаніту має бути додатним цілим числом",
+                                          "ru":  "Цель титанита должна быть положительным целым числом"
+                                      },
+    "SCRIPT_DUNGEON_UNAVAILABLE":  {
+                                       "en":  "Dungeon or guild activity data unavailable",
+                                       "uk":  "Дані Підземелля або активності гільдії недоступні",
+                                       "ru":  "Данные Подземелья или активности гильдии недоступны"
+                                   },
+    "SCRIPT_DUNGEON_INVALID_BATTLE":  {
+                                          "en":  "Invalid dungeon battle data",
+                                          "uk":  "Некоректні дані бою Підземелля",
+                                          "ru":  "Некорректные данные боя Подземелья"
+                                      },
+    "SCRIPT_DUNGEON_STALLED":  {
+                                   "en":  "Dungeon stopped: server state did not advance",
+                                   "uk":  "Підземелля зупинено: серверний стан не просунувся",
+                                   "ru":  "Подземелье остановлено: состояние сервера не изменилось"
+                               },
+    "SCRIPT_DUNGEON_UNKNOWN_FLOOR":  {
+                                         "en":  "Unknown dungeon floor type",
+                                         "uk":  "Невідомий тип поверху Підземелля",
+                                         "ru":  "Неизвестный тип этажа Подземелья"
+                                     },
+    "SCRIPT_DUNGEON_NO_TEAM":  {
+                                   "en":  "No living team for available doors",
+                                   "uk":  "Немає живої команди для доступних дверей",
+                                   "ru":  "Нет живой команды для доступных дверей"
+                               },
+    "SCRIPT_DUNGEON_NO_SAFE_WIN":  {
+                                       "en":  "No winning option without casualties",
+                                       "uk":  "Немає переможного варіанта без загибелі бійців",
+                                       "ru":  "Нет победного варианта без гибели бойцов"
+                                   },
+    "SCRIPT_DUNGEON_NO_WIN":  {
+                                  "en":  "Calculation found no winning option",
+                                  "uk":  "Розрахунок не знайшов переможного варіанта",
+                                  "ru":  "Расчёт не нашёл победного варианта"
+                              },
+    "SCRIPT_DUNGEON_CARDS":  {
+                                 "en":  "Oracle cards in inventory",
+                                 "uk":  "Карти оракула в інвентарі",
+                                 "ru":  "Карты оракула в инвентаре"
+                             },
+    "SCRIPT_DUNGEON_PROGRESS":  {
+                                    "en":  "Titanite earned today",
+                                    "uk":  "Титаніт за сьогодні",
+                                    "ru":  "Титанит за сегодня"
+                                },
+    "SCRIPT_DUNGEON_DOOR":  {
+                                "en":  "Selected door",
+                                "uk":  "Вибрано двері",
+                                "ru":  "Выбрана дверь"
+                            },
+    "SCRIPT_DUNGEON_WAIT":  {
+                                "en":  "Waiting for battle completion, seconds",
+                                "uk":  "Очікування завершення бою, секунд",
+                                "ru":  "Ожидание завершения боя, секунд"
+                            },
+    "SCRIPT_DUNGEON_TALENT":  {
+                                  "en":  "Talent reward collected on floor",
+                                  "uk":  "Отримано нагороду таланту на поверсі",
+                                  "ru":  "Получена награда таланта на этаже"
+                              },
+    "SCRIPT_TOWER_UNSAFE_BATTLE":  {
+                                       "en":  "Tower stopped: predicted hero death",
+                                       "uk":  "Вежу зупинено: прогнозується загибель героя",
+                                       "ru":  "Башня остановлена: прогнозируется гибель героя"
+                                   },
+    "SCRIPT_OPTION_AUTOTEAM":  {
+                                   "en":  "Automatically select the 5 strongest eligible heroes",
+                                   "uk":  "Автоматично вибирати 5 найсильніших дозволених героїв",
+                                   "ru":  "Автоматически выбирать 5 сильнейших разрешённых героев"
+                               },
+    "SCRIPT_BOSS_NO_RULES":  {
+                                 "en":  "Battle skipped: no boss hero list in the library",
+                                 "uk":  "Бій пропущено: у бібліотеці немає списку героїв для боса",
+                                 "ru":  "Бой пропущен: в библиотеке нет списка героев для босса"
+                             },
+    "SCRIPT_BOSS_TEAM":  {
+                             "en":  "Boss team, hero IDs",
+                             "uk":  "Команда боса, ID героїв",
+                             "ru":  "Команда босса, ID героев"
+                         },
+    "SCRIPT_OPTION_OUTLANDBATTLES":  {
+                                         "en":  "Try battles before raids",
+                                         "uk":  "Спробувати бої перед рейдами",
+                                         "ru":  "Попробовать бои перед рейдами"
+                                     },
+    "SCRIPT_BOSS_NO_TEAM":  {
+                                "en":  "Battle skipped: no suitable team for this boss",
+                                "uk":  "Бій пропущено: немає придатної команди для боса",
+                                "ru":  "Бой пропущен: нет подходящей команды для босса"
+                            },
+    "SCRIPT_BOSS_ATTACK":  {
+                               "en":  "Starting boss battle",
+                               "uk":  "Початок бою з босом",
+                               "ru":  "Начало боя с боссом"
+                           },
+    "SCRIPT_BOSS_WAIT":  {
+                             "en":  "Waiting for battle completion, boss / seconds",
+                             "uk":  "Очікування завершення бою, бос / секунд",
+                             "ru":  "Ожидание завершения боя, босс / секунд"
+                         },
+    "SCRIPT_BOSS_WON":  {
+                            "en":  "Boss defeated",
+                            "uk":  "Боса переможено",
+                            "ru":  "Босс побеждён"
+                        },
+    "SCRIPT_BOSS_LOST":  {
+                             "en":  "Boss not defeated",
+                             "uk":  "Боса не переможено",
+                             "ru":  "Босс не побеждён"
+                         },
+    "AUTOPILOT_ENABLED":  {
+                              "en":  "Autopilot after inactivity",
+                              "uk":  "Автопілот після неактивності",
+                              "ru":  "Автопилот после неактивности"
+                          },
+    "AUTOPILOT_IDLE_MINUTES":  {
+                                   "en":  "Inactivity before starting, minutes (minimum 5)",
+                                   "uk":  "Неактивність до запуску, хв (мінімум 5)",
+                                   "ru":  "Неактивность до запуска, мин (минимум 5)"
+                               },
+    "AUTOPILOT_INTERVAL":  {
+                               "en":  "recheck interval, minutes",
+                               "uk":  "інтервал повторної перевірки, хв",
+                               "ru":  "интервал повторной проверки, мин"
+                           },
+    "AUTOPILOT_DESCRIPTION":  {
+                                  "en":  "Runs the selected scripts in list order. Completed scripts are skipped until their next time boundary. Daily actions use game day boundaries; other scripts also use recheck intervals and expedition end times. Keyboard or mouse activity returns control to the player. Progress survives restarts.",
+                                  "uk":  "Виконує вибрані у «Скриптах» пункти за їхнім порядком. Завершені пункти пропускаються до найближчої часової межі. Для щоденних дій використовуються межі дня гри; для інших — також інтервал перевірки та час завершення експедицій. Клавіатура або миша повертає керування гравцю. Прогрес зберігається після перезапуску.",
+                                  "ru":  "Выполняет выбранные в «Скриптах» пункты по порядку. Завершённые пункты пропускаются до ближайшей временной границы. Для ежедневных действий используются границы игрового дня; для остальных — также интервал проверки и время завершения экспедиций. Клавиатура или мышь возвращает управление игроку. Прогресс сохраняется после перезапуска."
+                              },
+    "NAV_RESTART":  {
+                        "en":  "Restart",
+                        "uk":  "Перезапуск",
+                        "ru":  "Перезапуск"
+                    },
+    "SCRIPT_RUN_SEQUENCE":  {
+                                "en":  "Run selected scripts in list order",
+                                "uk":  "Виконати вибрані скрипти за порядком списку",
+                                "ru":  "Выполнить выбранные скрипты по порядку списка"
+                            },
+    "SCRIPT_INCLUDE_SEQUENCE":  {
+                                    "en":  "Include in sequence",
+                                    "uk":  "Включити в послідовність",
+                                    "ru":  "Включить в последовательность"
+                                },
+    "MESSAGE_LIMIT":  {
+                          "en":  "Current script entry limit",
+                          "uk":  "Ліміт записів поточного скрипта",
+                          "ru":  "Лимит записей текущего скрипта"
+                      },
+    "MESSAGE_LOG":  {
+                        "en":  "Script execution log",
+                        "uk":  "Лог виконання скриптів",
+                        "ru":  "Лог выполнения скриптов"
+                    },
+    "MESSAGE_TTL":  {
+                        "en":  "Message lifetime, seconds (0 — overwrite)",
+                        "uk":  "Час життя повідомлень, с (0 — перезапис)",
+                        "ru":  "Время жизни сообщений, с (0 — перезапись)"
+                    },
+    "SCRIPT_OPTION_OPENARTIFACTCHEST":  {
+                                            "en":  "Open artifact chests using all available keys",
+                                            "uk":  "Відкрити скрині артефактів за всі наявні ключі",
+                                            "ru":  "Открыть сундуки артефактов за все имеющиеся ключи"
+                                        },
+    "SCRIPT_ARTIFACT_CHEST_OPENED":  {
+                                         "en":  "Artifact chests opened",
+                                         "uk":  "Відкрито скринь артефактів",
+                                         "ru":  "Открыто сундуков артефактов"
+                                     },
+    "SCRIPT_ARTIFACT_CHEST_NO_KEY":  {
+                                         "en":  "Artifact chest skipped: no key",
+                                         "uk":  "Скриню артефактів пропущено: немає ключа",
+                                         "ru":  "Сундук артефактов пропущен: нет ключа"
+                                     },
+    "NAV_QUEST_REWARDS":  {
+                              "en":  "Collect quest rewards",
+                              "uk":  "Збір нагород завдань",
+                              "ru":  "Сбор наград заданий"
+                          },
+    "NAV_MAIL":  {
+                     "en":  "Collect mail",
+                     "uk":  "Збір пошти",
+                     "ru":  "Сбор почты"
+                 },
+    "SCRIPT_OPTION_COLLECTSTAMINA":  {
+                                         "en":  "Collect rewards containing energy",
+                                         "uk":  "Збирати нагороди з енергією",
+                                         "ru":  "Собирать награды с энергией"
+                                     },
+    "SCRIPT_OPTION_COLLECTPORTALS":  {
+                                         "en":  "Collect rewards containing adventure portals",
+                                         "uk":  "Збирати нагороди з порталами пригод",
+                                         "ru":  "Собирать награды с порталами приключений"
+                                     },
+    "SCRIPT_OPTION_COLLECTBUFFS":  {
+                                       "en":  "Collect rewards containing buffs",
+                                       "uk":  "Збирати нагороди з підсиленнями",
+                                       "ru":  "Собирать награды с усилениями"
+                                   },
+    "SCRIPT_OPTION_COLLECTVIPPOINTS":  {
+                                           "en":  "Collect rewards containing VIP points",
+                                           "uk":  "Збирати нагороди з VIP-очками",
+                                           "ru":  "Собирать награды с VIP-очками"
+                                       },
+    "SCRIPT_OPTION_COLLECTHEROSOULS":  {
+                                           "en":  "Collect rewards containing hero soul stones",
+                                           "uk":  "Збирати нагороди з каменями душ героїв",
+                                           "ru":  "Собирать награды с камнями душ героев"
+                                       },
+    "SCRIPT_OPTION_COLLECTHEROES":  {
+                                        "en":  "Collect rewards containing heroes",
+                                        "uk":  "Збирати нагороди з героями",
+                                        "ru":  "Собирать награды с героями"
+                                    },
+    "SCRIPT_OPTION_COLLECTEXPERIENCE":  {
+                                            "en":  "Collect rewards containing team experience",
+                                            "uk":  "Збирати нагороди з досвідом команди",
+                                            "ru":  "Собирать награды с опытом команды"
+                                        },
+    "SCRIPT_OPTION_FOLLOWCHAINS":  {
+                                       "en":  "Also collect newly completed quests in chains",
+                                       "uk":  "Збирати також наступні виконані завдання ланцюжка",
+                                       "ru":  "Собирать также следующие выполненные задания цепочки"
+                                   },
+    "SCRIPT_OPTION_COLLECTEXPIRING":  {
+                                          "en":  "Collect mail expiring in less than a day regardless of reward filters",
+                                          "uk":  "Збирати листи зі строком менше доби незалежно від фільтрів нагород",
+                                          "ru":  "Собирать письма со сроком меньше суток независимо от фильтров наград"
+                                      },
+    "SCRIPT_NOTHING_TO_COLLECT":  {
+                                      "en":  "No rewards match the selected conditions",
+                                      "uk":  "Немає нагород за вибраними умовами",
+                                      "ru":  "Нет наград по выбранным условиям"
+                                  },
+    "SCRIPT_MAIL_COLLECTED":  {
+                                  "en":  "Letters collected",
+                                  "uk":  "Зібрано листів",
+                                  "ru":  "Собрано писем"
+                              },
+    "SCRIPT_QUESTS_COLLECTED":  {
+                                    "en":  "Quest rewards collected",
+                                    "uk":  "Зібрано нагород завдань",
+                                    "ru":  "Собрано наград заданий"
+                                },
+    "NAV_DAILY_BONUS":  {
+                            "en":  "Daily bonus",
+                            "uk":  "Щоденний бонус",
+                            "ru":  "Ежедневный бонус"
+                        },
+    "SCRIPT_DAILY_BONUS_ALREADY_COLLECTED":  {
+                                                 "en":  "Daily bonus already collected",
+                                                 "uk":  "Щоденний бонус уже зібрано",
+                                                 "ru":  "Ежедневный бонус уже получен"
+                                             },
+    "SCRIPT_DAILY_BONUS_COLLECTED":  {
+                                         "en":  "Daily bonus collected",
+                                         "uk":  "Щоденний бонус отримано",
+                                         "ru":  "Ежедневный бонус получен"
+                                     },
+    "MENU_NAVIGATION":  {
+                            "en":  "Navigation",
+                            "uk":  "Переходи",
+                            "ru":  "Переходы"
+                        },
+    "MENU_LANGUAGE":  {
+                          "en":  "Interface language",
+                          "uk":  "Мова інтерфейсу",
+                          "ru":  "Язык интерфейса"
+                      },
+    "SCRIPT_SAVE":  {
+                        "en":  "Save",
+                        "uk":  "Зберегти",
+                        "ru":  "Сохранить"
+                    },
+    "SCRIPT_RELOAD_REQUIRED":  {
+                                   "en":  "Game state changed. Click to reload and synchronize the game.",
+                                   "uk":  "Стан гри змінено. Натисніть, щоб перезавантажити й синхронізувати гру.",
+                                   "ru":  "Состояние игры изменено. Нажмите, чтобы перезагрузить и синхронизировать игру."
+                               },
+    "SCRIPT_BACK":  {
+                        "en":  "Back to scripts",
+                        "uk":  "Назад до скриптів",
+                        "ru":  "Назад к скриптам"
+                    },
+    "SCRIPT_OPTION_COLLECT":  {
+                                  "en":  "Collect completed expeditions",
+                                  "uk":  "Збирати завершені експедиції",
+                                  "ru":  "Собирать завершённые экспедиции"
+                              },
+    "SCRIPT_OPTION_SEND":  {
+                               "en":  "Send available heroes on expeditions",
+                               "uk":  "Відправляти доступних героїв в експедиції",
+                               "ru":  "Отправлять доступных героев в экспедиции"
+                           },
+    "SCRIPT_OPTION_BUYBUFFS":  {
+                                   "en":  "Buy attack and defense buffs with skulls",
+                                   "uk":  "Купувати посилення атаки й захисту за черепи",
+                                   "ru":  "Покупать усиления атаки и защиты за черепа"
+                               },
+    "SCRIPT_OPTION_COLLECTREWARDS":  {
+                                         "en":  "Collect point and remaining skull rewards",
+                                         "uk":  "Збирати нагороди за очки й залишок черепів",
+                                         "ru":  "Собирать награды за очки и оставшиеся черепа"
+                                     },
+    "SCRIPT_OPTION_BATTLES":  {
+                                  "en":  "Fight using the strongest living heroes",
+                                  "uk":  "Проходити бої найсильнішими живими героями",
+                                  "ru":  "Проходить бои сильнейшими живыми героями"
+                              },
+    "SCRIPT_OPTION_RAID":  {
+                               "en":  "Raid eligible bosses",
+                               "uk":  "Виконувати доступні рейди босів",
+                               "ru":  "Выполнять доступные рейды боссов"
+                           },
+    "SCRIPT_OPTION_OPENCHESTS":  {
+                                     "en":  "Open free chests",
+                                     "uk":  "Відкривати безкоштовні скрині",
+                                     "ru":  "Открывать бесплатные сундуки"
+                                 },
+    "SCRIPT_STOP":  {
+                        "en":  "Stop",
+                        "uk":  "Зупинити",
+                        "ru":  "Остановить"
+                    },
+    "SCRIPT_STOPPING":  {
+                            "en":  "Stopping after the current action…",
+                            "uk":  "Зупинка після поточної дії…",
+                            "ru":  "Остановка после текущего действия…"
+                        },
+    "SCRIPT_RUNNING":  {
+                           "en":  "Running…",
+                           "uk":  "Виконується…",
+                           "ru":  "Выполняется…"
+                       },
+    "SCRIPT_DONE":  {
+                        "en":  "Completed",
+                        "uk":  "Виконано",
+                        "ru":  "Выполнено"
+                    },
+    "SCRIPT_STOPPED":  {
+                           "en":  "Stopped",
+                           "uk":  "Зупинено",
+                           "ru":  "Остановлено"
+                       },
+    "SCRIPT_FAILED":  {
+                          "en":  "Execution failed",
+                          "uk":  "Помилка виконання",
+                          "ru":  "Ошибка выполнения"
+                      },
+    "SCRIPT_ALREADY_RUNNING":  {
+                                   "en":  "Another script is already running",
+                                   "uk":  "Інший скрипт уже виконується",
+                                   "ru":  "Другой скрипт уже выполняется"
+                               },
+    "SCRIPT_API_NOT_READY":  {
+                                 "en":  "Wait for the game to load",
+                                 "uk":  "Дочекайтеся завантаження гри",
+                                 "ru":  "Дождитесь загрузки игры"
+                             },
+    "SCRIPT_NETWORK_ERROR":  {
+                                 "en":  "Network error or timeout; check the game state before retrying",
+                                 "uk":  "Помилка мережі або час очікування вичерпано; перевірте стан у грі перед повторним запуском",
+                                 "ru":  "Ошибка сети или истекло время ожидания; проверьте состояние в игре перед повторным запуском"
+                             },
+    "SCRIPT_API_ERROR":  {
+                             "en":  "The game returned a request error",
+                             "uk":  "Гра повернула помилку запиту",
+                             "ru":  "Игра вернула ошибку запроса"
+                         },
+    "SCRIPT_LIBRARY_NOT_READY":  {
+                                     "en":  "Game library is not loaded yet",
+                                     "uk":  "Бібліотека гри ще не завантажена",
+                                     "ru":  "Библиотека игры ещё не загружена"
+                                 },
+    "SCRIPT_EXPEDITION_COLLECTED":  {
+                                        "en":  "Expedition collected",
+                                        "uk":  "Експедицію зібрано",
+                                        "ru":  "Экспедиция собрана"
+                                    },
+    "SCRIPT_EXPEDITION_SENT":  {
+                                   "en":  "Expedition sent",
+                                   "uk":  "Експедицію відправлено",
+                                   "ru":  "Экспедиция отправлена"
+                               },
+    "SCRIPT_BOSS_RAIDED":  {
+                               "en":  "Boss raid completed",
+                               "uk":  "Рейд боса виконано",
+                               "ru":  "Рейд босса выполнен"
+                           },
+    "SCRIPT_BOSS_CHEST":  {
+                              "en":  "Boss chest opened",
+                              "uk":  "Скриню боса відкрито",
+                              "ru":  "Сундук босса открыт"
+                          },
+    "SCRIPT_BATTLE_UNAVAILABLE":  {
+                                      "en":  "Battle calculation is unavailable in this game version",
+                                      "uk":  "Розрахунок бою недоступний у цій версії гри",
+                                      "ru":  "Расчёт боя недоступен в этой версии игры"
+                                  },
+    "SCRIPT_BATTLE_TIMEOUT":  {
+                                  "en":  "Battle calculation timed out",
+                                  "uk":  "Час очікування розрахунку бою вичерпано",
+                                  "ru":  "Истекло время ожидания расчёта боя"
+                              },
+    "SCRIPT_TOWER_UNAVAILABLE":  {
+                                     "en":  "Tower is unavailable",
+                                     "uk":  "Вежа недоступна",
+                                     "ru":  "Башня недоступна"
+                                 },
+    "SCRIPT_TOWER_FLOOR":  {
+                               "en":  "Floor",
+                               "uk":  "Поверх",
+                               "ru":  "Этаж"
+                           },
+    "SCRIPT_TOWER_NEEDS_BATTLE":  {
+                                      "en":  "A battle is required; enable battles in settings or fight manually",
+                                      "uk":  "Потрібен бій; увімкніть бої в налаштуваннях або пройдіть вручну",
+                                      "ru":  "Нужен бой; включите бои в настройках или пройдите вручную"
+                                  },
+    "SCRIPT_TOWER_NO_HEROES":  {
+                                   "en":  "No living heroes available for battle",
+                                   "uk":  "Немає живих героїв для бою",
+                                   "ru":  "Нет живых героев для боя"
+                               },
+    "SCRIPT_TOWER_BATTLE_LOST":  {
+                                     "en":  "Calculation did not produce a victory without losses; tower stopped",
+                                     "uk":  "Розрахунок не дав перемоги без втрат; вежу зупинено",
+                                     "ru":  "Расчёт не дал победы без потерь; башня остановлена"
+                                 },
+    "SCRIPT_TOWER_UNKNOWN_FLOOR":  {
+                                       "en":  "Unknown floor type",
+                                       "uk":  "Невідомий тип поверху",
+                                       "ru":  "Неизвестный тип этажа"
+                                   },
+    "SCRIPT_TOWER_LIMIT":  {
+                               "en":  "Tower stopped: too many floor transitions",
+                               "uk":  "Вежу зупинено: перевищено кількість переходів",
+                               "ru":  "Башня остановлена: превышено количество переходов"
+                           },
+    "SCRIPT_GO":  {
+                      "en":  "Go to",
+                      "uk":  "Перейти",
+                      "ru":  "Перейти"
+                  },
+    "SCRIPT_CONFIGURE":  {
+                             "en":  "Configure",
+                             "uk":  "Налаштувати",
+                             "ru":  "Настроить"
+                         },
+    "SCRIPT_RUN_CONFIGURED":  {
+                                  "en":  "Run configured",
+                                  "uk":  "Виконати налаштоване",
+                                  "ru":  "Выполнить настроенное"
+                              },
+    "SCRIPT_NOT_IMPLEMENTED":  {
+                                   "en":  "Automation scenario has not been ported yet",
+                                   "uk":  "Сценарій автоматизації ще не перенесено",
+                                   "ru":  "Сценарий автоматизации ещё не перенесён"
+                               },
+    "NAV_UNAVAILABLE":  {
+                            "en":  "Section unavailable",
+                            "uk":  "Розділ недоступний",
+                            "ru":  "Раздел недоступен"
+                        },
+    "NAV_MISSION":  {
+                        "en":  "Campaign",
+                        "uk":  "Кампанія",
+                        "ru":  "Кампания"
+                    },
+    "NAV_ARENA":  {
+                      "en":  "Arena",
+                      "uk":  "Арена",
+                      "ru":  "Арена"
+                  },
+    "NAV_GRAND":  {
+                      "en":  "Grand Arena",
+                      "uk":  "Гранд-арена",
+                      "ru":  "Гранд-арена"
+                  },
+    "NAV_CHEST":  {
+                      "en":  "Heroic Chest",
+                      "uk":  "Героїчна скриня",
+                      "ru":  "Героический сундук"
+                  },
+    "NAV_SKILLS":  {
+                       "en":  "Skills",
+                       "uk":  "Уміння",
+                       "ru":  "Умения"
+                   },
+    "NAV_SOCIAL_GIFT":  {
+                            "en":  "Friend gifts",
+                            "uk":  "Подарунки друзів",
+                            "ru":  "Подарки друзей"
+                        },
+    "NAV_CLAN":  {
+                     "en":  "Guild",
+                     "uk":  "Гільдія",
+                     "ru":  "Гильдия"
+                 },
+    "NAV_ENCHANT":  {
+                        "en":  "Glyphs",
+                        "uk":  "Символи",
+                        "ru":  "Символы"
+                    },
+    "NAV_TOWER":  {
+                      "en":  "Tower",
+                      "uk":  "Вежа",
+                      "ru":  "Башня"
+                  },
+    "NAV_RATING":  {
+                       "en":  "Rankings",
+                       "uk":  "Рейтинг",
+                       "ru":  "Рейтинг"
+                   },
+    "NAV_CHALLENGE":  {
+                          "en":  "Training",
+                          "uk":  "Тренування",
+                          "ru":  "Тренировка"
+                      },
+    "NAV_BOSS":  {
+                     "en":  "Outland",
+                     "uk":  "Запреділля",
+                     "ru":  "Запределье"
+                 },
+    "NAV_CHAT":  {
+                     "en":  "Chat",
+                     "uk":  "Чат",
+                     "ru":  "Чат"
+                 },
+    "NAV_CLAN_DUNGEON":  {
+                             "en":  "Dungeon",
+                             "uk":  "Підземелля",
+                             "ru":  "Подземелье"
+                         },
+    "NAV_CLAN_CHEST":  {
+                           "en":  "Titan chests",
+                           "uk":  "Скрині титанів",
+                           "ru":  "Сундуки титанов"
+                       },
+    "NAV_TITAN_GIFT":  {
+                           "en":  "Sparks of Power",
+                           "uk":  "Іскри сили",
+                           "ru":  "Искры мощи"
+                       },
+    "NAV_CLAN_RAID":  {
+                          "en":  "Guild raid",
+                          "uk":  "Рейд гільдії",
+                          "ru":  "Рейд гильдии"
+                      },
+    "NAV_ASGARD":  {
+                       "en":  "Asgard",
+                       "uk":  "Асгард",
+                       "ru":  "Асгард"
+                   },
+    "NAV_HERO_ASCENSION":  {
+                               "en":  "Hero ascension",
+                               "uk":  "Піднесення героїв",
+                               "ru":  "Вознесение героев"
+                           },
+    "NAV_ROLE_ASCENSION":  {
+                               "en":  "Role ascension",
+                               "uk":  "Піднесення ролей",
+                               "ru":  "Вознесение ролей"
+                           },
+    "NAV_ASCENSION_CHEST":  {
+                                "en":  "Altar of Wishes",
+                                "uk":  "Вівтар бажань",
+                                "ru":  "Алтарь желаний"
+                            },
+    "NAV_TITAN_MISSION":  {
+                              "en":  "Titan battles",
+                              "uk":  "Бої титанів",
+                              "ru":  "Бои титанов"
+                          },
+    "NAV_TITAN_ARENA":  {
+                            "en":  "Tournament of the Elements",
+                            "uk":  "Турнір Стихій",
+                            "ru":  "Турнир Стихий"
+                        },
+    "NAV_TITAN_ARTIFACT":  {
+                               "en":  "Titan artifacts",
+                               "uk":  "Артефакти титанів",
+                               "ru":  "Артефакты титанов"
+                           },
+    "NAV_TITAN_ARTIFACT_CHEST":  {
+                                     "en":  "Titan artifact chest",
+                                     "uk":  "Скриня артефактів титанів",
+                                     "ru":  "Сундук артефактов титанов"
+                                 },
+    "NAV_TITAN_VALLEY":  {
+                             "en":  "Titan Valley",
+                             "uk":  "Долина титанів",
+                             "ru":  "Долина титанов"
+                         },
+    "NAV_TITAN_SPIRITS":  {
+                              "en":  "Totems",
+                              "uk":  "Тотеми",
+                              "ru":  "Тотемы"
+                          },
+    "NAV_TITAN_ARTIFACT_MERCHANT":  {
+                                        "en":  "Titan artifact merchant",
+                                        "uk":  "Торговець артефактами титанів",
+                                        "ru":  "Торговец артефактами титанов"
+                                    },
+    "NAV_TITAN_ARENA_HALL_OF_FAME":  {
+                                         "en":  "Elemental tournament Hall of Fame",
+                                         "uk":  "Зала слави Турніру Стихій",
+                                         "ru":  "Зал славы Турнира Стихий"
+                                     },
+    "NAV_CLAN_PVP":  {
+                         "en":  "Guild War",
+                         "uk":  "Війна гільдій",
+                         "ru":  "Война гильдий"
+                     },
+    "NAV_CLAN_PVP_MERCHANT":  {
+                                  "en":  "Guild War shop",
+                                  "uk":  "Магазин війни гільдій",
+                                  "ru":  "Магазин войны гильдий"
+                              },
+    "NAV_CLAN_GLOBAL_PVP":  {
+                                "en":  "Clash of Worlds",
+                                "uk":  "Чемпіонат Домініону",
+                                "ru":  "Чемпионат Доминиона"
+                            },
+    "NAV_CLAN_GLOBAL_PVP_TITAN":  {
+                                      "en":  "Clash of Worlds titans",
+                                      "uk":  "Титани чемпіонату Домініону",
+                                      "ru":  "Титаны чемпионата Доминиона"
+                                  },
+    "NAV_ARTIFACT":  {
+                         "en":  "Hero artifacts",
+                         "uk":  "Артефакти героїв",
+                         "ru":  "Артефакты героев"
+                     },
+    "NAV_ZEPPELIN":  {
+                         "en":  "Airship",
+                         "uk":  "Дирижабль",
+                         "ru":  "Дирижабль"
+                     },
+    "NAV_ARTIFACT_CHEST":  {
+                               "en":  "Artifact chest",
+                               "uk":  "Скриня артефактів",
+                               "ru":  "Сундук артефактов"
+                           },
+    "NAV_ARTIFACT_MERCHANT":  {
+                                  "en":  "Artifact merchant",
+                                  "uk":  "Торговець артефактами",
+                                  "ru":  "Торговец артефактами"
+                              },
+    "NAV_EXPEDITIONS":  {
+                            "en":  "Expeditions",
+                            "uk":  "Експедиції",
+                            "ru":  "Экспедиции"
+                        },
+    "NAV_SUBSCRIPTION":  {
+                             "en":  "Valkyrie's Blessing",
+                             "uk":  "Благословення Валькірій",
+                             "ru":  "Благословение Валькирий"
+                         },
+    "NAV_NY2018_GIFTS":  {
+                             "en":  "New Year gifts",
+                             "uk":  "Новорічні подарунки",
+                             "ru":  "Новогодние подарки"
+                         },
+    "NAV_NY2018_TREE":  {
+                            "en":  "New Year tree",
+                            "uk":  "Новорічна ялинка",
+                            "ru":  "Новогодняя ёлка"
+                        },
+    "NAV_NY2018_WELCOME":  {
+                               "en":  "New Year event",
+                               "uk":  "Новорічна подія",
+                               "ru":  "Новогоднее событие"
+                           },
+    "NAV_ADVENTURE":  {
+                          "en":  "Adventures",
+                          "uk":  "Пригоди",
+                          "ru":  "Приключения"
+                      },
+    "NAV_ADVENTURESOLO":  {
+                              "en":  "Solo adventure",
+                              "uk":  "Одиночна пригода",
+                              "ru":  "Одиночное приключение"
+                          },
+    "NAV_SANCTUARY":  {
+                          "en":  "Sanctuary",
+                          "uk":  "Святилище",
+                          "ru":  "Святилище"
+                      },
+    "NAV_PET_MERCHANT":  {
+                             "en":  "Pet shop",
+                             "uk":  "Магазин вихованців",
+                             "ru":  "Магазин питомцев"
+                         },
+    "NAV_PET_LIST":  {
+                         "en":  "Pets",
+                         "uk":  "Вихованці",
+                         "ru":  "Питомцы"
+                     },
+    "NAV_PET_SUMMON":  {
+                           "en":  "Pet summoning",
+                           "uk":  "Призов вихованців",
+                           "ru":  "Призыв питомцев"
+                       },
+    "NAV_BOSS_RATING_EVENT":  {
+                                  "en":  "Boss ranking event",
+                                  "uk":  "Подія з рейтингом босів",
+                                  "ru":  "Событие с рейтингом боссов"
+                              },
+    "NAV_BRAWL":  {
+                      "en":  "Brawl",
+                      "uk":  "Сутичка",
+                      "ru":  "Потасовка"
+                  },
+    "VALKYRIES_BLESSING":  {
+                               "en":  "Valkyrie's Blessing",
+                               "uk":  "Благословення Валькірій",
+                               "ru":  "Благословение Валькирий"
+                           },
     "SKIP_FIGHTS":  {
                         "en":  "Skip battles",
                         "uk":  "Пропуск боїв",
@@ -2154,6 +3219,11 @@
                               "uk":  "Поведінка",
                               "ru":  "Поведение"
                           },
+    "SETTING_DUNGEON_AVOID_DEATHS":  {
+                                         "en":  "Stop if a hero or titan dies in the dungeon",
+                                         "uk":  "???????? ??? ???????? ?????/?????? ? ??????????",
+                                         "ru":  "??????????????? ??? ?????? ?????/?????? ? ??????????"
+                                     },
     "SETTINGS_BATTLES":  {
                              "en":  "Battles",
                              "uk":  "Бої",
@@ -2164,64 +3234,139 @@
                                 "uk":  "Додатково",
                                 "ru":  "Дополнительно"
                             },
-    "MENU_GENERAL_SETTINGS": {
-        "en": "General settings",
-        "uk": "Загальні налаштування",
-        "ru": "Общие настройки"
-    },
-    "MENU_SCRIPTS": {
-        "en": "Scripts",
-        "uk": "Скрипти",
-        "ru": "Скрипты"
-    },
-    "MENU_SEQUENCE": {
-        "en": "Create a sequence",
-        "uk": "Зробити послідовність",
-        "ru": "Создать последовательность"
-    },
-    "MENU_FARM_HEROES": {
-        "en": "Farm heroes",
-        "uk": "Фармити героїв",
-        "ru": "Фармить героев"
-    },
-    "MENU_AUTOPILOT": {
-        "en": "Autopilot",
-        "uk": "Автопілот",
-        "ru": "Автопилот"
-    },
-    "MENU_CLOSE": {
-        "en": "Close",
-        "uk": "Закрити",
-        "ru": "Закрыть"
-    },
-    "MENU_LEVEL": {
-        "en": "Level",
-        "uk": "Рівень",
-        "ru": "Уровень"
-    },
-    "MENU_GUILD": {
-        "en": "Guild",
-        "uk": "Гільдія",
-        "ru": "Гильдия"
-    },
-    "MENU_NO_GUILD": {
-        "en": "No guild",
-        "uk": "Без гільдії",
-        "ru": "Без гильдии"
-    },
-    "MENU_BASE_SCRIPT": {
-        "en": "Basic script",
-        "uk": "Базовий скрипт",
-        "ru": "Базовый скрипт"
-    },
-    "MENU_PLACEHOLDER": {
-        "en": "Placeholder",
-        "uk": "Заглушка",
-        "ru": "Заглушка"
-    },
-    "MENU_SECTION_PENDING": {
-        "en": "This section is not configured yet.",
-        "uk": "Цей розділ ще не налаштований.",
-        "ru": "Этот раздел пока не настроен."
-    }
+    "MENU_GENERAL_SETTINGS":  {
+                                  "en":  "General settings",
+                                  "uk":  "Загальні налаштування",
+                                  "ru":  "Общие настройки"
+                              },
+    "MENU_SCRIPTS":  {
+                         "en":  "Scripts",
+                         "uk":  "Скрипти",
+                         "ru":  "Скрипты"
+                     },
+    "MENU_SEQUENCE":  {
+                          "en":  "Create a sequence",
+                          "uk":  "Зробити послідовність",
+                          "ru":  "Создать последовательность"
+                      },
+    "MENU_FARM_HEROES":  {
+                             "en":  "Farm heroes",
+                             "uk":  "Фармити героїв",
+                             "ru":  "Фармить героев"
+                         },
+    "MENU_AUTOPILOT":  {
+                           "en":  "Autopilot",
+                           "uk":  "Автопілот",
+                           "ru":  "Автопилот"
+                       },
+    "MENU_CLOSE":  {
+                       "en":  "Close",
+                       "uk":  "Закрити",
+                       "ru":  "Закрыть"
+                   },
+    "MENU_LEVEL":  {
+                       "en":  "Level",
+                       "uk":  "Рівень",
+                       "ru":  "Уровень"
+                   },
+    "MENU_GUILD":  {
+                       "en":  "Guild",
+                       "uk":  "Гільдія",
+                       "ru":  "Гильдия"
+                   },
+    "MENU_NO_GUILD":  {
+                          "en":  "No guild",
+                          "uk":  "Без гільдії",
+                          "ru":  "Без гильдии"
+                      },
+    "MENU_BASE_SCRIPT":  {
+                             "en":  "Basic script",
+                             "uk":  "Базовий скрипт",
+                             "ru":  "Базовый скрипт"
+                         },
+    "MENU_PLACEHOLDER":  {
+                             "en":  "Placeholder",
+                             "uk":  "Заглушка",
+                             "ru":  "Заглушка"
+                         },
+    "MENU_SECTION_PENDING":  {
+                                 "en":  "This section is not configured yet.",
+                                 "uk":  "Цей розділ ще не налаштований.",
+                                 "ru":  "Этот раздел пока не настроен."
+                             },
+    "NAV_HERO_UPGRADE":  {
+                             "en":  "Hero upgrades",
+                             "uk":  "Прокачка",
+                             "ru":  "Прокачка"
+                         },
+    "SCRIPT_OPTION_ENERGYBUDGET":  {
+                                       "en":  "Energy budget per run (0: no spending)",
+                                       "uk":  "Бюджет енергії на запуск (0 — не витрачати)",
+                                       "ru":  "Бюджет энергии на запуск (0 — не тратить)"
+                                   },
+    "SCRIPT_OPTION_RESERVEENERGY":  {
+                                        "en":  "Keep energy",
+                                        "uk":  "Залишати енергії",
+                                        "ru":  "Оставлять энергии"
+                                    },
+    "SCRIPT_OPTION_RESERVEGOLD":  {
+                                      "en":  "Keep gold",
+                                      "uk":  "Залишати золота",
+                                      "ru":  "Оставлять золота"
+                                  },
+    "SCRIPT_UPGRADE_STAGE":  {
+                                 "en":  "Read-only preflight. Hero queue follows in the next stage.",
+                                 "uk":  "Доступна перевірка даних без витрат. Черга героїв — наступний етап.",
+                                 "ru":  "Доступна проверка данных без затрат. Очередь героев — следующий этап."
+                             },
+    "SCRIPT_UPGRADE_HERO_COUNT":  {
+                                      "en":  "Heroes loaded",
+                                      "uk":  "Завантажено героїв",
+                                      "ru":  "Загружено героев"
+                                  },
+    "SCRIPT_UPGRADE_NEEDS_QUEUE":  {
+                                       "en":  "Configure the hero queue; upgrades are not connected yet",
+                                       "uk":  "Потрібно налаштувати чергу героїв; прокачка ще не підключена",
+                                       "ru":  "Нужно настроить очередь героев; прокачка ещё не подключена"
+                                   },
+    "SCRIPT_UPGRADE_INVALID_LIMIT":  {
+                                         "en":  "Limits must be non-negative integers",
+                                         "uk":  "Ліміти мають бути цілими невід’ємними числами",
+                                         "ru":  "Лимиты должны быть целыми неотрицательными числами"
+                                     },
+    "SCRIPT_UPGRADE_NO_DATA":  {
+                                   "en":  "Could not load hero or account data",
+                                   "uk":  "Не вдалося отримати дані героїв або акаунта",
+                                   "ru":  "Не удалось получить данные героев или аккаунта"
+                               },
+    "NAV_ITEM_EXCHANGE":  {
+                              "en":  "Exchange items",
+                              "uk":  "Обмін предметів",
+                              "ru":  "Обмен предметов"
+                          },
+    "SCRIPT_OPTION_TARGETACTIVITY":  {
+                                         "en":  "Target activity",
+                                         "uk":  "Ціль активності",
+                                         "ru":  "Цель активности"
+                                     },
+    "SCRIPT_OPTION_ITEMRESERVES":  {
+                                       "en":  "Reserve per item: gray / green / blue / violet / orange / red / brown",
+                                       "uk":  "Залишок кожного предмета: сірий / зелений / синій / фіолетовий / помаранчевий / червоний / коричневий",
+                                       "ru":  "Остаток каждого предмета: серый / зелёный / синий / фиолетовый / оранжевый / красный / коричневый"
+                                   },
+    "SCRIPT_EXCHANGE_PROGRESS":  {
+                                     "en":  "Activity received",
+                                     "uk":  "Отримано активності",
+                                     "ru":  "Получено активности"
+                                 },
+    "SCRIPT_EXCHANGE_COUNTER":  {
+                                    "en":  "Item activity counter did not advance",
+                                    "uk":  "Лічильник активності не змінився",
+                                    "ru":  "Счётчик активности не изменился"
+                                },
+    "SCRIPT_EXCHANGE_INVALID_RESERVES":  {
+                                             "en":  "Enter seven non-negative reserves separated by non-numeric characters",
+                                             "uk":  "Введіть сім невід’ємних залишків через нецифрові символи",
+                                             "ru":  "Введите семь неотрицательных остатков через нецифровые символы"
+                                         }
 }
