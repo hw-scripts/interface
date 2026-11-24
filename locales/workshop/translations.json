@@ -3453,5 +3453,35 @@
                                   "en":  "Adventure node completed",
                                   "uk":  "Вузол пригоди пройдено",
                                   "ru":  "Узел приключения пройден"
-                              }
+                              },
+    "NAV_CAMPAIGN":  {
+                         "en":  "Campaign missions",
+                         "uk":  "Місії кампанії",
+                         "ru":  "Миссии кампании"
+                     },
+    "SCRIPT_OPTION_MISSIONS":  {
+                                   "en":  "Missions and counts (example: 25:3, 45:10)",
+                                   "uk":  "Місії та кількість (наприклад: 25:3, 45:10)",
+                                   "ru":  "Миссии и количество (например: 25:3, 45:10)"
+                               },
+    "SCRIPT_CAMPAIGN_INVALID":  {
+                                    "en":  "Enter mission ID and count pairs",
+                                    "uk":  "Вкажіть пари ID місії та кількості",
+                                    "ru":  "Укажите пары ID миссии и количества"
+                                },
+    "SCRIPT_CAMPAIGN_NO_TEAM":  {
+                                    "en":  "Select a campaign team first",
+                                    "uk":  "Спочатку виберіть команду кампанії",
+                                    "ru":  "Сначала выберите команду кампании"
+                                },
+    "SCRIPT_CAMPAIGN_DONE":  {
+                                 "en":  "Campaign mission completed",
+                                 "uk":  "Місію кампанії виконано",
+                                 "ru":  "Миссия кампании выполнена"
+                             },
+    "SCRIPT_OPTION_RAIDCAMPAIGN":  {
+                                       "en":  "Use raids",
+                                       "uk":  "Використовувати рейди",
+                                       "ru":  "Использовать рейды"
+                                   }
 }

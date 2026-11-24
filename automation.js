@@ -244,6 +244,7 @@ class InterfaceAutomation {
             TITAN_ARENA: { fields: { testBattles: 10, retryBattles: 10 }, run: (s, r, t) => this.titanArena(s, r, t) },
             ADVENTURE: { fields: { path: '', testBattles: 10, retryBattles: 10 }, run: (s, r, t) => this.adventure(false, s, r, t) },
             ADVENTURE_SOLO: { fields: { path: '', testBattles: 10, retryBattles: 10 }, run: (s, r, t) => this.adventure(true, s, r, t) },
+            CAMPAIGN: { fields: { missions: '', raidCampaign: true }, run: (s, r, t) => this.campaign(s, r, t) },
             ADVENTURE_RAID: { fields: { limit: 0 }, run: (s, r, t) => this.adventureRaid(s, r, t) },
             BUY_HERO_SOULS: { fields: {}, run: (s, r, t) => this.buyHeroSouls(r, t) },
             BUY_GOLD_SHOPS: { fields: {}, run: (s, r, t) => this.buyGoldShops(r, t) },
@@ -818,6 +819,46 @@ class InterfaceAutomation {
             }
             if (!won) return 'SCRIPT_ADVENTURE_NO_WIN';
             turns--; segment = [id]; report('SCRIPT_ADVENTURE_NODE', id);
+        }
+    }
+
+    async campaign(settings, report, token) {
+        const text = String(settings.missions ?? '').trim();
+        if (!/^\d+\s*:\s*\d+(?:\s*,\s*\d+\s*:\s*\d+)*$/.test(text)) throw new Error('SCRIPT_CAMPAIGN_INVALID');
+        const missions = text.split(',').map(part => part.split(':').map(value => Number(value.trim())));
+        if (missions.some(([id, count]) => !Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(count) || count <= 0)) throw new Error('SCRIPT_CAMPAIGN_INVALID');
+        let args;
+        if (!settings.raidCampaign) {
+            this.battleCalculator.assertAvailable('get_pve');
+            const teams = await this.api.call('teamGetAll');
+            if (token.stopped) return;
+            const favors = await this.api.call('teamGetFavor');
+            if (token.stopped) return;
+            if (!Array.isArray(teams?.mission) || !teams.mission.some(id => Number(id) > 0 && Number(id) < 6000)) throw new Error('SCRIPT_CAMPAIGN_NO_TEAM');
+            args = { heroes: teams.mission.filter(id => Number(id) < 6000), favor: favors?.mission ?? {} };
+            const pet = teams.mission.find(id => Number(id) >= 6000);
+            if (pet != null) args.pet = pet;
+        }
+        for (const [id, count] of missions) {
+            if (token.stopped) return;
+            if (settings.raidCampaign) {
+                await this.api.call('missionRaid', { id, times: count });
+                report('SCRIPT_CAMPAIGN_DONE', `${id}: ${count}`);
+                continue;
+            }
+            for (let i = 0; i < count && !token.stopped; i++) {
+                const started = performance.now();
+                const battle = await this.api.call('missionStart', { ...args, id });
+                if (token.stopped) return;
+                const calculated = await this.battleCalculator.calculate(battle, 'get_pve');
+                if (token.stopped) return;
+                if (!calculated?.result || !Array.isArray(calculated.progress)) throw new Error('SCRIPT_BATTLE_UNAVAILABLE');
+                const until = started + Math.max(0, Number(calculated.waitSeconds) || 0) * 1000;
+                while (!token.stopped && performance.now() < until) await new Promise(resolve => setTimeout(resolve, Math.min(250, until - performance.now())));
+                if (token.stopped) return;
+                await this.api.call('missionEnd', { id, result: calculated.result, progress: calculated.progress });
+                report('SCRIPT_CAMPAIGN_DONE', `${id}: ${i + 1}/${count}`);
+            }
         }
     }
 

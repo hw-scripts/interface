@@ -689,5 +689,11 @@
     "SCRIPT_ADVENTURE_NOT_ACTIVE": "Немає активної пригоди",
     "SCRIPT_ADVENTURE_NO_WIN": "Переможного бою не знайдено",
     "SCRIPT_ADVENTURE_CANCEL_UNCONFIRMED": "Не вдалося підтвердити скасування бою",
-    "SCRIPT_ADVENTURE_NODE": "Вузол пригоди пройдено"
+    "SCRIPT_ADVENTURE_NODE": "Вузол пригоди пройдено",
+    "NAV_CAMPAIGN": "Місії кампанії",
+    "SCRIPT_OPTION_MISSIONS": "Місії та кількість (наприклад: 25:3, 45:10)",
+    "SCRIPT_CAMPAIGN_INVALID": "Вкажіть пари ID місії та кількості",
+    "SCRIPT_CAMPAIGN_NO_TEAM": "Спочатку виберіть команду кампанії",
+    "SCRIPT_CAMPAIGN_DONE": "Місію кампанії виконано",
+    "SCRIPT_OPTION_RAIDCAMPAIGN": "Використовувати рейди"
 }

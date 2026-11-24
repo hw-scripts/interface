@@ -689,5 +689,11 @@
     "SCRIPT_ADVENTURE_NOT_ACTIVE": "No active adventure",
     "SCRIPT_ADVENTURE_NO_WIN": "No winning battle found",
     "SCRIPT_ADVENTURE_CANCEL_UNCONFIRMED": "Could not confirm battle cancellation",
-    "SCRIPT_ADVENTURE_NODE": "Adventure node completed"
+    "SCRIPT_ADVENTURE_NODE": "Adventure node completed",
+    "NAV_CAMPAIGN": "Campaign missions",
+    "SCRIPT_OPTION_MISSIONS": "Missions and counts (example: 25:3, 45:10)",
+    "SCRIPT_CAMPAIGN_INVALID": "Enter mission ID and count pairs",
+    "SCRIPT_CAMPAIGN_NO_TEAM": "Select a campaign team first",
+    "SCRIPT_CAMPAIGN_DONE": "Campaign mission completed",
+    "SCRIPT_OPTION_RAIDCAMPAIGN": "Use raids"
 }
