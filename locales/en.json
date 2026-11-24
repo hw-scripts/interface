@@ -203,7 +203,7 @@
     "NAV_NY2018_GIFTS": "New Year gifts",
     "NAV_NY2018_TREE": "New Year tree",
     "NAV_NY2018_WELCOME": "New Year event",
-    "NAV_ADVENTURE": "Adventures",
+    "NAV_ADVENTURE": "Adventure",
     "NAV_ADVENTURESOLO": "Solo adventure",
     "NAV_SANCTUARY": "Sanctuary",
     "NAV_PET_MERCHANT": "Pet shop",
@@ -682,5 +682,12 @@
     "SCRIPT_ASGARD_INCOMPLETE_TEAM": "Complete the Asgard teams first",
     "SCRIPT_ASGARD_CANCEL_UNCONFIRMED": "Could not confirm battle cancellation",
     "SCRIPT_ASGARD_CANCELLED": "Asgard node cancelled",
-    "SCRIPT_ASGARD_NODE_DONE": "Asgard node completed"
+    "SCRIPT_ASGARD_NODE_DONE": "Asgard node completed",
+    "NAV_ADVENTURE_SOLO": "Solo adventure",
+    "SCRIPT_OPTION_PATH": "Route (node numbers separated by commas)",
+    "SCRIPT_ADVENTURE_INVALID_PATH": "Enter a valid connected route",
+    "SCRIPT_ADVENTURE_NOT_ACTIVE": "No active adventure",
+    "SCRIPT_ADVENTURE_NO_WIN": "No winning battle found",
+    "SCRIPT_ADVENTURE_CANCEL_UNCONFIRMED": "Could not confirm battle cancellation",
+    "SCRIPT_ADVENTURE_NODE": "Adventure node completed"
 }

@@ -197,7 +197,7 @@ class InterfaceAutomation {
             const readOnly = new Set(['userGetInfo', 'expeditionGet', 'dailyBonusGetInfo',
                 'mailGetAll', 'questGetAll', 'battlePass_getInfo', 'battlePass_getSpecial',
                 'bossGetAll', 'heroGetAll', 'pet_getAll', 'teamGetAll', 'teamGetFavor', 'inventoryGet',
-                'clanRaid_getInfo', 'titanArenaGetStatus', 'towerGetInfo', 'dungeonGetInfo', 'clanGetInfo', 'titanGetAll', 'specialOffer_getAll', 'offerGetAll', 'shopGetAll', 'subscriptionGetInfo', 'zeppelinGiftGet', 'adventure_raidGetInfo']);
+                'adventure_getInfo', 'adventureSolo_getInfo', 'clanRaid_getInfo', 'titanArenaGetStatus', 'towerGetInfo', 'dungeonGetInfo', 'clanGetInfo', 'titanGetAll', 'specialOffer_getAll', 'offerGetAll', 'shopGetAll', 'subscriptionGetInfo', 'zeppelinGiftGet', 'adventure_raidGetInfo']);
             const synchronized = new Set(['expeditionFarm', 'expeditionSendHeroes', 'artifactChestOpen']);
             if (!readOnly.has(name) && !synchronized.has(name)) {
                 this.requiresReload = true;
@@ -242,6 +242,8 @@ class InterfaceAutomation {
             HERO_SKIN_UPGRADE: { fields: { levels: 10 }, run: (s, r, t) => this.upgradeCosmetics('heroSkin', s, r, t) },
             ASGARD_MINIONS: { fields: {}, run: (s, r, t) => this.asgardMinions(r, t) },
             TITAN_ARENA: { fields: { testBattles: 10, retryBattles: 10 }, run: (s, r, t) => this.titanArena(s, r, t) },
+            ADVENTURE: { fields: { path: '', testBattles: 10, retryBattles: 10 }, run: (s, r, t) => this.adventure(false, s, r, t) },
+            ADVENTURE_SOLO: { fields: { path: '', testBattles: 10, retryBattles: 10 }, run: (s, r, t) => this.adventure(true, s, r, t) },
             ADVENTURE_RAID: { fields: { limit: 0 }, run: (s, r, t) => this.adventureRaid(s, r, t) },
             BUY_HERO_SOULS: { fields: {}, run: (s, r, t) => this.buyHeroSouls(r, t) },
             BUY_GOLD_SHOPS: { fields: {}, run: (s, r, t) => this.buyGoldShops(r, t) },
@@ -726,6 +728,96 @@ class InterfaceAutomation {
             if (token.stopped) return;
             checked = true;
             status = await this.api.call('titanArenaGetStatus');
+        }
+    }
+
+    async adventure(solo, settings, report, token) {
+        const prefix = solo ? 'adventureSolo' : 'adventure';
+        const text = String(settings.path ?? '').trim();
+        if (!/^\d+(?:\s*[, -]\s*\d+)+$/.test(text)) throw new Error('SCRIPT_ADVENTURE_INVALID_PATH');
+        let path = text.split(/[, -]+/).map(Number);
+        const tests = Number(settings.testBattles), retries = Number(settings.retryBattles);
+        if (![tests, retries].every(n => Number.isSafeInteger(n) && n >= 0 && n <= 100)) throw new Error('SCRIPT_UPGRADE_INVALID_LIMIT');
+        const info = await this.api.call(`${prefix}_getInfo`);
+        if (token.stopped) return;
+        if (!info) return 'SCRIPT_ADVENTURE_NOT_ACTIVE';
+        const teams = await this.api.call('teamGetAll');
+        if (token.stopped) return;
+        const favors = await this.api.call('teamGetFavor');
+        if (token.stopped) return;
+        const user = await this.api.call('userGetInfo');
+        if (token.stopped) return;
+        const state = info.users?.[user?.id], team = teams?.adventure_hero;
+        if (!state || !Array.isArray(team) || !team.length || !Array.isArray(info.nodes) || !Array.isArray(info.paths)) throw new Error('SCRIPT_API_ERROR');
+        for (let i = 1; i < path.length; i++) {
+            const a = path[i - 1], b = path[i];
+            if (!info.paths.some(p => Number(p.from_id) === a && Number(p.to_id) === b || Number(p.from_id) === b && Number(p.to_id) === a))
+                throw new Error('SCRIPT_ADVENTURE_INVALID_PATH');
+        }
+        if (Number(state.currentNode) === 1 && path[0] !== 1) path.unshift(1);
+        const position = path.indexOf(Number(state.currentNode));
+        if (position < 0) throw new Error('SCRIPT_ADVENTURE_INVALID_PATH');
+        path = path.slice(position);
+        let turns = Number(state.turnsLeft), segment = [path[0]];
+        if (!Number.isSafeInteger(turns) || turns < 0) throw new Error('SCRIPT_API_ERROR');
+        const args = { heroes: team.slice(0, 5), pet: team[5], favor: favors?.adventure_hero, path: [], broadcast: false };
+        for (const id of path.slice(1)) {
+            if (token.stopped || !turns) return;
+            segment.push(id);
+            const node = info.nodes.find(n => Number(n.id) === id);
+            if (!node) throw new Error('SCRIPT_ADVENTURE_INVALID_PATH');
+            if (node.type === 'TYPE_COMBAT' && node.state === 'empty') { turns--; continue; }
+            if (node.type === 'TYPE_PLAYERBUFF') {
+                const buffs = Object.entries(node.buffs ?? {}).filter(([, b]) => b.owner == null && Number(b.value) > 0)
+                    .sort((a,b) => Number(b[1].value) - Number(a[1].value));
+                if (!buffs.length) continue;
+                await this.api.call(`${prefix}_turnCollectBuff`, { buff: buffs[0][0], path: segment });
+                turns--; segment = [id]; report('SCRIPT_ADVENTURE_NODE', id); continue;
+            }
+            if (node.type !== 'TYPE_COMBAT') continue;
+            this.battleCalculator.assertAvailable('get_clanPvp');
+            let won = false, canRetry = false;
+            for (let attempt = 0; attempt <= retries && !token.stopped; attempt++) {
+                const started = performance.now();
+                const startedBattle = await this.api.call(`${prefix}_turnStartBattle`, { ...args, path: segment });
+                if (token.stopped) return;
+                const battle = startedBattle?.battle;
+                if (!battle) throw new Error('SCRIPT_API_ERROR');
+                const result = await this.battleCalculator.calculate(battle, 'get_clanPvp');
+                if (token.stopped) return;
+                if (!result?.result || !Array.isArray(result.progress)) throw new Error('SCRIPT_BATTLE_UNAVAILABLE');
+                if (!result.result.win) {
+                    for (const side of ['attackers','defenders']) {
+                        const units = result.progress?.[0]?.[side]?.heroes;
+                        if (!units) throw new Error('SCRIPT_BATTLE_UNAVAILABLE');
+                        for (const hero of Object.values(units)) {
+                            hero.energy = 1 + Math.floor(Math.random() * 999);
+                            if (hero.hp > 0) hero.hp = 1 + Math.floor(Math.random() * hero.hp);
+                        }
+                    }
+                }
+                const until = started + Math.max(0, Number(result.waitSeconds) || 0) * 1000;
+                while (!token.stopped && performance.now() < until) await new Promise(resolve => setTimeout(resolve, Math.min(250, until - performance.now())));
+                if (token.stopped) return;
+                try {
+                    const ended = await this.api.call(`${prefix}_endBattle`, { result: result.result, progress: result.progress });
+                    if (result.result.win && ended?.error) throw new Error('SCRIPT_API_ERROR');
+                    if (!result.result.win && !(ended?.error && ended.reason === 'invalidBattle')) throw new Error('SCRIPT_ADVENTURE_CANCEL_UNCONFIRMED');
+                } catch (error) {
+                    if (result.result.win || !/invalidBattle/i.test(String(error?.message))) throw error;
+                }
+                if (result.result.win) { won = true; break; }
+                if (attempt === 0) {
+                    for (let n = 0; n < tests && !token.stopped; n++) {
+                        const trial = structuredClone(battle); trial.seed = Math.floor(Date.now()/1000) + Math.floor(Math.random()*1001);
+                        if ((await this.battleCalculator.calculate(trial, 'get_clanPvp'))?.result?.win) { canRetry = true; break; }
+                    }
+                    if (!canRetry) return 'SCRIPT_ADVENTURE_NO_WIN';
+                    segment = segment.slice(-2);
+                }
+            }
+            if (!won) return 'SCRIPT_ADVENTURE_NO_WIN';
+            turns--; segment = [id]; report('SCRIPT_ADVENTURE_NODE', id);
         }
     }
 

@@ -203,7 +203,7 @@
     "NAV_NY2018_GIFTS": "Новорічні подарунки",
     "NAV_NY2018_TREE": "Новорічна ялинка",
     "NAV_NY2018_WELCOME": "Новорічна подія",
-    "NAV_ADVENTURE": "Пригоди",
+    "NAV_ADVENTURE": "Пригода",
     "NAV_ADVENTURESOLO": "Одиночна пригода",
     "NAV_SANCTUARY": "Святилище",
     "NAV_PET_MERCHANT": "Магазин вихованців",
@@ -682,5 +682,12 @@
     "SCRIPT_ASGARD_INCOMPLETE_TEAM": "Спочатку заповніть команди Асгарду",
     "SCRIPT_ASGARD_CANCEL_UNCONFIRMED": "Не вдалося підтвердити скасування бою",
     "SCRIPT_ASGARD_CANCELLED": "Бій з міньйонами скасовано",
-    "SCRIPT_ASGARD_NODE_DONE": "Вузол міньйонів пройдено"
+    "SCRIPT_ASGARD_NODE_DONE": "Вузол міньйонів пройдено",
+    "NAV_ADVENTURE_SOLO": "Соло-пригода",
+    "SCRIPT_OPTION_PATH": "Маршрут (номери вузлів через кому)",
+    "SCRIPT_ADVENTURE_INVALID_PATH": "Вкажіть правильний зв’язаний маршрут",
+    "SCRIPT_ADVENTURE_NOT_ACTIVE": "Немає активної пригоди",
+    "SCRIPT_ADVENTURE_NO_WIN": "Переможного бою не знайдено",
+    "SCRIPT_ADVENTURE_CANCEL_UNCONFIRMED": "Не вдалося підтвердити скасування бою",
+    "SCRIPT_ADVENTURE_NODE": "Вузол пригоди пройдено"
 }

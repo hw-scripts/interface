@@ -1250,6 +1250,21 @@
         const stopped=fixture({shopGetAll:()=>{stopped.engine.stop();return shops;}});
         await stopped.engine.run('BUY_GOLD_SHOPS',()=>{});assert(!stopped.calls.some(c=>c.name==='shopBuy'));
     });
+    await test('adventures validate routes and run separate solo and regular RPCs', async () => {
+        for (const [section,prefix] of [['ADVENTURE','adventure'],['ADVENTURE_SOLO','adventureSolo']]) {
+            const info={users:{7:{currentNode:1,turnsLeft:2}},paths:[{from_id:1,to_id:2},{from_id:2,to_id:3}],
+                nodes:[{id:2,type:'TYPE_PLAYERBUFF',buffs:{4:{owner:null,value:5}}},{id:3,type:'TYPE_COMBAT',state:'full'}]};
+            const f=fixture({[prefix+'_getInfo']:info,userGetInfo:{id:7},teamGetAll:{adventure_hero:[1,2,3,4,5,6001]},
+                teamGetFavor:{adventure_hero:{}},[prefix+'_turnStartBattle']:{battle:{}},[prefix+'_endBattle']:{}});
+            f.engine.battleCalculator={assertAvailable:()=>{},calculate:async()=>({result:{win:true},progress:[],waitSeconds:0})};
+            f.engine.save(section,{path:'1,2,3',testBattles:0,retryBattles:0});await f.engine.run(section,()=>{});
+            equal(f.calls.filter(c=>c.name.startsWith(prefix+'_turn')).map(c=>c.name),[prefix+'_turnCollectBuff',prefix+'_turnStartBattle']);
+            equal(f.calls.find(c=>c.name===prefix+'_turnStartBattle').args.path,[2,3]);
+            const g=fixture({[prefix+'_getInfo']:info,userGetInfo:{id:7},teamGetAll:{adventure_hero:[1]},teamGetFavor:{}});
+            g.engine.save(section,{path:'1,3'});let error='';try {await g.engine.run(section,()=>{});}catch(e){error=e.message;}
+            equal(error,'SCRIPT_ADVENTURE_INVALID_PATH');assert(!g.calls.some(c=>c.name.includes('turnStartBattle')));
+        }
+    });
     await test('Asgard minions complete eligible nodes and avoid incomplete teams', async () => {
         const now=Date.now()/1000;
         const info={attempts:1,nodes:{a:{timestamps:{start:now-60,end:now+60},teams:[{points:0}]},b:{timestamps:{start:now-60,end:now+60},teams:[{points:1}]}}};

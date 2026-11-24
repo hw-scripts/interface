@@ -1020,9 +1020,9 @@
                                "ru":  "Новогоднее событие"
                            },
     "NAV_ADVENTURE":  {
-                          "en":  "Adventures",
-                          "uk":  "Пригоди",
-                          "ru":  "Приключения"
+                          "en":  "Adventure",
+                          "uk":  "Пригода",
+                          "ru":  "Приключение"
                       },
     "NAV_ADVENTURESOLO":  {
                               "en":  "Solo adventure",
@@ -3418,5 +3418,40 @@
                                     "en":  "Asgard node completed",
                                     "uk":  "Вузол міньйонів пройдено",
                                     "ru":  "Узел миньонов пройден"
-                                }
+                                },
+    "NAV_ADVENTURE_SOLO":  {
+                               "en":  "Solo adventure",
+                               "uk":  "Соло-пригода",
+                               "ru":  "Соло-приключение"
+                           },
+    "SCRIPT_OPTION_PATH":  {
+                               "en":  "Route (node numbers separated by commas)",
+                               "uk":  "Маршрут (номери вузлів через кому)",
+                               "ru":  "Маршрут (номера узлов через запятую)"
+                           },
+    "SCRIPT_ADVENTURE_INVALID_PATH":  {
+                                          "en":  "Enter a valid connected route",
+                                          "uk":  "Вкажіть правильний зв’язаний маршрут",
+                                          "ru":  "Укажите правильный связанный маршрут"
+                                      },
+    "SCRIPT_ADVENTURE_NOT_ACTIVE":  {
+                                        "en":  "No active adventure",
+                                        "uk":  "Немає активної пригоди",
+                                        "ru":  "Нет активного приключения"
+                                    },
+    "SCRIPT_ADVENTURE_NO_WIN":  {
+                                    "en":  "No winning battle found",
+                                    "uk":  "Переможного бою не знайдено",
+                                    "ru":  "Победный бой не найден"
+                                },
+    "SCRIPT_ADVENTURE_CANCEL_UNCONFIRMED":  {
+                                                "en":  "Could not confirm battle cancellation",
+                                                "uk":  "Не вдалося підтвердити скасування бою",
+                                                "ru":  "Не удалось подтвердить отмену боя"
+                                            },
+    "SCRIPT_ADVENTURE_NODE":  {
+                                  "en":  "Adventure node completed",
+                                  "uk":  "Вузол пригоди пройдено",
+                                  "ru":  "Узел приключения пройден"
+                              }
 }
