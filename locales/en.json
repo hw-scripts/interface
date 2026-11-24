@@ -695,5 +695,8 @@
     "SCRIPT_CAMPAIGN_INVALID": "Enter mission ID and count pairs",
     "SCRIPT_CAMPAIGN_NO_TEAM": "Select a campaign team first",
     "SCRIPT_CAMPAIGN_DONE": "Campaign mission completed",
-    "SCRIPT_OPTION_RAIDCAMPAIGN": "Use raids"
+    "SCRIPT_OPTION_RAIDCAMPAIGN": "Use raids",
+    "NAV_NEW_YEAR_GIFTS": "New Year gifts",
+    "SCRIPT_OPTION_INCLUDENEWYEARGIFTS": "Collect New Year gifts",
+    "SCRIPT_NEW_YEAR_GIFT_OPENED": "New Year gifts opened"
 }

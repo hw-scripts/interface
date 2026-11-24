@@ -197,7 +197,7 @@ class InterfaceAutomation {
             const readOnly = new Set(['userGetInfo', 'expeditionGet', 'dailyBonusGetInfo',
                 'mailGetAll', 'questGetAll', 'battlePass_getInfo', 'battlePass_getSpecial',
                 'bossGetAll', 'heroGetAll', 'pet_getAll', 'teamGetAll', 'teamGetFavor', 'inventoryGet',
-                'adventure_getInfo', 'adventureSolo_getInfo', 'clanRaid_getInfo', 'titanArenaGetStatus', 'towerGetInfo', 'dungeonGetInfo', 'clanGetInfo', 'titanGetAll', 'specialOffer_getAll', 'offerGetAll', 'shopGetAll', 'subscriptionGetInfo', 'zeppelinGiftGet', 'adventure_raidGetInfo']);
+                'newYearGiftGet', 'adventure_getInfo', 'adventureSolo_getInfo', 'clanRaid_getInfo', 'titanArenaGetStatus', 'towerGetInfo', 'dungeonGetInfo', 'clanGetInfo', 'titanGetAll', 'specialOffer_getAll', 'offerGetAll', 'shopGetAll', 'subscriptionGetInfo', 'zeppelinGiftGet', 'adventure_raidGetInfo']);
             const synchronized = new Set(['expeditionFarm', 'expeditionSendHeroes', 'artifactChestOpen']);
             if (!readOnly.has(name) && !synchronized.has(name)) {
                 this.requiresReload = true;
@@ -224,7 +224,7 @@ class InterfaceAutomation {
                 fields: { includeRewards: true, includeMail: true, includeHeroArtifacts: false,
                     includeTitanArtifacts: false, includeTitanSummons: false, includePetEggs: false, includeAscension: false,
                     includeHeroSouls: false, includeTitanSouls: false, includeOfferGifts: false, includeStageOffers: false, includeBattlePass: false,
-                    includeSubscription: false, includeZeppelin: false, includeGrandCoins: false, includeSoulAtrium: false, includeInventoryBoxes: false },
+                    includeSubscription: false, includeZeppelin: false, includeGrandCoins: false, includeSoulAtrium: false, includeInventoryBoxes: false, includeNewYearGifts: false },
                 run: (settings, report, token) => this.collectAll(settings, report, token)
             },
             QUEST_REWARDS: {
@@ -235,6 +235,7 @@ class InterfaceAutomation {
                 fields: {},
                 run: (settings, report, token, context) => this.mail(settings, report, token, undefined, context?.letters)
             },
+            NEW_YEAR_GIFTS: { fields: {}, run: (s, r, t) => new InterfaceSeasonalGifts(this.api).run(r, t) },
             HERO_POWER: { fields: {}, run: (s, r, t) => this.heroPower(r, t) },
             INVENTORY_BOXES: { fields: { equipmentBoxes: true, randomBoxes: true, artifactBoxes: true }, run: (s, r, t) => this.openInventoryBoxes(s, r, t) },
             HERO_ARTIFACT_UPGRADE: { fields: { levels: 10 }, run: (s, r, t) => this.upgradeCosmetics('heroArtifact', s, r, t) },
@@ -505,7 +506,8 @@ class InterfaceAutomation {
             ['includeAscension', 'ASCENSION_FREE'],
             ['includeHeroSouls', 'HERO_SOUL_EXCHANGE'],
             ['includeTitanSouls', 'TITAN_SOUL_EXCHANGE'],
-            ['includeInventoryBoxes', 'INVENTORY_BOXES']
+            ['includeInventoryBoxes', 'INVENTORY_BOXES'],
+            ['includeNewYearGifts', 'NEW_YEAR_GIFTS']
         ];
         let collected = false;
         for (const [option, section] of selected) {

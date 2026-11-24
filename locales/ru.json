@@ -695,5 +695,8 @@
     "SCRIPT_CAMPAIGN_INVALID": "Укажите пары ID миссии и количества",
     "SCRIPT_CAMPAIGN_NO_TEAM": "Сначала выберите команду кампании",
     "SCRIPT_CAMPAIGN_DONE": "Миссия кампании выполнена",
-    "SCRIPT_OPTION_RAIDCAMPAIGN": "Использовать рейды"
+    "SCRIPT_OPTION_RAIDCAMPAIGN": "Использовать рейды",
+    "NAV_NEW_YEAR_GIFTS": "Новогодние подарки",
+    "SCRIPT_OPTION_INCLUDENEWYEARGIFTS": "Собирать новогодние подарки",
+    "SCRIPT_NEW_YEAR_GIFT_OPENED": "Новогодних подарков открыто"
 }

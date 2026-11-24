@@ -3483,5 +3483,20 @@
                                        "en":  "Use raids",
                                        "uk":  "Використовувати рейди",
                                        "ru":  "Использовать рейды"
-                                   }
+                                   },
+    "NAV_NEW_YEAR_GIFTS":  {
+                               "en":  "New Year gifts",
+                               "uk":  "Новорічні подарунки",
+                               "ru":  "Новогодние подарки"
+                           },
+    "SCRIPT_OPTION_INCLUDENEWYEARGIFTS":  {
+                                              "en":  "Collect New Year gifts",
+                                              "uk":  "Збирати новорічні подарунки",
+                                              "ru":  "Собирать новогодние подарки"
+                                          },
+    "SCRIPT_NEW_YEAR_GIFT_OPENED":  {
+                                        "en":  "New Year gifts opened",
+                                        "uk":  "Новорічних подарунків відкрито",
+                                        "ru":  "Новогодних подарков открыто"
+                                    }
 }

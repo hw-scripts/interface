@@ -6,6 +6,7 @@
 <script src="../dungeon.js"></script>
 <script src="../hero-upgrade.js"></script>
 <script src="../battle-scripts.js"></script>
+<script src="../seasonal-gifts.js"></script>
 <script src="../automation.js"></script>
 <script src="../autopilot.js"></script>
 <script>
@@ -54,7 +55,7 @@
         assert(!stopped.requiresReload);
     });
     await test('syntax of interface and automation', async () => {
-        for (const file of ['../interface.js', '../automation.js', '../battle-scripts.js', '../autopilot.js', '../battle-calculator.js', '../dungeon.js']) {
+        for (const file of ['../interface.js', '../automation.js', '../battle-scripts.js', '../seasonal-gifts.js', '../autopilot.js', '../battle-calculator.js', '../dungeon.js']) {
             const response = await fetch(file);
             new Function(await response.text());
         }
@@ -1250,6 +1251,15 @@
         equal(f.calls.filter(c=>c.name==='shopBuy').map(c=>[c.args.shopId,c.args.slot]),[[4,1],[1,4]]);
         const stopped=fixture({shopGetAll:()=>{stopped.engine.stop();return shops;}});
         await stopped.engine.run('BUY_GOLD_SHOPS',()=>{});assert(!stopped.calls.some(c=>c.name==='shopBuy'));
+    });
+    await test('new year gifts open only unopened unique gifts and honor cancellation', async () => {
+        const f=fixture({newYearGiftGet:{gifts:[{id:1,opened:0},{id:2,opened:1},{id:1,opened:0},{id:3,opened:0}]}});
+        await f.engine.run('NEW_YEAR_GIFTS',()=>{});
+        equal(f.calls.filter(c=>c.name==='newYearGiftOpen').map(c=>c.args.giftId),[1,3]);
+        const stopped=fixture({newYearGiftGet:{gifts:[{id:1,opened:0},{id:2,opened:0}]},newYearGiftOpen:()=>{stopped.engine.stop();}});
+        await stopped.engine.run('NEW_YEAR_GIFTS',()=>{});equal(stopped.calls.filter(c=>c.name==='newYearGiftOpen').length,1);
+        const no=fixture({newYearGiftGet:{gifts:[{id:1,opened:1}]}});await no.engine.run('NEW_YEAR_GIFTS',()=>{});
+        assert(!no.calls.some(c=>c.name==='newYearGiftOpen'));
     });
     await test('campaign runs configured raids or timed battles sequentially and stops', async () => {
         const f=fixture();f.engine.save('CAMPAIGN',{missions:'25:3, 45:2',raidCampaign:true});await f.engine.run('CAMPAIGN',()=>{});
