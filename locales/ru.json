@@ -643,7 +643,7 @@
     "SEQUENCE": "Выполнить последовательность",
     "SEQUENCE_TITLE": "Выполнить выбранные действия по очереди",
     "SETTINGS_BEHAVIOR": "Поведение",
-    "SETTING_DUNGEON_AVOID_DEATHS": "??????????????? ??? ?????? ?????/?????? ? ??????????",
+    "SETTING_DUNGEON_AVOID_DEATHS": "Останавливаться при гибели героя или титана в подземелье",
     "SETTINGS_BATTLES": "Бои",
     "SETTINGS_ADDITIONAL": "Дополнительно",
     "MENU_GENERAL_SETTINGS": "Общие настройки",
