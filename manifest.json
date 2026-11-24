@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Interface",
-  "version": "3.4.7",
+  "version": "3.4.8",
   "description": "Extension interface testing",
   "author": "Miish",
   "homepage_url": "https://github.com/hw-scripts/interface",
@@ -17,6 +17,7 @@
         "battle-calculator.js",
         "dungeon.js",
         "hero-upgrade.js",
+        "gear-farm.js",
         "battle-scripts.js",
         "seasonal-gifts.js",
         "energy-boxes.js",

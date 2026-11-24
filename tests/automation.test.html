@@ -8,6 +8,7 @@
 <script src="../battle-scripts.js"></script>
 <script src="../seasonal-gifts.js"></script>
 <script src="../energy-boxes.js"></script>
+<script src="../gear-farm.js"></script>
 <script src="../automation.js"></script>
 <script src="../autopilot.js"></script>
 <script>
@@ -56,7 +57,7 @@
         assert(!stopped.requiresReload);
     });
     await test('syntax of interface and automation', async () => {
-        for (const file of ['../interface.js', '../automation.js', '../battle-scripts.js', '../seasonal-gifts.js', '../energy-boxes.js', '../autopilot.js', '../battle-calculator.js', '../dungeon.js']) {
+        for (const file of ['../interface.js', '../automation.js', '../battle-scripts.js', '../seasonal-gifts.js', '../energy-boxes.js', '../gear-farm.js', '../autopilot.js', '../battle-calculator.js', '../dungeon.js']) {
             const response = await fetch(file);
             new Function(await response.text());
         }
@@ -1261,6 +1262,22 @@
         equal(f.calls.filter(c=>c.name==='shopBuy').map(c=>[c.args.shopId,c.args.slot]),[[4,1],[1,4]]);
         const stopped=fixture({shopGetAll:()=>{stopped.engine.stop();return shops;}});
         await stopped.engine.run('BUY_GOLD_SHOPS',()=>{});assert(!stopped.calls.some(c=>c.name==='shopBuy'));
+    });
+    await test('gear planner resolves priority, recipes, stock, shops and raid options', () => {
+        const drop = chance => ({1:{enemies:{1:{drop:{1:{chance,reward:{fragmentGear:{20:1}}}}}}}});
+        const lib={hero:{1:{color:{1:{items:{0:10}}}},2:{color:{1:{items:{0:10}}}}},
+            inventoryItem:{gear:{10:{craftRecipe:{fragmentGear:{20:3},gold:1}},11:{heroLevel:99}},fragmentGear:{}},
+            mission:{5:{isHeroic:0,normalMode:{cost:{stamina:6},waves:drop(50)}},
+                6:{isHeroic:1,normalMode:{cost:{stamina:10},waves:drop(100)}}}};
+        const planner=new InterfaceGearFarmPlanner(lib), heroes={1:{id:1,color:1,level:10,slots:{}},2:{id:2,color:1,level:10,slots:{}}};
+        const stock={gear:{10:1},fragmentGear:{20:1},coin:{1:10}};
+        const needs=planner.needs([1,2],heroes,stock);equal(needs.get('gear:10'),1);equal(needs.get('fragmentGear:20'),2);
+        const shops={1:{slots:{1:{id:1,cost:{starmoney:1},reward:{fragmentGear:{20:1}}},2:{id:2,cost:{gold:3},reward:{fragmentGear:{20:1}}}}}};
+        equal(planner.purchase(shops,needs,stock,{gold:10}).slot.id,2);
+        equal(planner.purchase(shops,needs,stock,{gold:2}),null);
+        const options=planner.missions({type:'fragmentGear',id:20},{5:{id:5,stars:3},6:{id:6,stars:3,triesSpent:2}});
+        equal(options.map(o=>[o.id,o.attempts,o.expectedYield]),[[6,1,1],[5,Infinity,0.5]]);
+        equal(stock.gear[10],1);
     });
     await test('energy boxes respect batch rules, energy targets and stopping', async () => {
         const f=fixture({inventoryGet:{consumable:{148:123}},consumableUseLootBox:{reward:{stamina:50}}});
