@@ -5,6 +5,7 @@
 <script src="../battle-calculator.js"></script>
 <script src="../dungeon.js"></script>
 <script src="../hero-upgrade.js"></script>
+<script src="../battle-scripts.js"></script>
 <script src="../automation.js"></script>
 <script src="../autopilot.js"></script>
 <script>
@@ -53,7 +54,7 @@
         assert(!stopped.requiresReload);
     });
     await test('syntax of interface and automation', async () => {
-        for (const file of ['../interface.js', '../automation.js', '../autopilot.js', '../battle-calculator.js', '../dungeon.js']) {
+        for (const file of ['../interface.js', '../automation.js', '../battle-scripts.js', '../autopilot.js', '../battle-calculator.js', '../dungeon.js']) {
             const response = await fetch(file);
             new Function(await response.text());
         }
