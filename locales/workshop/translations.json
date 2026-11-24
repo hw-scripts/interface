@@ -921,8 +921,8 @@
                           },
     "NAV_TITAN_ARENA":  {
                             "en":  "Tournament of the Elements",
-                            "uk":  "Турнір Стихій",
-                            "ru":  "Турнир Стихий"
+                            "uk":  "Турнір стихій",
+                            "ru":  "Турнир стихий"
                         },
     "NAV_TITAN_ARTIFACT":  {
                                "en":  "Titan artifacts",
@@ -3368,5 +3368,55 @@
                                              "en":  "Enter seven non-negative reserves separated by non-numeric characters",
                                              "uk":  "Введіть сім невід’ємних залишків через нецифрові символи",
                                              "ru":  "Введите семь неотрицательных остатков через нецифровые символы"
-                                         }
+                                         },
+    "SCRIPT_TITAN_ARENA_NO_TEAM":  {
+                                       "en":  "Select a titan tournament team first",
+                                       "uk":  "Спочатку виберіть команду титанів для турніру",
+                                       "ru":  "Сначала выберите команду титанов для турнира"
+                                   },
+    "SCRIPT_TITAN_ARENA_TIER":  {
+                                    "en":  "Tournament tier",
+                                    "uk":  "Рівень турніру",
+                                    "ru":  "Уровень турнира"
+                                },
+    "SCRIPT_TITAN_ARENA_SCORE":  {
+                                     "en":  "Tournament battle score",
+                                     "uk":  "Очки бою турніру",
+                                     "ru":  "Очки боя турнира"
+                                 },
+    "SCRIPT_OPTION_TESTBATTLES":  {
+                                      "en":  "Battle simulations",
+                                      "uk":  "Пробні розрахунки бою",
+                                      "ru":  "Пробные расчёты боя"
+                                  },
+    "SCRIPT_OPTION_RETRYBATTLES":  {
+                                       "en":  "Battle retries",
+                                       "uk":  "Повторні спроби бою",
+                                       "ru":  "Повторные попытки боя"
+                                   },
+    "NAV_ASGARD_MINIONS":  {
+                               "en":  "Asgard minions",
+                               "uk":  "Міньйони Асгарду",
+                               "ru":  "Миньоны Асгарда"
+                           },
+    "SCRIPT_ASGARD_INCOMPLETE_TEAM":  {
+                                          "en":  "Complete the Asgard teams first",
+                                          "uk":  "Спочатку заповніть команди Асгарду",
+                                          "ru":  "Сначала заполните команды Асгарда"
+                                      },
+    "SCRIPT_ASGARD_CANCEL_UNCONFIRMED":  {
+                                             "en":  "Could not confirm battle cancellation",
+                                             "uk":  "Не вдалося підтвердити скасування бою",
+                                             "ru":  "Не удалось подтвердить отмену боя"
+                                         },
+    "SCRIPT_ASGARD_CANCELLED":  {
+                                    "en":  "Asgard node cancelled",
+                                    "uk":  "Бій з міньйонами скасовано",
+                                    "ru":  "Бой с миньонами отменён"
+                                },
+    "SCRIPT_ASGARD_NODE_DONE":  {
+                                    "en":  "Asgard node completed",
+                                    "uk":  "Вузол міньйонів пройдено",
+                                    "ru":  "Узел миньонов пройден"
+                                }
 }

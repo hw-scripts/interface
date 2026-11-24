@@ -1250,6 +1250,61 @@
         const stopped=fixture({shopGetAll:()=>{stopped.engine.stop();return shops;}});
         await stopped.engine.run('BUY_GOLD_SHOPS',()=>{});assert(!stopped.calls.some(c=>c.name==='shopBuy'));
     });
+    await test('Asgard minions complete eligible nodes and avoid incomplete teams', async () => {
+        const now=Date.now()/1000;
+        const info={attempts:1,nodes:{a:{timestamps:{start:now-60,end:now+60},teams:[{points:0}]},b:{timestamps:{start:now-60,end:now+60},teams:[{points:1}]}}};
+        const f=fixture({clanRaid_getInfo:info,teamGetAll:{clanRaid_nodes:[[1,2,3,4,5,6001]]},teamGetFavor:{clanRaid_nodes:{1:6001}},
+            clanRaid_startNodeBattles:{battles:[{result:{nodeId:'a'}}]},clanRaid_endNodeBattle:{}});
+        f.engine.battleCalculator={assertAvailable:()=>{},calculate:async()=>({result:{win:true},progress:[],waitSeconds:0})};
+        await f.engine.run('ASGARD_MINIONS',()=>{});
+        equal(f.calls.filter(c=>c.name==='clanRaid_endNodeBattle').map(c=>c.args.nodeId),['a']);
+        const g=fixture({clanRaid_getInfo:info,teamGetAll:{clanRaid_nodes:[[1]]},teamGetFavor:{}});
+        await g.engine.run('ASGARD_MINIONS',()=>{});assert(!g.calls.some(c=>c.name==='clanRaid_startNodeBattles'));
+        const stopped=fixture({clanRaid_getInfo:()=>{stopped.engine.stop();return info;}});
+        await stopped.engine.run('ASGARD_MINIONS',()=>{});equal(stopped.calls.length,1);
+    });
+    await test('Asgard minions cancel a predicted loss and do not spend attempts on it', async () => {
+        const now=Date.now()/1000, info={attempts:1,nodes:{a:{timestamps:{start:now-1,end:now+60},teams:[{points:0}]}}};
+        const f=fixture({clanRaid_getInfo:info,teamGetAll:{clanRaid_nodes:[[1,2,3,4,5,6001]]},teamGetFavor:{},
+            clanRaid_startNodeBattles:{battles:[{result:{nodeId:'a'}}]},clanRaid_endNodeBattle:{error:true,reason:'invalidBattle'}});
+        f.engine.battleCalculator={assertAvailable:()=>{},calculate:async()=>({result:{win:false},progress:[{attackers:{heroes:{1:{hp:100}}},defenders:{heroes:{2:{hp:100}}}}],waitSeconds:0})};
+        await f.engine.run('ASGARD_MINIONS',()=>{});
+        const end=f.calls.find(c=>c.name==='clanRaid_endNodeBattle');assert(end);assert(end.args.progress[0].attackers.heroes[1].energy>0);
+    });
+    await test('titan tournament completes raids and fights remaining rivals', async () => {
+        let phase = 0;
+        const f = fixture({titanArenaGetStatus:()=>phase===0?{status:'completed_tier',tier:1}:
+            phase===1?{status:'battle',tier:2,canRaid:true}:{status:'battle',tier:3,rivals:{1:{attackScore:100},2:{attackScore:250}}},
+            teamGetAll:{titan_arena:[1,2]},
+            titanArenaCompleteTier:()=>{ phase++; return phase===1?{status:'battle',tier:2,canRaid:true}:{status:'battle',tier:3,rivals:{1:{attackScore:100},2:{attackScore:250}}}; },
+            titanArenaStartRaid:{attackers:{},rivals:{1:{team:{},seed:1}}},
+            titanArenaEndRaid:{results:{1:{attackScore:250}}},
+            titanArenaStartBattle:{battle:{typeId:'1'}},titanArenaEndBattle:{attackScore:250}});
+        f.engine.battleCalculator={assertAvailable:()=>{},calculate:async()=>({result:{win:true},progress:[],waitSeconds:0})};
+        f.engine.save('TITAN_ARENA',{testBattles:0,retryBattles:0});
+        await f.engine.run('TITAN_ARENA',()=>{});
+        equal(f.calls.map(c=>c.name),['titanArenaGetStatus','teamGetAll','titanArenaCompleteTier','titanArenaStartRaid','titanArenaEndRaid','titanArenaCompleteTier','titanArenaStartBattle','titanArenaEndBattle','titanArenaGetStatus','titanArenaFarmDailyReward']);
+        equal(f.calls.find(c=>c.name==='titanArenaStartBattle').args,{rivalId:'1',titans:[1,2]});
+        const stopped=fixture({titanArenaGetStatus:()=>{stopped.engine.stop();return {status:'battle'};}});
+        await stopped.engine.run('TITAN_ARENA',()=>{});equal(stopped.calls.length,1);
+        const peace=fixture({titanArenaGetStatus:{status:'peace_time'}});
+        await peace.engine.run('TITAN_ARENA',()=>{});equal(peace.calls.length,1);
+    });
+    await test('titan tournament retries only after a promising simulation and stops on interruption', async () => {
+        let checks=0, starts=0, calculations=0;
+        const f=fixture({titanArenaGetStatus:()=>++checks===1?{status:'battle',rivals:{1:{attackScore:10}}}:{status:'battle',rivals:{}},
+            teamGetAll:{titan_arena:[1]},titanArenaStartBattle:()=>{starts++;return {battle:{typeId:'1'}};},titanArenaEndBattle:{attackScore:250}});
+        f.engine.battleCalculator={assertAvailable:()=>{},calculate:async()=>({result:{win:++calculations>=2},progress:[],waitSeconds:0})};
+        f.engine.save('TITAN_ARENA',{testBattles:1,retryBattles:2});
+        await f.engine.run('TITAN_ARENA',()=>{});
+        equal(starts,2);equal(calculations,3);
+        equal(f.calls.filter(c=>c.name==='titanArenaEndBattle').length,1);
+        const g=fixture({titanArenaGetStatus:{status:'battle',rivals:{1:{attackScore:10}}},teamGetAll:{titan_arena:[1]},
+            titanArenaStartBattle:{battle:{typeId:'1'}}});
+        g.engine.battleCalculator={assertAvailable:()=>{},calculate:async()=>{g.engine.stop();return {result:{win:true},progress:[],waitSeconds:0};}};
+        await g.engine.run('TITAN_ARENA',()=>{});
+        assert(!g.calls.some(c=>c.name==='titanArenaEndBattle'));
+    });
     await test('gold shop buys experience potions only for underlevelled heroes', async () => {
         const shops={1:{slots:{2:{reward:{consumable:{11:90}},cost:{gold:90}},4:{reward:{gear:{1:1}},cost:{gold:20}}}}};
         for (const [level, heroes, expected] of [[130,{1:{level:129}},[2]],[130,{1:{level:130}},[4]],[undefined,{1:{level:1}},[4]],[130,{},[4]]]) {

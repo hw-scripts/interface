@@ -672,5 +672,15 @@
     "SCRIPT_OPTION_ITEMRESERVES": "Reserve per item: gray / green / blue / violet / orange / red / brown",
     "SCRIPT_EXCHANGE_PROGRESS": "Activity received",
     "SCRIPT_EXCHANGE_COUNTER": "Item activity counter did not advance",
-    "SCRIPT_EXCHANGE_INVALID_RESERVES": "Enter seven non-negative reserves separated by non-numeric characters"
+    "SCRIPT_EXCHANGE_INVALID_RESERVES": "Enter seven non-negative reserves separated by non-numeric characters",
+    "SCRIPT_TITAN_ARENA_NO_TEAM": "Select a titan tournament team first",
+    "SCRIPT_TITAN_ARENA_TIER": "Tournament tier",
+    "SCRIPT_TITAN_ARENA_SCORE": "Tournament battle score",
+    "SCRIPT_OPTION_TESTBATTLES": "Battle simulations",
+    "SCRIPT_OPTION_RETRYBATTLES": "Battle retries",
+    "NAV_ASGARD_MINIONS": "Asgard minions",
+    "SCRIPT_ASGARD_INCOMPLETE_TEAM": "Complete the Asgard teams first",
+    "SCRIPT_ASGARD_CANCEL_UNCONFIRMED": "Could not confirm battle cancellation",
+    "SCRIPT_ASGARD_CANCELLED": "Asgard node cancelled",
+    "SCRIPT_ASGARD_NODE_DONE": "Asgard node completed"
 }

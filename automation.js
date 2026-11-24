@@ -197,7 +197,7 @@ class InterfaceAutomation {
             const readOnly = new Set(['userGetInfo', 'expeditionGet', 'dailyBonusGetInfo',
                 'mailGetAll', 'questGetAll', 'battlePass_getInfo', 'battlePass_getSpecial',
                 'bossGetAll', 'heroGetAll', 'pet_getAll', 'teamGetAll', 'teamGetFavor', 'inventoryGet',
-                'towerGetInfo', 'dungeonGetInfo', 'clanGetInfo', 'titanGetAll', 'specialOffer_getAll', 'offerGetAll', 'shopGetAll', 'subscriptionGetInfo', 'zeppelinGiftGet', 'adventure_raidGetInfo']);
+                'clanRaid_getInfo', 'titanArenaGetStatus', 'towerGetInfo', 'dungeonGetInfo', 'clanGetInfo', 'titanGetAll', 'specialOffer_getAll', 'offerGetAll', 'shopGetAll', 'subscriptionGetInfo', 'zeppelinGiftGet', 'adventure_raidGetInfo']);
             const synchronized = new Set(['expeditionFarm', 'expeditionSendHeroes', 'artifactChestOpen']);
             if (!readOnly.has(name) && !synchronized.has(name)) {
                 this.requiresReload = true;
@@ -240,6 +240,8 @@ class InterfaceAutomation {
             HERO_ARTIFACT_UPGRADE: { fields: { levels: 10 }, run: (s, r, t) => this.upgradeCosmetics('heroArtifact', s, r, t) },
             TITAN_ARTIFACT_UPGRADE: { fields: { levels: 1 }, run: (s, r, t) => this.upgradeCosmetics('titanArtifact', s, r, t) },
             HERO_SKIN_UPGRADE: { fields: { levels: 10 }, run: (s, r, t) => this.upgradeCosmetics('heroSkin', s, r, t) },
+            ASGARD_MINIONS: { fields: {}, run: (s, r, t) => this.asgardMinions(r, t) },
+            TITAN_ARENA: { fields: { testBattles: 10, retryBattles: 10 }, run: (s, r, t) => this.titanArena(s, r, t) },
             ADVENTURE_RAID: { fields: { limit: 0 }, run: (s, r, t) => this.adventureRaid(s, r, t) },
             BUY_HERO_SOULS: { fields: {}, run: (s, r, t) => this.buyHeroSouls(r, t) },
             BUY_GOLD_SHOPS: { fields: {}, run: (s, r, t) => this.buyGoldShops(r, t) },
@@ -570,6 +572,161 @@ class InterfaceAutomation {
             }
         }
         if (!opened) return 'SCRIPT_NOTHING_TO_COLLECT';
+    }
+
+    async asgardMinions(report, token) {
+        const info = await this.api.call('clanRaid_getInfo');
+        if (token.stopped) return;
+        const teams = await this.api.call('teamGetAll');
+        if (token.stopped) return;
+        const favors = await this.api.call('teamGetFavor');
+        if (token.stopped) return;
+        const savedTeams = teams?.clanRaid_nodes;
+        if (!Array.isArray(savedTeams) || !savedTeams.length || savedTeams.some(team => !Array.isArray(team) || team.length < 6))
+            return 'SCRIPT_ASGARD_INCOMPLETE_TEAM';
+        let attempts = Number(info?.attempts);
+        if (!Number.isSafeInteger(attempts) || attempts < 0 || !info?.nodes) throw new Error('SCRIPT_API_ERROR');
+        if (!attempts) return 'SCRIPT_NOTHING_TO_COLLECT';
+        this.battleCalculator.assertAvailable('get_clanPvp');
+        const lineups = savedTeams.map((team, battleIndex) => ({ data: {}, heroes: team.filter(id => id < 6000),
+            pet: team.find(id => id >= 6000), battleIndex }));
+        const heroes = new Set(lineups.flatMap(team => team.heroes).map(Number));
+        const favor = Object.fromEntries(Object.entries(favors?.clanRaid_nodes ?? {}).filter(([hero]) => heroes.has(Number(hero))));
+        for (const [nodeId, node] of Object.entries(info.nodes)) {
+            if (token.stopped || !attempts) return;
+            const now = Date.now() / 1000;
+            if (!Array.isArray(node.teams) || !node.teams.length || node.teams.some(team => Number(team.points) !== 0) ||
+                !(now > Number(node.timestamps?.start) && now < Number(node.timestamps?.end))) continue;
+            if (node.teams.length > lineups.length) throw new Error('SCRIPT_ASGARD_INCOMPLETE_TEAM');
+            const started = performance.now();
+            const response = await this.api.call('clanRaid_startNodeBattles', { nodeId, teams: lineups.slice(0, node.teams.length), favor });
+            if (token.stopped) return;
+            if (!Array.isArray(response?.battles) || response.battles.length !== node.teams.length) throw new Error('SCRIPT_API_ERROR');
+            const results = [];
+            for (const [battleIndex, battle] of response.battles.entries()) {
+                if (token.stopped) return;
+                const calculated = await this.battleCalculator.calculate(battle, 'get_clanPvp');
+                if (!calculated?.result || !Array.isArray(calculated.progress)) throw new Error('SCRIPT_BATTLE_UNAVAILABLE');
+                results.push({ battle, battleIndex, calculated });
+            }
+            const losing = results.some(entry => !entry.calculated.result.win);
+            if (losing) {
+                const progress = results[0].calculated.progress;
+                for (const side of ['attackers', 'defenders']) {
+                    const units = progress?.[0]?.[side]?.heroes;
+                    if (!units || typeof units !== 'object') throw new Error('SCRIPT_BATTLE_UNAVAILABLE');
+                    for (const hero of Object.values(units)) {
+                        hero.energy = 1 + Math.floor(Math.random() * 999);
+                        if (hero.hp > 0) hero.hp = 1 + Math.floor(Math.random() * hero.hp);
+                    }
+                }
+            }
+            for (const entry of losing ? results.slice(0, 1) : results) {
+                const until = started + Math.max(0, Number(entry.calculated.waitSeconds) || 0) * 1000;
+                while (!token.stopped && performance.now() < until)
+                    await new Promise(resolve => setTimeout(resolve, Math.min(250, until - performance.now())));
+                if (token.stopped) return;
+                try {
+                    const result = await this.api.call('clanRaid_endNodeBattle', { nodeId: entry.battle?.result?.nodeId ?? nodeId,
+                        battleIndex: entry.battleIndex, result: entry.calculated.result, progress: entry.calculated.progress });
+                    if (result?.error && !(losing && result.reason === 'invalidBattle')) throw new Error(result.reason || 'SCRIPT_API_ERROR');
+                    if (losing && !(result?.error && result.reason === 'invalidBattle')) throw new Error('SCRIPT_ASGARD_CANCEL_UNCONFIRMED');
+                } catch (error) {
+                    if (!(losing && /invalidBattle/i.test(String(error?.message)))) throw error;
+                }
+            }
+            if (!losing) attempts--;
+            report(losing ? 'SCRIPT_ASGARD_CANCELLED' : 'SCRIPT_ASGARD_NODE_DONE', nodeId);
+        }
+    }
+
+    async titanArena(settings, report, token) {
+        const tests = Number(settings.testBattles), retries = Number(settings.retryBattles);
+        if (!Number.isSafeInteger(tests) || tests < 0 || tests > 100 ||
+            !Number.isSafeInteger(retries) || retries < 0 || retries > 100) throw new Error('SCRIPT_UPGRADE_INVALID_LIMIT');
+        let status = await this.api.call('titanArenaGetStatus');
+        if (token.stopped || status?.status === 'disabled' || status?.status === 'peace_time') return;
+        const teams = await this.api.call('teamGetAll');
+        if (token.stopped) return;
+        const titans = teams?.titan_arena;
+        if (!Array.isArray(titans) || !titans.length) throw new Error('SCRIPT_TITAN_ARENA_NO_TEAM');
+        this.battleCalculator.assertAvailable('get_titanClanPvp');
+        let checked = false;
+        const calculate = async battle => {
+            const result = await this.battleCalculator.calculate(battle, 'get_titanClanPvp');
+            if (!result?.result || !Array.isArray(result.progress)) throw new Error('SCRIPT_BATTLE_UNAVAILABLE');
+            return result;
+        };
+        const wait = async (started, seconds) => {
+            const until = started + Math.max(0, Number(seconds) || 0) * 1000;
+            while (!token.stopped && performance.now() < until)
+                await new Promise(resolve => setTimeout(resolve, Math.min(250, until - performance.now())));
+        };
+        while (!token.stopped) {
+            if (!status || status.status === 'disabled' || status.status === 'peace_time') return;
+            report('SCRIPT_TITAN_ARENA_TIER', status.tier);
+            if (status.status === 'completed_tier') {
+                status = await this.api.call('titanArenaCompleteTier'); checked = false; continue;
+            }
+            if (status.canRaid) {
+                const started = performance.now();
+                const raid = await this.api.call('titanArenaStartRaid', { titans });
+                if (token.stopped) return;
+                if (!raid?.attackers || !raid.rivals || !Object.keys(raid.rivals).length) throw new Error('SCRIPT_API_ERROR');
+                const results = {}; let seconds = 0;
+                for (const [id, rival] of Object.entries(raid.rivals)) {
+                    if (token.stopped) return;
+                    const calculated = await calculate({ attackers: raid.attackers, defenders: [rival.team], seed: rival.seed, typeId: id });
+                    results[id] = { progress: calculated.progress, result: calculated.result };
+                    seconds += Math.max(0, Number(calculated.waitSeconds) || 0);
+                }
+                await wait(started, seconds);
+                if (token.stopped) return;
+                const response = await this.api.call('titanArenaEndRaid', { results });
+                if (token.stopped) return;
+                const scores = response?.results;
+                if (!scores || !Object.keys(scores).length) throw new Error('SCRIPT_API_ERROR');
+                if (Object.values(scores).every(value => Number(value.attackScore) >= 250)) {
+                    status = await this.api.call('titanArenaCompleteTier'); checked = false;
+                } else status = await this.api.call('titanArenaGetStatus');
+                continue;
+            }
+            if (checked) {
+                await this.api.call('titanArenaFarmDailyReward');
+                return;
+            }
+            if (!status.rivals || typeof status.rivals !== 'object') throw new Error('SCRIPT_API_ERROR');
+            const rivals = Object.keys(status.rivals).filter(id => Number(status.rivals[id].attackScore) < 250).reverse();
+            for (const rivalId of rivals) {
+                if (token.stopped) return;
+                let started = performance.now();
+                let response = await this.api.call('titanArenaStartBattle', { rivalId, titans });
+                if (token.stopped) return;
+                let battle = response?.battle;
+                if (!battle) throw new Error('SCRIPT_API_ERROR');
+                let calculated = await calculate(battle), possible = !!calculated.result.win;
+                for (let n = 0; n < tests && !token.stopped; n++) {
+                    const trial = structuredClone(battle);
+                    trial.seed = Math.floor(Date.now() / 1000) + Math.floor(Math.random() * 1001);
+                    if ((await calculate(trial)).result.win) possible = true;
+                }
+                let remaining = possible ? retries : 0;
+                while (!calculated.result.win && remaining-- > 0 && !token.stopped) {
+                    started = performance.now();
+                    response = await this.api.call('titanArenaStartBattle', { rivalId, titans });
+                    if (token.stopped) return;
+                    if (!response?.battle) throw new Error('SCRIPT_API_ERROR');
+                    calculated = await calculate(response.battle);
+                }
+                await wait(started, calculated.waitSeconds);
+                if (token.stopped) return;
+                const result = await this.api.call('titanArenaEndBattle', { progress: calculated.progress, result: calculated.result, rivalId });
+                report('SCRIPT_TITAN_ARENA_SCORE', `${rivalId}: ${result?.attackScore ?? 0}`);
+            }
+            if (token.stopped) return;
+            checked = true;
+            status = await this.api.call('titanArenaGetStatus');
+        }
     }
 
     async adventureRaid(settings, report, token) {
