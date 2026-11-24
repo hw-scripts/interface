@@ -698,5 +698,9 @@
     "SCRIPT_OPTION_RAIDCAMPAIGN": "Использовать рейды",
     "NAV_NEW_YEAR_GIFTS": "Новогодние подарки",
     "SCRIPT_OPTION_INCLUDENEWYEARGIFTS": "Собирать новогодние подарки",
-    "SCRIPT_NEW_YEAR_GIFT_OPENED": "Новогодних подарков открыто"
+    "SCRIPT_NEW_YEAR_GIFT_OPENED": "Новогодних подарков открыто",
+    "NAV_ENERGY_BOXES": "Наборы энергии",
+    "SCRIPT_OPTION_MAXBOXES": "Максимум наборов (0 = все)",
+    "SCRIPT_OPTION_TARGETENERGY": "Цель энергии (0 = без цели; проверка после каждой партии)",
+    "SCRIPT_ENERGY_BOX_PROGRESS": "Открыто наборов и получено энергии"
 }

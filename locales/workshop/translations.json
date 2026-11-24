@@ -3498,5 +3498,25 @@
                                         "en":  "New Year gifts opened",
                                         "uk":  "Новорічних подарунків відкрито",
                                         "ru":  "Новогодних подарков открыто"
-                                    }
+                                    },
+    "NAV_ENERGY_BOXES":  {
+                             "en":  "Energy boxes",
+                             "uk":  "Набори енергії",
+                             "ru":  "Наборы энергии"
+                         },
+    "SCRIPT_OPTION_MAXBOXES":  {
+                                   "en":  "Maximum boxes (0 = all)",
+                                   "uk":  "Максимум наборів (0 = усі)",
+                                   "ru":  "Максимум наборов (0 = все)"
+                               },
+    "SCRIPT_OPTION_TARGETENERGY":  {
+                                       "en":  "Target energy (0 = no target; checked after each batch)",
+                                       "uk":  "Ціль енергії (0 = без цілі; перевірка після кожної пачки)",
+                                       "ru":  "Цель энергии (0 = без цели; проверка после каждой партии)"
+                                   },
+    "SCRIPT_ENERGY_BOX_PROGRESS":  {
+                                       "en":  "Boxes opened and energy gained",
+                                       "uk":  "Відкрито наборів і отримано енергії",
+                                       "ru":  "Открыто наборов и получено энергии"
+                                   }
 }

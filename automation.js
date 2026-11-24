@@ -237,6 +237,7 @@ class InterfaceAutomation {
             },
             NEW_YEAR_GIFTS: { fields: {}, run: (s, r, t) => new InterfaceSeasonalGifts(this.api).run(r, t) },
             HERO_POWER: { fields: {}, run: (s, r, t) => this.heroPower(r, t) },
+            ENERGY_BOXES: { fields: { maxBoxes: 1, targetEnergy: 100 }, run: (s, r, t) => new InterfaceEnergyBoxes(this.api).run(s, r, t) },
             INVENTORY_BOXES: { fields: { equipmentBoxes: true, randomBoxes: true, artifactBoxes: true }, run: (s, r, t) => this.openInventoryBoxes(s, r, t) },
             HERO_ARTIFACT_UPGRADE: { fields: { levels: 10 }, run: (s, r, t) => this.upgradeCosmetics('heroArtifact', s, r, t) },
             TITAN_ARTIFACT_UPGRADE: { fields: { levels: 1 }, run: (s, r, t) => this.upgradeCosmetics('titanArtifact', s, r, t) },

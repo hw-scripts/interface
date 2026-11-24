@@ -698,5 +698,9 @@
     "SCRIPT_OPTION_RAIDCAMPAIGN": "Use raids",
     "NAV_NEW_YEAR_GIFTS": "New Year gifts",
     "SCRIPT_OPTION_INCLUDENEWYEARGIFTS": "Collect New Year gifts",
-    "SCRIPT_NEW_YEAR_GIFT_OPENED": "New Year gifts opened"
+    "SCRIPT_NEW_YEAR_GIFT_OPENED": "New Year gifts opened",
+    "NAV_ENERGY_BOXES": "Energy boxes",
+    "SCRIPT_OPTION_MAXBOXES": "Maximum boxes (0 = all)",
+    "SCRIPT_OPTION_TARGETENERGY": "Target energy (0 = no target; checked after each batch)",
+    "SCRIPT_ENERGY_BOX_PROGRESS": "Boxes opened and energy gained"
 }

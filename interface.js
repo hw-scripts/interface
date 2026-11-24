@@ -1751,7 +1751,7 @@
         for (const [name, initial] of Object.entries(automation.definitions[section].fields))
             inputs[name] = settingInput(I18N(section === 'BOSS' && name === 'battles'
                 ? 'SCRIPT_OPTION_OUTLANDBATTLES' : `SCRIPT_OPTION_${name.toUpperCase()}`),
-                typeof initial === 'number' ? 'number' : typeof initial === 'string' ? 'text' : 'checkbox', typeof initial === 'boolean' ? settings[name] === true : settings[name], section === 'HERO_UPGRADE' || section === 'ITEM_EXCHANGE' || section === 'TITAN_ARENA' || section === 'ADVENTURE' || section === 'ADVENTURE_SOLO' || name === 'limit' ? 0 : 1);
+                typeof initial === 'number' ? 'number' : typeof initial === 'string' ? 'text' : 'checkbox', typeof initial === 'boolean' ? settings[name] === true : settings[name], section === 'HERO_UPGRADE' || section === 'ITEM_EXCHANGE' || section === 'ENERGY_BOXES' || section === 'TITAN_ARENA' || section === 'ADVENTURE' || section === 'ADVENTURE_SOLO' || name === 'limit' ? 0 : 1);
         if (section === 'HERO_UPGRADE') {
             const note = document.createElement('p');
             note.textContent = I18N('SCRIPT_UPGRADE_STAGE');

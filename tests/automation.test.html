@@ -7,6 +7,7 @@
 <script src="../hero-upgrade.js"></script>
 <script src="../battle-scripts.js"></script>
 <script src="../seasonal-gifts.js"></script>
+<script src="../energy-boxes.js"></script>
 <script src="../automation.js"></script>
 <script src="../autopilot.js"></script>
 <script>
@@ -55,7 +56,7 @@
         assert(!stopped.requiresReload);
     });
     await test('syntax of interface and automation', async () => {
-        for (const file of ['../interface.js', '../automation.js', '../battle-scripts.js', '../seasonal-gifts.js', '../autopilot.js', '../battle-calculator.js', '../dungeon.js']) {
+        for (const file of ['../interface.js', '../automation.js', '../battle-scripts.js', '../seasonal-gifts.js', '../energy-boxes.js', '../autopilot.js', '../battle-calculator.js', '../dungeon.js']) {
             const response = await fetch(file);
             new Function(await response.text());
         }
@@ -1251,6 +1252,17 @@
         equal(f.calls.filter(c=>c.name==='shopBuy').map(c=>[c.args.shopId,c.args.slot]),[[4,1],[1,4]]);
         const stopped=fixture({shopGetAll:()=>{stopped.engine.stop();return shops;}});
         await stopped.engine.run('BUY_GOLD_SHOPS',()=>{});assert(!stopped.calls.some(c=>c.name==='shopBuy'));
+    });
+    await test('energy boxes respect batch rules, energy targets and stopping', async () => {
+        const f=fixture({inventoryGet:{consumable:{148:123}},consumableUseLootBox:{reward:{stamina:50}}});
+        f.engine.save('ENERGY_BOXES',{maxBoxes:123,targetEnergy:0});await f.engine.run('ENERGY_BOXES',()=>{});
+        equal(f.calls.filter(c=>c.name==='consumableUseLootBox').map(c=>c.args.amount),[100,10,10,1,1,1]);
+        const limited=fixture({inventoryGet:{consumable:{148:50}},consumableUseLootBox:{reward:{stamina:100}}});
+        limited.engine.save('ENERGY_BOXES',{maxBoxes:20,targetEnergy:100});await limited.engine.run('ENERGY_BOXES',()=>{});
+        equal(limited.calls.filter(c=>c.name==='consumableUseLootBox').map(c=>c.args.amount),[10]);
+        const stopped=fixture({inventoryGet:{consumable:{148:20}},consumableUseLootBox:()=>{stopped.engine.stop();return {};}});
+        stopped.engine.save('ENERGY_BOXES',{maxBoxes:20,targetEnergy:0});await stopped.engine.run('ENERGY_BOXES',()=>{});
+        equal(stopped.calls.filter(c=>c.name==='consumableUseLootBox').length,1);
     });
     await test('new year gifts open only unopened unique gifts and honor cancellation', async () => {
         const f=fixture({newYearGiftGet:{gifts:[{id:1,opened:0},{id:2,opened:1},{id:1,opened:0},{id:3,opened:0}]}});
