@@ -849,7 +849,8 @@
         const classes = {};
         classes.BattleConfigStorage = function () {};
         classes.BattleConfigStorage.prototype.__properties__ = { towerAlias: 'get_tower' };
-        classes.DataStorage = Object.fromEntries(Array.from({ length: 25 }, (_, index) => [`key${index}`, null]));
+        classes.BattleConfigStorage.prototype.towerAlias = function () {};
+        classes.DataStorage = { unrelated: null };
         classes.DataStorage.storage = { towerAlias: () => 'towerConfig' };
         classes.BattlePresets = function (progress, a, b, config) { equal(config, 'towerConfig'); };
         classes.BattlePresets.prototype.__properties__ = { timeAlias: 'get_timeLimit' };
@@ -860,7 +861,7 @@
             __properties__: { resultAlias: 'get_result', progressAlias: 'get_progress' } });
         classes.BattleInstantPlay = function () { this.signal = { add: callback => { this.callback = callback; } }; };
         Object.assign(classes.BattleInstantPlay.prototype,
-            Object.fromEntries(Array.from({ length: 9 }, (_, i) => [`key${i}`, null])),
+            { unrelated: null },
             { signal: null, __properties__: { resultAlias: 'get_result' }, resultAlias: () => result,
                 start() { this.callback(this); } });
         classes.BattleLogReader = function (value) { equal(value, 'part'); };
@@ -870,6 +871,14 @@
         equal(calculated.result, { stars: 3 });
         equal(calculated.progress, ['real progress']);
         equal(calculated.waitSeconds, 62);
+    });
+    await test('battle adapter refuses ambiguous completion signals instead of selecting by order', async () => {
+        const classes={BattleConfigStorage:function(){},DataStorage:{storage:{tower:()=>({})}},BattlePresets:function(){},
+            BattleInstantPlay:function(){this.one={add(){}};this.two={add(){}};},MultiBattleResult:function(){},BattleLogEncoder:{},BattleLogReader:function(){}};
+        classes.BattleConfigStorage.prototype.__properties__={tower:'get_tower'};
+        classes.BattleConfigStorage.prototype.tower=function(){};
+        let error='';try {new InterfaceBattleCalculator({classes}).calculate({},'get_tower');}catch(e){error=e.message;}
+        equal(error,'SCRIPT_BATTLE_UNAVAILABLE');
     });
     await test('inline menu saves or cancels drafts, runs scripts and separates bounded current output from TTL log', async () => {
         const source = await (await fetch('../interface.js')).text();
