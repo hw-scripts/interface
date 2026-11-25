@@ -127,7 +127,12 @@ class InterfaceTitanScripts extends InterfaceScriptGroup {
                 continue;
             }
             if (checked) {
-                await this.api.call('titanArenaFarmDailyReward');
+                try {
+                    await this.api.call('titanArenaFarmDailyReward');
+                } catch (error) {
+                    // The server reports this exact condition when no daily reward is available.
+                    if (error?.rpcErrorName !== 'NotAvailable' || error?.message !== 'titan arena daily reward') throw error;
+                }
                 return;
             }
             if (!status.rivals || typeof status.rivals !== 'object') throw new Error('SCRIPT_API_ERROR');
