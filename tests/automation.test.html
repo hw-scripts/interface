@@ -171,6 +171,40 @@
         log.setTTL(-1);
         equal(log.ttl, 0);
     });
+    await test('execution log aggregates each script over 48 hours and survives reload', async () => {
+        const source = await (await fetch('../interface.js')).text();
+        const start = source.indexOf('    class CompactExecutionLog {');
+        const end = source.indexOf("    const interfaceSidebar = document.getElementById('interfaceSidebar');", start);
+        const CompactExecutionLog = new Function(source.slice(start, end) + ';return CompactExecutionLog;')();
+        const values = new Map(), storage = {get: key => values.get(key) ?? null, set: (key, value) => values.set(key, value)};
+        const log = new CompactExecutionLog(storage, 1500, 500), id = Symbol();
+        log.start('TOWER', 'Tower');
+        log.write('TOWER', 'WAIT', 'countdown 2', {id, pending:true});
+        log.write('TOWER', 'WAIT', 'countdown 1', {id, pending:true});
+        log.write('TOWER', 'WAIT', 'finished', {id});
+        equal(log.entries[0][3][0][1][0][1], 1);
+        log.start('MAIL', 'Mail'); log.write('MAIL', 'DONE', 'collected');
+        log.start('TOWER', 'Tower'); log.write('TOWER', 'WAIT', 'new run');
+        equal(log.entries.length, 2);
+        equal(log.entries.find(row => row[0] === 'TOWER')[3][0][1][0][1], 2);
+        assert(log.text().includes('new run') && log.text().includes('collected'));
+        const restored = new CompactExecutionLog(storage, 1500, 500);
+        equal(restored.entries.length, 2);
+        assert(restored.text().includes('×2'));
+        const tower = restored.entries.find(row => row[0] === 'TOWER');
+        tower[3][0][1].unshift([Math.floor((Date.now() - 49 * 3600000) / 3600000), 7]);
+        restored.trim();
+        equal(tower[3][0][1].reduce((sum, bucket) => sum + bucket[1], 0), 2);
+        restored.entries.find(row => row[0] === 'MAIL')[1] = Date.now() - 49 * 60 * 60 * 1000;
+        restored.entries.find(row => row[0] === 'MAIL')[3][0][2] = Date.now() - 49 * 60 * 60 * 1000;
+        restored.entries.find(row => row[0] === 'MAIL')[3][0][1][0][0] = Math.floor((Date.now() - 49 * 60 * 60 * 1000) / 3600000);
+        restored.trim(); assert(!restored.entries.some(row => row[0] === 'MAIL'));
+        for (let i = 0; i < 20; i++) log.write('TOWER', `KEY_${i}`, `event ${i} ${'x'.repeat(30)}`);
+        assert(storage.get('executionLog:v1').length <= 1500);
+        assert(log.text().includes('event 19') && !log.text().includes('event 0'));
+        const failing = new CompactExecutionLog({get: () => null, set: () => { throw new Error('quota'); }});
+        failing.start('TOWER', 'Tower'); failing.write('TOWER', 'RUN', 'still running'); assert(failing.text().includes('still running'));
+    });
     await test('restart reloads the page without API calls and terminates a sequence', async () => {
         const source = await (await fetch('../automation.js')).text();
         let reloads = 0;
@@ -915,7 +949,7 @@
         message.addEventListener('click', () => currentLog.clear());
         const { engine, calls, storage } = fixture({ bossGetAll: { bosses: [] }, dailyBonusGetInfo: { availableToday: false } });
         const navigated = [];
-        const start = source.indexOf("    const interfaceSidebar = document.getElementById('interfaceSidebar');");
+        const start = source.indexOf('    class CompactExecutionLog {');
         const end = source.indexOf("    phase('Sidebar rendered');", start);
         const pilot = new Function('automation', 'I18N', 'i18n', 'menuSections', 'gameNavigationSections', 'navigateToGameSection',
             'userStorage', 'MessageLog', 'currentLog', 'valkyriesBlessing', 'gameApi', 'theGame', 'memoryStorage', source.slice(start, end) + ';return pilot;')(
@@ -992,6 +1026,18 @@
         pilot.state.completed={};
         await pilot.run(tree.sequence('scripts', { atomicCollect:true }));
         equal(order, ['DAILY_BONUS','BOSS']);
+        const button = panel.querySelector('[data-interface-log-save]');
+        assert(button && !button.hidden);
+        const oldCreate = URL.createObjectURL, oldClick = HTMLAnchorElement.prototype.click;
+        let savedBlob, savedName;
+        try {
+            URL.createObjectURL = blob => { savedBlob = blob; return 'blob:test'; };
+            HTMLAnchorElement.prototype.click = function() { savedName = this.download; };
+            button.click();
+            assert(savedName.startsWith('interface-log-') && savedName.endsWith('.txt'));
+            const savedText = await savedBlob.text();
+            assert(savedText.includes(I18N('NAV_DAILY_BONUS')) && savedText.includes(I18N('NAV_BOSS')));
+        } finally { URL.createObjectURL = oldCreate; HTMLAnchorElement.prototype.click = oldClick; }
         const row = section => panel.querySelector(`[data-script="${section}"]`);
         // Scrollable content stays below the panel header.
         const body = panel.querySelector('.interface-panel-body');

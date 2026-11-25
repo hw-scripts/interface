@@ -721,5 +721,6 @@
     "SCRIPT_COLLECT_GROUP_OTHER": "Other",
     "SCRIPT_COLLECT_ORDER_VIEW": "Execution order",
     "SCRIPT_COLLECT_GROUP_VIEW": "Groups",
-    "SCRIPT_COLLECT_GROUP_HINT": "Numbers show execution order. Use Execution order to reorder across groups."
+    "SCRIPT_COLLECT_GROUP_HINT": "Numbers show execution order. Use Execution order to reorder across groups.",
+    "MESSAGE_LOG_SAVE":  "Save log"
 }

@@ -721,5 +721,6 @@
     "SCRIPT_COLLECT_GROUP_OTHER": "Інше",
     "SCRIPT_COLLECT_ORDER_VIEW": "Порядок виконання",
     "SCRIPT_COLLECT_GROUP_VIEW": "Групи",
-    "SCRIPT_COLLECT_GROUP_HINT": "Числа показують порядок виконання. Для зміни порядку між групами відкрийте «Порядок виконання»."
+    "SCRIPT_COLLECT_GROUP_HINT": "Числа показують порядок виконання. Для зміни порядку між групами відкрийте «Порядок виконання».",
+    "MESSAGE_LOG_SAVE":  "Зберегти лог"
 }

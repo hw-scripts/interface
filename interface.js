@@ -1473,6 +1473,7 @@
     #interfacePanelForm { display: flex; flex-direction: column; height: 100%; }
     #interfacePanel .interface-panel-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #d9bd7b; }
     #interfacePanel h2 { flex: 1; margin: 0; font-size: 18px; }
+    #interfacePanel .interface-log-save { width: auto; min-height: 0; padding: 5px 8px; font-size: 13px; }
     #interfacePanel .interface-confirm, #interfacePanel .interface-cancel { border: 0; border-radius: 4px; padding: 6px 12px; color: white; font-size: 20px; cursor: pointer; }
     #interfacePanel .interface-confirm { background: #28783c; }
     #interfacePanel .interface-cancel { background: #a33333; }
@@ -1532,6 +1533,7 @@
             <form id="interfacePanelForm">
                 <div class="interface-panel-header">
                     <h2 id="interfacePanelTitle" class="menu__help-title"></h2>
+                    <button type="button" class="interface-menu-action menu__help-support-button interface-log-save" data-interface-log-save hidden>{{ I18N('MESSAGE_LOG_SAVE') }}</button>
                     <button type="submit" class="interface-confirm" aria-label="{{ I18N('SCRIPT_SAVE') }}">&#10003;</button>
                     <button type="button" class="interface-cancel" aria-label="{{ I18N('MENU_CLOSE') }}">&#10005;</button>
                 </div>
@@ -1658,12 +1660,97 @@
         userStorage.set('language', languageSelector.value);
         location.reload();
     });
+    class CompactExecutionLog {
+        constructor(storage, limit = 32768, recordLimit = 2048, retention = 48 * 60 * 60 * 1000) {
+            Object.assign(this, { storage, limit, recordLimit, retention });
+            this.pending = new Map();
+            try {
+                const saved = JSON.parse(storage.get('executionLog:v1') ?? '[]');
+                this.entries = Array.isArray(saved) ? saved.filter(row => Array.isArray(row) && row.length === 4 &&
+                    typeof row[0] === 'string' && typeof row[1] === 'number' && typeof row[2] === 'string' &&
+                    Array.isArray(row[3]) && row[3].every(event => Array.isArray(event) && event.length === 4 &&
+                        typeof event[0] === 'string' && Array.isArray(event[1]) && event[1].every(bucket => Array.isArray(bucket) && bucket.length === 2 && Number.isSafeInteger(bucket[0]) && Number.isSafeInteger(bucket[1]) && bucket[1] > 0) &&
+                        typeof event[2] === 'number' && typeof event[3] === 'string')) : [];
+            } catch { this.entries = []; }
+            this.trim();
+        }
+        trim() {
+            const cutoff = Date.now() - this.retention;
+            const cutoffHour = Math.floor(cutoff / 3600000);
+            for (const row of this.entries) {
+                for (const event of row[3]) event[1] = event[1].filter(bucket => bucket[0] >= cutoffHour);
+                row[3] = row[3].filter(event => event[1].length);
+            }
+            this.entries = this.entries.filter(row => row[3].length || row[1] >= cutoff);
+            for (const row of this.entries)
+                while (JSON.stringify(row[3]).length > this.recordLimit && row[3].length > 1) row[3].shift();
+            let serialized = JSON.stringify(this.entries);
+            while (serialized.length > this.limit && this.entries.length > 1) {
+                this.entries.shift(); serialized = JSON.stringify(this.entries);
+            }
+            while (serialized.length > this.limit && this.entries.length && this.entries[0][3].length) {
+                this.entries[0][3].shift(); serialized = JSON.stringify(this.entries);
+            }
+            return serialized;
+        }
+        persist() {
+            try { this.storage.set('executionLog:v1', this.trim()); }
+            catch (error) { console.warn('Unable to save execution log:', error); }
+        }
+        start(section, name) {
+            this.trim();
+            let row = this.entries.find(item => item[0] === section);
+            if (!row) { row = [section, Date.now(), String(name).slice(0, 128), []]; this.entries.push(row); }
+            else { row[1] = Date.now(); row[2] = String(name).slice(0, 128); }
+            for (const [id, state] of this.pending) if (state.section === section) this.pending.delete(id);
+            this.persist();
+        }
+        write(section, key, text, { id, pending = false } = {}) {
+            this.trim();
+            let row = this.entries.find(item => item[0] === section);
+            if (!row) { this.start(section, section); row = this.entries.find(item => item[0] === section); }
+            const now = Date.now(), value = String(text).slice(0, 512), eventKey = String(key).slice(0, 128);
+            let event = row[3].find(item => item[0] === eventKey);
+            const prior = id !== undefined ? this.pending.get(id) : null;
+            const isNew = !event;
+            if (isNew) { event = [eventKey, [], now, value]; row[3].push(event); }
+            if (isNew || !prior || prior.section !== section || prior.key !== eventKey) {
+                const hour = Math.floor(now / 3600000);
+                let bucket = event[1].find(item => item[0] === hour);
+                if (!bucket) { bucket = [hour, 0]; event[1].push(bucket); }
+                bucket[1]++;
+            }
+            event[2] = now; event[3] = value;
+            if (id !== undefined) {
+                if (pending) this.pending.set(id, {section, key: eventKey});
+                else this.pending.delete(id);
+            }
+            row[1] = now;
+            row[3].splice(row[3].indexOf(event), 1); row[3].push(event);
+            this.entries.splice(this.entries.indexOf(row), 1); this.entries.push(row);
+            this.persist();
+        }
+        text() {
+            this.trim();
+            return this.entries.map(([, time, name, events]) => `${name} (${new Date(time).toLocaleString()})\n  ${events.map(([, buckets, eventTime, text]) => { const count = buckets.reduce((sum, bucket) => sum + bucket[1], 0); return `${new Date(eventTime).toLocaleString()} ${text}${count > 1 ? ` ×${count}` : ''}`; }).join('\n  ')}`).join('\n\n');
+        }
+    }
     const interfaceSidebar = document.getElementById('interfaceSidebar');
     const panel = document.getElementById('interfacePanel');
     const panelForm = document.getElementById('interfacePanelForm');
     const panelTitle = panel.querySelector('h2');
     const panelBody = panel.querySelector('.interface-panel-body');
     const mainMenu = interfaceSidebar.querySelector('.interface-menu-actions');
+    const executionLog = new CompactExecutionLog(userStorage);
+    const logSave = panel.querySelector('[data-interface-log-save]');
+    logSave.addEventListener('click', () => {
+        const blob = new Blob(['\uFEFF', executionLog.text()], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url; link.download = `interface-log-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
     const logElement = document.getElementById('interfaceLog');
     const messageLog = new MessageLog(logElement, userStorage.get('messageTTL') ?? 0);
     const scriptText = value => i18n.translations[value] || value;
@@ -1709,6 +1796,7 @@
         panelBody.replaceChildren();
         interfaceSidebar.classList.add('interface-section-open');
         logElement.hidden = !scripts;
+        logSave.hidden = !scripts;
         savePanel = cancelPanel = returnToMenu;
         sequenceView = false;
         panel.querySelector('.interface-confirm').disabled = false;
@@ -1744,6 +1832,7 @@
         const line = `${I18N(`NAV_${section}`)}: ${text}`;
         currentLog.write(line, entry);
         messageLog.write(line, entry);
+        executionLog.write(section, key, text, entry);
     };
     const settingInput = (label, type, value, min = 0) => {
         const wrapper = document.createElement('label');
@@ -1784,6 +1873,7 @@
             return false;
         }
         currentLog.clear();
+        executionLog.start(section, I18N(`NAV_${section}`));
         const executedSettings = pilot.fingerprint(section);
         let stopped = false;
         const report = (key, detail, options) => {

@@ -3561,5 +3561,10 @@
     "SCRIPT_COLLECT_GROUP_OTHER": {"en": "Other", "uk": "Інше", "ru": "Другое"},
     "SCRIPT_COLLECT_ORDER_VIEW": {"en": "Execution order", "uk": "Порядок виконання", "ru": "Порядок выполнения"},
     "SCRIPT_COLLECT_GROUP_VIEW": {"en": "Groups", "uk": "Групи", "ru": "Группы"},
-    "SCRIPT_COLLECT_GROUP_HINT": {"en": "Numbers show execution order. Use Execution order to reorder across groups.", "uk": "Числа показують порядок виконання. Для зміни порядку між групами відкрийте «Порядок виконання».", "ru": "Числа показывают порядок выполнения. Для изменения порядка между группами откройте «Порядок выполнения»."}
+    "SCRIPT_COLLECT_GROUP_HINT": {"en": "Numbers show execution order. Use Execution order to reorder across groups.", "uk": "Числа показують порядок виконання. Для зміни порядку між групами відкрийте «Порядок виконання».", "ru": "Числа показывают порядок выполнения. Для изменения порядка между группами откройте «Порядок выполнения»."},
+    "MESSAGE_LOG_SAVE": {
+        "en": "Save log",
+        "uk": "Зберегти лог",
+        "ru": "Сохранить лог"
+    }
 }
