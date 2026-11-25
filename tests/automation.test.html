@@ -980,24 +980,23 @@
             caption.click();
             assert(!input.checked && !engine.settings(section).enabled);
         }
-        const folder = panel.querySelector('[data-script="COLLECT_ALL"] details');
-        assert(folder && !folder.open); folder.open = true;
+        const collectRow = panel.querySelector('[data-script="COLLECT_ALL"]');
+        const folder = collectRow.querySelector('.interface-collect-accordion');
+        assert(folder && folder.hidden);
+        const configure = collectRow.querySelector('.interface-script-actions button');
+        equal(configure.textContent,I18N('SCRIPT_CONFIGURE'));configure.click();assert(!folder.hidden);
         const nestedMail = folder.querySelector('[data-collect-child="MAIL"]');
         assert(nestedMail && panel.querySelector('[data-script="MAIL"]').hidden);
         const membership = nestedMail.querySelector('[data-collect-option="includeMail"]');
-        const standalone = nestedMail.querySelector('[data-collect-sequence="MAIL"]');
-        assert(membership.checked && !standalone.checked);
+        assert(membership.checked);equal(nestedMail.querySelectorAll('input[type="checkbox"]').length,1);
         membership.click(); assert(!engine.settings('COLLECT_ALL').includeMail && !engine.settings('MAIL').enabled);
-        standalone.click(); assert(engine.settings('MAIL').enabled && !engine.settings('COLLECT_ALL').includeMail);
-        assert(panel.querySelector('[data-sequence-script="MAIL"]').checked);
-        membership.click(); standalone.click();
-        assert(engine.settings('COLLECT_ALL').includeMail && !engine.settings('MAIL').enabled);
+        membership.click(); assert(engine.settings('COLLECT_ALL').includeMail && !engine.settings('MAIL').enabled);
         const nestedRewards = folder.querySelector('[data-collect-child="QUEST_REWARDS"]');
         assert(nestedRewards.querySelector('[data-interface-run="QUEST_REWARDS"]'));
         nestedRewards.querySelector('.interface-script-actions button').click();
         assert(panel.querySelector('input[type="checkbox"]'));
         cancel();
-        assert(panel.querySelector('[data-script="COLLECT_ALL"] details').open);
+        assert(!panel.querySelector('[data-script="COLLECT_ALL"] .interface-collect-accordion').hidden);
 
         const row = section => panel.querySelector(`[data-script="${section}"]`);
         row('EXPEDITIONS').querySelector('.interface-script-actions button').click();
@@ -1530,6 +1529,24 @@
             const stopped=fixture({[info]:()=>{stopped.engine.stop();return value;}});
             await stopped.engine.run(section,()=>{});assert(!stopped.calls.some(c=>c.name===rpc));
         }
+    });
+    await test('collection parent is the only sequence switch for its child scripts', async () => {
+        const f=fixture(), runs=[];
+        f.engine.definitions.MAIL.run=async()=>{runs.push('MAIL');};
+        f.engine.definitions.COLLECT_ALL.run=async()=>{runs.push('COLLECT_ALL');};
+        f.engine.save('MAIL',{enabled:true});f.engine.save('COLLECT_ALL',{enabled:false});
+        const pilot=new InterfaceAutopilot(f.engine,f.storage,{execute:async section=>{await f.engine.run(section,()=>{});return f.engine.lastResult.completed;},
+            sections:()=>['MAIL','COLLECT_ALL'],now:()=>1000,setTimer:()=>0,clearTimer:()=>{}});
+        await pilot.run(['MAIL','COLLECT_ALL']);equal(runs,[]);
+        f.engine.save('COLLECT_ALL',{enabled:true});await pilot.run(['MAIL','COLLECT_ALL']);equal(runs,['COLLECT_ALL']);
+        await f.engine.run('MAIL',()=>{});equal(runs,['COLLECT_ALL','MAIL']);
+    });
+    await test('collect all follows displayed child order and only repeats reward sources', async () => {
+        const f=fixture(), calls=[];
+        const settings=Object.fromEntries(f.engine.collectionSources.map(([option])=>[option,false]));
+        Object.assign(settings,{includeRewards:true,includeMail:true,includeHeroArtifacts:true});f.engine.save('COLLECT_ALL',settings);
+        for(const name of ['QUEST_REWARDS','MAIL','HERO_ARTIFACT_CHESTS']) f.engine.definitions[name].run=async()=>{calls.push(name);return 'SCRIPT_NOTHING_TO_COLLECT';};
+        await f.engine.run('COLLECT_ALL',()=>{});equal(calls,['QUEST_REWARDS','MAIL','HERO_ARTIFACT_CHESTS']);
     });
     await test('collect all revisits offers unlocked by rewards without claiming twice', async () => {
         let questClaimed=false, offerClaimed=false;

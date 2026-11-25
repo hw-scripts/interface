@@ -215,6 +215,17 @@ class InterfaceAutomation {
         } };
         this.storage = storage;
         this.running = null;
+        this.collectionSources = [
+            ['includeRewards', 'QUEST_REWARDS', true], ['includeMail', 'MAIL', true],
+            ['includeHeroArtifacts', 'HERO_ARTIFACT_CHESTS', false], ['includeTitanArtifacts', 'TITAN_ARTIFACT_CHESTS', false],
+            ['includeTitanSummons', 'TITAN_SUMMONS', false], ['includePetEggs', 'PET_EGGS', false], ['includeAscension', 'ASCENSION_FREE', false],
+            ['includeHeroSouls', 'HERO_SOUL_EXCHANGE', false], ['includeTitanSouls', 'TITAN_SOUL_EXCHANGE', false],
+            ['includeOfferGifts', 'OFFER_GIFTS', true], ['includeStageOffers', 'FREE_OFFER_STAGES', true],
+            ['includeBattlePass', 'BATTLE_PASS_REWARDS', true], ['includeSubscription', 'SUBSCRIPTION_GIFT', true],
+            ['includeZeppelin', 'ZEPPELIN_GIFT', true], ['includeGrandCoins', 'GRAND_ARENA_COINS', true],
+            ['includeSoulAtrium', 'SOUL_ATRIUM_REFILL', true], ['includeInventoryBoxes', 'INVENTORY_BOXES', false],
+            ['includeNewYearGifts', 'NEW_YEAR_GIFTS', false], ['includePowerTournament', 'POWER_TOURNAMENT_REWARDS', true]
+        ];
         this.definitions = {
             DAILY_BONUS: {
                 fields: {},
@@ -535,42 +546,20 @@ class InterfaceAutomation {
     }
 
     async collectAll(settings, report, token) {
-        const selected = [
-            ['includeHeroArtifacts', 'HERO_ARTIFACT_CHESTS'],
-            ['includeTitanArtifacts', 'TITAN_ARTIFACT_CHESTS'],
-            ['includeTitanSummons', 'TITAN_SUMMONS'],
-            ['includePetEggs', 'PET_EGGS'],
-            ['includeAscension', 'ASCENSION_FREE'],
-            ['includeHeroSouls', 'HERO_SOUL_EXCHANGE'],
-            ['includeTitanSouls', 'TITAN_SOUL_EXCHANGE'],
-            ['includeInventoryBoxes', 'INVENTORY_BOXES'],
-            ['includeNewYearGifts', 'NEW_YEAR_GIFTS']
-        ];
-        let collected = false;
-        for (const [option, section] of selected) {
-            if (token.stopped) return;
-            if (!settings[option]) continue;
-            const result = await this.availableRewardSource(section, () => this.definitions[section].run(this.settings(section), report, token), report);
-            if (result !== 'SCRIPT_NOTHING_TO_COLLECT') collected = true;
-        }
         const context = { letters: new Set() };
-        const repeat = [['includeMail', 'MAIL'], ['includeRewards', 'QUEST_REWARDS'],
-            ['includeOfferGifts', 'OFFER_GIFTS'], ['includeStageOffers', 'FREE_OFFER_STAGES'],
-            ['includeBattlePass', 'BATTLE_PASS_REWARDS'], ['includeSubscription', 'SUBSCRIPTION_GIFT'],
-            ['includeZeppelin', 'ZEPPELIN_GIFT'], ['includeGrandCoins', 'GRAND_ARENA_COINS'],
-            ['includeSoulAtrium', 'SOUL_ATRIUM_REFILL'], ['includePowerTournament', 'POWER_TOURNAMENT_REWARDS']];
-        while (!token.stopped && repeat.some(([option]) => settings[option])) {
-            let advanced = false;
-            for (const [option, section] of repeat) {
+        let collected = false, firstPass = true, advanced;
+        do {
+            advanced = false;
+            for (const [option, section, repeat] of this.collectionSources) {
                 if (token.stopped) return;
-                if (!settings[option]) continue;
-                const result = await this.availableRewardSource(section, () => this.definitions[section].run(this.settings(section), report, token, context), report);
+                if (!settings[option] || !firstPass && !repeat) continue;
+                const result = await this.availableRewardSource(section,
+                    () => this.definitions[section].run(this.settings(section), report, token, context), report);
                 if (token.stopped) return;
-                if (result !== 'SCRIPT_NOTHING_TO_COLLECT') advanced = true;
+                if (result !== 'SCRIPT_NOTHING_TO_COLLECT') { advanced = true; collected = true; }
             }
-            if (!advanced) break;
-            collected = true;
-        }
+            firstPass = false;
+        } while (advanced && !token.stopped && this.collectionSources.some(([option,,repeat]) => repeat && settings[option]));
         if (!collected && !token.stopped) return 'SCRIPT_NOTHING_TO_COLLECT';
     }
 

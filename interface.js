@@ -1486,10 +1486,8 @@
     #interfacePanel .interface-script-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 8px; padding: 6px 8px; border: 1px solid #e2cd98; background: #fff4c4; border-radius: 4px; font-size: 13px; }
     #interfacePanel .interface-script-list > li[hidden] { display: none; }
     #interfacePanel .interface-collect-accordion { grid-column: 1 / -1; min-width: 0; }
-    #interfacePanel .interface-collect-accordion summary { cursor: pointer; padding: 4px 0; }
     #interfacePanel .interface-collect-children { display: grid; gap: 4px; padding-left: 16px; }
     #interfacePanel .interface-collect-child { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 8px; align-items: center; padding: 5px; border-left: 2px solid #d9bd7b; }
-    #interfacePanel .interface-collect-sequence { grid-column: 2 / -1; display: flex; gap: 6px; align-items: center; font-size: 12px; }
     #interfacePanel .interface-script-actions { display: flex; flex-wrap: wrap; gap: 4px; }
     #interfacePanel .interface-script-actions .interface-menu-action { flex: 0 1 auto; width: auto; padding: 4px 6px; min-height: 32px; font-size: 13px; text-align: center; }
     #interfacePanel .interface-script-name { min-width: 0; overflow-wrap: anywhere; }
@@ -1803,7 +1801,7 @@
             let order = [];
             try { order = JSON.parse(userStorage.get('scriptOrder:scripts') ?? '[]'); } catch {}
             return [...new Set([...(Array.isArray(order) ? order : []), ...gameNavigationSections,
-                ...Object.keys(automation.definitions)])].filter(section => automation.definitions[section] && automation.settings(section).enabled);
+                ...Object.keys(automation.definitions)])].filter(section => automation.definitions[section] && !automation.collectionSources.some(([, child]) => child === section) && automation.settings(section).enabled);
         },
         ready: () => Boolean(gameApi.headers && theGame.lib),
         userInfo: () => memoryStorage.memoryStorage.user.info,
@@ -1834,18 +1832,7 @@
             for (const name of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'])
                 doc.removeEventListener(name, onActivity, true);
     }, { once: true });
-    // The visible accordion edits existing COLLECT_ALL options, not the independent sequence flags.
-    const collectChildren = [
-        ['includeRewards', 'QUEST_REWARDS'], ['includeMail', 'MAIL'],
-        ['includeHeroArtifacts', 'HERO_ARTIFACT_CHESTS'], ['includeTitanArtifacts', 'TITAN_ARTIFACT_CHESTS'],
-        ['includeTitanSummons', 'TITAN_SUMMONS'], ['includePetEggs', 'PET_EGGS'], ['includeAscension', 'ASCENSION_FREE'],
-        ['includeHeroSouls', 'HERO_SOUL_EXCHANGE'], ['includeTitanSouls', 'TITAN_SOUL_EXCHANGE'],
-        ['includeOfferGifts', 'OFFER_GIFTS'], ['includeStageOffers', 'FREE_OFFER_STAGES'],
-        ['includeBattlePass', 'BATTLE_PASS_REWARDS'], ['includeSubscription', 'SUBSCRIPTION_GIFT'],
-        ['includeZeppelin', 'ZEPPELIN_GIFT'], ['includeGrandCoins', 'GRAND_ARENA_COINS'],
-        ['includeSoulAtrium', 'SOUL_ATRIUM_REFILL'], ['includeInventoryBoxes', 'INVENTORY_BOXES'],
-        ['includeNewYearGifts', 'NEW_YEAR_GIFTS'], ['includePowerTournament', 'POWER_TOURNAMENT_REWARDS']
-    ];
+    const collectChildren = automation.collectionSources;
     let collectAccordionOpen = false;
     const showSection = id => {
         const section = menuSections.find(item => item.id === id);
@@ -1880,7 +1867,7 @@
             const enabled = settingInput(I18N('AUTOPILOT_ENABLED'), 'checkbox', pilot.options.enabled);
             const idle = settingInput(I18N('AUTOPILOT_IDLE_MINUTES'), 'number', pilot.options.idleMinutes, 5);
             const inputs = {};
-            for (const section of Object.keys(automation.definitions).filter(section => !automation.definitions[section].endsSequence))
+            for (const section of Object.keys(automation.definitions).filter(section => !automation.definitions[section].endsSequence && !automation.collectionSources.some(([, child]) => child === section)))
                 inputs[section] = settingInput(`${I18N(`NAV_${section}`)}: ${I18N('AUTOPILOT_INTERVAL')}`, 'number',
                     pilot.interval(section) / 60000, 1);
             savePanel = () => {
@@ -1910,7 +1897,7 @@
                 panel.querySelector('.interface-confirm').setAttribute('aria-label', I18N('SCRIPT_RUN_SEQUENCE'));
                 panel.querySelector('.interface-confirm').title = I18N('SCRIPT_RUN_SEQUENCE');
                 savePanel = () => void runSequence([...list.querySelectorAll('[data-sequence-script]:checked')]
-                    .map(input => input.dataset.sequenceScript));
+                    .map(input => input.dataset.sequenceScript).filter(section => !collectChildren.some(([, child]) => child === section)));
                 cancelPanel = () => {
                     persistList();
                     if (sequenceRunning) pilot.stop();
@@ -1996,7 +1983,7 @@
                 label.append(status);
                 for (const action of ['SCRIPT_CONFIGURE', 'SCRIPT_RUN_CONFIGURED']) {
                     if (!automation.definitions[section]) continue;
-                    if (action === 'SCRIPT_CONFIGURE' && (section === 'COLLECT_ALL' || !Object.keys(automation.definitions[section].fields).length)) continue;
+                    if (action === 'SCRIPT_CONFIGURE' && !Object.keys(automation.definitions[section].fields).length) continue;
                     const actionButton = document.createElement('button');
                     actionButton.type = 'button';
                     actionButton.className = 'interface-menu-action menu__help-support-button';
@@ -2006,7 +1993,12 @@
                     else {
                         if (action === 'SCRIPT_RUN_CONFIGURED') actionButton.dataset.interfaceRun = section;
                         actionButton.addEventListener('click', () => {
-                            if (action === 'SCRIPT_CONFIGURE') showScriptSettings(section);
+                            if (action === 'SCRIPT_CONFIGURE' && section === 'COLLECT_ALL') {
+                                const content = item.querySelector('.interface-collect-accordion');
+                                collectAccordionOpen = !collectAccordionOpen;
+                                content.hidden = !collectAccordionOpen;
+                                actionButton.setAttribute('aria-expanded', String(collectAccordionOpen));
+                            } else if (action === 'SCRIPT_CONFIGURE') showScriptSettings(section);
                             else if (automation.running?.section === section) {
                                 if (sequenceRunning) pilot.stop();
                                 automation.stop();
@@ -2020,13 +2012,10 @@
                 item.append(label);
                 if (actions.childElementCount) item.append(actions);
                 if (id === 'scripts' && section === 'COLLECT_ALL') {
-                    const folder = document.createElement('details');
+                    const folder = document.createElement('div');
                     folder.className = 'interface-collect-accordion';
-                    folder.open = collectAccordionOpen;
-                    folder.addEventListener('toggle', () => { collectAccordionOpen = folder.open; });
-                    const summary = document.createElement('summary');
-                    summary.textContent = I18N('SCRIPT_COLLECT_CONTENTS');
-                    folder.append(summary);
+                    folder.hidden = !collectAccordionOpen;
+                    actions.querySelector('button').setAttribute('aria-expanded', String(collectAccordionOpen));
                     const children = document.createElement('div');
                     children.className = 'interface-collect-children';
                     for (const [option, child] of collectChildren) {
@@ -2055,7 +2044,7 @@
                             configure.type = 'button';
                             configure.className = 'interface-menu-action menu__help-support-button';
                             configure.textContent = I18N('SCRIPT_CONFIGURE');
-                            configure.addEventListener('click', () => { collectAccordionOpen = folder.open; showScriptSettings(child); });
+                            configure.addEventListener('click', () => { collectAccordionOpen = !folder.hidden; showScriptSettings(child); });
                             childActions.append(configure);
                         }
                         const run = document.createElement('button');
@@ -2072,19 +2061,7 @@
                             } else void runScript(child, run, childStatus);
                         });
                         childActions.append(run);
-                        const sequenceLabel = document.createElement('label');
-                        sequenceLabel.className = 'interface-collect-sequence';
-                        const sequence = document.createElement('input');
-                        sequence.type = 'checkbox';
-                        sequence.dataset.collectSequence = child;
-                        sequence.checked = automation.settings(child).enabled;
-                        sequence.addEventListener('change', () => {
-                            automation.save(child, { enabled: sequence.checked });
-                            const original = list.querySelector(`[data-sequence-script="${child}"]`);
-                            if (original) original.checked = sequence.checked;
-                        });
-                        sequenceLabel.append(sequence, document.createTextNode(I18N('SCRIPT_INCLUDE_SEQUENCE')));
-                        row.append(included, name, childActions, sequenceLabel);
+                        row.append(included, name, childActions);
                         children.append(row);
                     }
                     folder.append(children);

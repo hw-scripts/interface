@@ -39,16 +39,7 @@ class InterfaceAutopilot {
     fingerprint(section) {
         const { enabled, ...settings } = this.automation.settings(section);
         if (section !== 'COLLECT_ALL') return JSON.stringify(settings);
-        const children = [
-            ['includeRewards', 'QUEST_REWARDS'], ['includeMail', 'MAIL'],
-            ['includeHeroArtifacts', 'HERO_ARTIFACT_CHESTS'], ['includeTitanArtifacts', 'TITAN_ARTIFACT_CHESTS'],
-            ['includeTitanSummons', 'TITAN_SUMMONS'], ['includePetEggs', 'PET_EGGS'], ['includeAscension', 'ASCENSION_FREE'],
-            ['includeHeroSouls', 'HERO_SOUL_EXCHANGE'], ['includeTitanSouls', 'TITAN_SOUL_EXCHANGE'],
-            ['includeOfferGifts', 'OFFER_GIFTS'], ['includeStageOffers', 'FREE_OFFER_STAGES'],
-            ['includeBattlePass', 'BATTLE_PASS_REWARDS'], ['includeSubscription', 'SUBSCRIPTION_GIFT'],
-            ['includeZeppelin', 'ZEPPELIN_GIFT'], ['includeGrandCoins', 'GRAND_ARENA_COINS'],
-            ['includeSoulAtrium', 'SOUL_ATRIUM_REFILL'], ['includeInventoryBoxes', 'INVENTORY_BOXES'], ['includeNewYearGifts', 'NEW_YEAR_GIFTS'], ['includePowerTournament', 'POWER_TOURNAMENT_REWARDS']
-        ];
+        const children = this.automation.collectionSources ?? [];
         const dependencies = {};
         for (const [option, child] of children) {
             if (!settings[option]) continue;
@@ -111,7 +102,7 @@ class InterfaceAutopilot {
             for (let index = 0; index < sections.length && !this.stopped; index++) {
                 const section = sections[index];
                 const definition = this.automation.definitions[section];
-                if (!definition) continue;
+                if (!definition || this.automation.collectionSources?.some(([, child]) => child === section)) continue;
                 if (!this.automation.settings(section).enabled) continue;
                 if (definition.endsSequence) {
                     const signature = this.restartSignature(sections, index);
