@@ -86,7 +86,7 @@ class InterfaceTitanScripts extends InterfaceScriptGroup {
         const titans = teams?.titan_arena;
         if (!Array.isArray(titans) || !titans.length) throw new Error('SCRIPT_TITAN_ARENA_NO_TEAM');
         this.battleCalculator.assertAvailable('get_titanClanPvp');
-        let checked = false;
+        let checked = false, unresolved = false;
         const calculate = async battle => {
             const result = await this.battleCalculator.calculate(battle, 'get_titanClanPvp');
             if (!result?.result || !Array.isArray(result.progress)) throw new Error('SCRIPT_BATTLE_UNAVAILABLE');
@@ -133,6 +133,7 @@ class InterfaceTitanScripts extends InterfaceScriptGroup {
                     // The server reports this exact condition when no daily reward is available.
                     if (error?.rpcErrorName !== 'NotAvailable' || error?.message !== 'titan arena daily reward') throw error;
                 }
+                if (unresolved) return 'SCRIPT_TITAN_ARENA_NO_WIN';
                 return;
             }
             if (!status.rivals || typeof status.rivals !== 'object') throw new Error('SCRIPT_API_ERROR');
@@ -145,7 +146,7 @@ class InterfaceTitanScripts extends InterfaceScriptGroup {
                 let battle = response?.battle;
                 if (!battle) throw new Error('SCRIPT_API_ERROR');
                 let calculated = await calculate(battle), possible = !!calculated.result.win;
-                for (let n = 0; n < tests && !token.stopped; n++) {
+                for (let n = 0; n < tests && !possible && !token.stopped; n++) {
                     const trial = structuredClone(battle);
                     trial.seed = Math.floor(Date.now() / 1000) + Math.floor(Math.random() * 1001);
                     if ((await calculate(trial)).result.win) possible = true;
@@ -157,6 +158,12 @@ class InterfaceTitanScripts extends InterfaceScriptGroup {
                     if (token.stopped) return;
                     if (!response?.battle) throw new Error('SCRIPT_API_ERROR');
                     calculated = await calculate(response.battle);
+                }
+                if (token.stopped) return;
+                if (!calculated.result.win) {
+                    unresolved = true;
+                    report('SCRIPT_TITAN_ARENA_NO_WIN', rivalId);
+                    continue;
                 }
                 await wait(started, calculated.waitSeconds);
                 if (token.stopped) return;

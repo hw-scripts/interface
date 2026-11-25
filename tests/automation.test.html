@@ -1422,6 +1422,18 @@
         const peace=fixture({titanArenaGetStatus:{status:'peace_time'}});
         await peace.engine.run('TITAN_ARENA',()=>{});equal(peace.calls.length,1);
     });
+    await test('titan tournament submits victories only and stops simulations when victory is found', async () => {
+        for (const win of [true,false]) {
+            const f=fixture({titanArenaGetStatus:{status:'battle',tier:7,canRaid:false,rivals:{1:{attackScore:20}}},
+                teamGetAll:{titan_arena:[1]},titanArenaStartBattle:{battle:{typeId:'1'}},
+                titanArenaEndBattle:{attackScore:250},titanArenaFarmDailyReward:{}});
+            let count=0;f.engine.battleCalculator={assertAvailable:()=>{},calculate:async()=>{count++;return {result:{win},progress:[],waitSeconds:0};}};
+            f.engine.save('TITAN_ARENA',{testBattles:3,retryBattles:2});
+            const reports=[];await f.engine.run('TITAN_ARENA',(key)=>reports.push(key));
+            equal(count,win?1:4);equal(f.calls.filter(c=>c.name==='titanArenaEndBattle').length,win?1:0);
+            if(!win){assert(reports.includes('SCRIPT_TITAN_ARENA_NO_WIN'));assert(!f.engine.lastResult.completed);}
+        }
+    });
     await test('titan tournament retries only after a promising simulation and stops on interruption', async () => {
         let checks=0, starts=0, calculations=0;
         const f=fixture({titanArenaGetStatus:()=>++checks===1?{status:'battle',rivals:{1:{attackScore:10}}}:{status:'battle',rivals:{}},
