@@ -3518,5 +3518,15 @@
                                        "en":  "Boxes opened and energy gained",
                                        "uk":  "Відкрито наборів і отримано енергії",
                                        "ru":  "Открыто наборов и получено энергии"
-                                   }
+                                   },
+    "SCRIPT_TITAN_ARENA_CALCULATING":  {
+                                           "en":  "Calculating tournament raid battles",
+                                           "uk":  "Розрахунок боїв рейду турніру",
+                                           "ru":  "Расчёт боёв рейда турнира"
+                                       },
+    "SCRIPT_TITAN_ARENA_FINISHING":  {
+                                         "en":  "Submitting tournament raid",
+                                         "uk":  "Завершення рейду турніру",
+                                         "ru":  "Завершение рейда турнира"
+                                     }
 }

@@ -104,19 +104,19 @@ class InterfaceTitanScripts extends InterfaceScriptGroup {
                 status = await this.api.call('titanArenaCompleteTier'); checked = false; continue;
             }
             if (status.canRaid) {
-                const started = performance.now();
                 const raid = await this.api.call('titanArenaStartRaid', { titans });
                 if (token.stopped) return;
                 if (!raid?.attackers || !raid.rivals || !Object.keys(raid.rivals).length) throw new Error('SCRIPT_API_ERROR');
-                const results = {}; let seconds = 0;
-                for (const [id, rival] of Object.entries(raid.rivals)) {
+                const results = {};
+                const rivals = Object.entries(raid.rivals);
+                for (const [index, [id, rival]] of rivals.entries()) {
                     if (token.stopped) return;
+                    report('SCRIPT_TITAN_ARENA_CALCULATING', `${index + 1}/${rivals.length}`);
                     const calculated = await calculate({ attackers: raid.attackers, defenders: [rival.team], seed: rival.seed, typeId: id });
+                    if (token.stopped) return;
                     results[id] = { progress: calculated.progress, result: calculated.result };
-                    seconds += Math.max(0, Number(calculated.waitSeconds) || 0);
                 }
-                await wait(started, seconds);
-                if (token.stopped) return;
+                report('SCRIPT_TITAN_ARENA_FINISHING');
                 const response = await this.api.call('titanArenaEndRaid', { results });
                 if (token.stopped) return;
                 const scores = response?.results;

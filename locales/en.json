@@ -702,5 +702,7 @@
     "NAV_ENERGY_BOXES": "Energy boxes",
     "SCRIPT_OPTION_MAXBOXES": "Maximum boxes (0 = all)",
     "SCRIPT_OPTION_TARGETENERGY": "Target energy (0 = no target; checked after each batch)",
-    "SCRIPT_ENERGY_BOX_PROGRESS": "Boxes opened and energy gained"
+    "SCRIPT_ENERGY_BOX_PROGRESS": "Boxes opened and energy gained",
+    "SCRIPT_TITAN_ARENA_CALCULATING": "Calculating tournament raid battles",
+    "SCRIPT_TITAN_ARENA_FINISHING": "Submitting tournament raid"
 }

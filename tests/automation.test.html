@@ -1348,6 +1348,16 @@
         await f.engine.run('ASGARD_MINIONS',()=>{});
         const end=f.calls.find(c=>c.name==='clanRaid_endNodeBattle');assert(end);assert(end.args.progress[0].attackers.heroes[1].energy>0);
     });
+    await test('titan tournament submits raid without summing individual battle timers', async () => {
+        const f=fixture({titanArenaGetStatus:{status:'battle',tier:1,canRaid:true},teamGetAll:{titan_arena:[1]},
+            titanArenaStartRaid:{attackers:{},rivals:{1:{team:{},seed:1},2:{team:{},seed:2}}},
+            titanArenaEndRaid:{results:{1:{attackScore:250},2:{attackScore:250}}},titanArenaCompleteTier:{status:'peace_time'}});
+        f.engine.battleCalculator={assertAvailable:()=>{},calculate:async()=>({result:{win:true},progress:[],waitSeconds:999})};
+        const reports=[];await f.engine.run('TITAN_ARENA',(key,value)=>reports.push([key,value]));
+        equal(f.calls.filter(c=>c.name==='titanArenaEndRaid').length,1);
+        equal(reports.filter(([key])=>key==='SCRIPT_TITAN_ARENA_CALCULATING').map(([,v])=>v),['1/2','2/2']);
+        assert(reports.some(([key])=>key==='SCRIPT_TITAN_ARENA_FINISHING'));
+    });
     await test('titan tournament completes raids and fights remaining rivals', async () => {
         let phase = 0;
         const f = fixture({titanArenaGetStatus:()=>phase===0?{status:'completed_tier',tier:1}:

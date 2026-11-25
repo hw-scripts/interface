@@ -702,5 +702,7 @@
     "NAV_ENERGY_BOXES": "Набори енергії",
     "SCRIPT_OPTION_MAXBOXES": "Максимум наборів (0 = усі)",
     "SCRIPT_OPTION_TARGETENERGY": "Ціль енергії (0 = без цілі; перевірка після кожної пачки)",
-    "SCRIPT_ENERGY_BOX_PROGRESS": "Відкрито наборів і отримано енергії"
+    "SCRIPT_ENERGY_BOX_PROGRESS": "Відкрито наборів і отримано енергії",
+    "SCRIPT_TITAN_ARENA_CALCULATING": "Розрахунок боїв рейду турніру",
+    "SCRIPT_TITAN_ARENA_FINISHING": "Завершення рейду турніру"
 }
