@@ -9,7 +9,10 @@ class InterfaceAutopilot {
         this.timer = null;
         this.state = this.read('autopilotProgress', { completed: {}, lastActivity: now() });
         this.state.completed ??= {};
-        this.state.lastActivity = Math.min(now(), Number(this.state.lastActivity) || now());
+        // A new page starts a new inactivity period; only our own pending reload may resume immediately.
+        if (this.state.pending?.mode !== 'auto' || this.state.pending?.internalReload !== true)
+            this.state.lastActivity = now();
+        else this.state.lastActivity = Math.min(now(), Number(this.state.lastActivity) || now());
         this.savedActivity = this.state.lastActivity;
         this.configure(this.read('autopilotSettings', {}), false);
     }

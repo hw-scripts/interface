@@ -251,6 +251,14 @@
         await resumed.run(['A', 'RESTART', 'B']);
         equal(f.executed, ['A', 'RESTART', 'B', 'A', 'RESTART']);
     });
+    await test('fresh page starts a new idle period even when stored activity is old', async () => {
+        const f=pilotFixture();f.pilot.configure({enabled:true,idleMinutes:5});f.pilot.save();
+        f.advance(600000);
+        const fresh=new InterfaceAutopilot(f.engine,f.storage,f.dependencies);
+        await fresh.tick();equal(f.executed,[]);
+        f.advance(299999);await fresh.tick();equal(f.executed,[]);
+        f.advance(1);await fresh.tick();equal(f.executed,['A','B']);
+    });
     await test('autopilot resumes its own reload without idle wait but real activity cancels it', async () => {
         const f = pilotFixture(['A', 'RESTART', 'B']);
         f.pilot.configure({ enabled: true, idleMinutes: 5 });
