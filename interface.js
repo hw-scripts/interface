@@ -1508,6 +1508,7 @@
     #interfacePanel .interface-script-status:empty { display: none; }
     @media (max-width: 520px) { #interfacePanel .interface-script-list li { grid-template-columns: minmax(0, 1fr); } }
     #interfacePanel .interface-menu-action:disabled { opacity: .45; cursor: default; }
+    #interfacePanel .interface-tree-children { grid-column: 1 / -1; margin-left: 20px; padding-left: 12px; border-left: 1px solid #d9bd7b; }
     #interfacePanel .interface-script-status { opacity: .6; font-size: 12px; }
 </style>
 <section id="interfaceSidebar" class="sidebar">
@@ -1803,14 +1804,31 @@
             return false;
         } finally { refreshRunButtons(); }
     };
+    const menuTree = automation.menuTree = new InterfaceMenuTree(automation, userStorage, menuSections, gameNavigationSections);
+    const applyMenuOrder = () => {
+        for (const node of menuTree.nodes) {
+            const button = mainMenu.querySelector(`[data-interface-dialog="${node.id}"]`);
+            if (button) { button.dataset.nodeId = node.id; mainMenu.append(button); }
+        }
+    };
+    applyMenuOrder();
+    let draggedMenu = null;
+    for (const button of mainMenu.querySelectorAll('[data-interface-dialog]')) {
+        button.draggable = true;
+        button.addEventListener('dragstart', event => { draggedMenu = button.dataset.nodeId; event.dataTransfer.setData('text/plain', draggedMenu); });
+        button.addEventListener('dragend', () => { draggedMenu = null; });
+        button.addEventListener('dragover', event => { if (draggedMenu) event.preventDefault(); });
+        button.addEventListener('drop', event => {
+            if (!draggedMenu) return;
+            event.preventDefault();
+            const bounds = button.getBoundingClientRect();
+            menuTree.move(draggedMenu, button.dataset.nodeId, event.clientY < bounds.top + bounds.height / 2 ? 'before' : 'after');
+            draggedMenu = null; applyMenuOrder();
+        });
+    }
     pilot = new InterfaceAutopilot(automation, userStorage, {
         execute: section => runScript(section, null, null, true),
-        sections: () => {
-            let order = [];
-            try { order = JSON.parse(userStorage.get('scriptOrder:scripts') ?? '[]'); } catch {}
-            return [...new Set([...(Array.isArray(order) ? order : []), ...gameNavigationSections,
-                ...Object.keys(automation.definitions)])].filter(section => automation.definitions[section] && !automation.collectionSources.some(([, child]) => child === section) && automation.settings(section).enabled);
-        },
+        sections: () => menuTree.sequence('scripts', { atomicCollect: true }),
         ready: () => Boolean(gameApi.headers && theGame.lib),
         userInfo: () => memoryStorage.memoryStorage.user.info,
         changed: () => {
@@ -1840,16 +1858,7 @@
             for (const name of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'])
                 doc.removeEventListener(name, onActivity, true);
     }, { once: true });
-    const collectChildren = automation.collectionSources;
-    let collectAccordionOpen = false, collectOrderView = false;
-    const collectOpenGroups = new Set();
-    const collectGroups = [
-        ['MAIN', ['QUEST_REWARDS','MAIL','GRAND_ARENA_COINS','SOUL_ATRIUM_REFILL']],
-        ['EVENTS', ['OFFER_GIFTS','FREE_OFFER_STAGES','BATTLE_PASS_REWARDS','SUBSCRIPTION_GIFT','ZEPPELIN_GIFT','NEW_YEAR_GIFTS','POWER_TOURNAMENT_REWARDS']],
-        ['RESOURCES', ['HERO_ARTIFACT_CHESTS','TITAN_ARTIFACT_CHESTS','TITAN_SUMMONS','PET_EGGS','ASCENSION_FREE','INVENTORY_BOXES']],
-        ['EXCHANGE', ['HERO_SOUL_EXCHANGE','TITAN_SOUL_EXCHANGE']],
-        ['OTHER', []]
-    ];
+    const treeOpen = new Set();
     const showSection = id => {
         const section = menuSections.find(item => item.id === id);
         if (!section) return;
@@ -1891,303 +1900,114 @@
                     intervals: Object.fromEntries(Object.entries(inputs).map(([section, input]) => [section, Number(input.value)])) });
                 returnToMenu();
             };
-        } else if (id === 'scripts' || id === 'navigation') {
+        } else if (id === 'scripts') {
+            sequenceView = true;
+            panel.querySelector('.interface-confirm').setAttribute('aria-label', I18N('SCRIPT_RUN_SEQUENCE'));
+            panel.querySelector('.interface-confirm').title = I18N('SCRIPT_RUN_SEQUENCE');
+            savePanel = () => void runSequence(menuTree.sequence('scripts', { atomicCollect: true }));
+            cancelPanel = () => { if (sequenceRunning) pilot.stop(); returnToMenu(); };
             const list = document.createElement('ul');
             list.className = 'interface-script-list';
-            const orderKey = `scriptOrder:${section.id}`;
-            let savedOrder;
-            try { savedOrder = JSON.parse(userStorage.get(orderKey) ?? userStorage.get('scriptOrder')); } catch {}
-            const available = section.id === 'scripts'
-                ? [...gameNavigationSections.filter(name => automation.definitions[name]),
-                    ...Object.keys(automation.definitions).filter(name => !gameNavigationSections.includes(name))]
-                : gameNavigationSections.filter(name => !automation.definitions[name]);
-            const sections = [...new Set([...(Array.isArray(savedOrder) ? savedOrder : []), ...available])]
-                .filter(section => available.includes(section));
-            const persistList = () => {
-                userStorage.set(orderKey, JSON.stringify([...list.children].map(item => item.dataset.script)));
-                if (id === 'scripts') for (const input of list.querySelectorAll('[data-sequence-script]'))
-                    automation.save(input.dataset.sequenceScript, { enabled: input.checked });
-            };
-            if (id === 'scripts') {
-                sequenceView = true;
-                panel.querySelector('.interface-confirm').setAttribute('aria-label', I18N('SCRIPT_RUN_SEQUENCE'));
-                panel.querySelector('.interface-confirm').title = I18N('SCRIPT_RUN_SEQUENCE');
-                savePanel = () => void runSequence([...list.querySelectorAll('[data-sequence-script]:checked')]
-                    .map(input => input.dataset.sequenceScript).filter(section => !collectChildren.some(([, child]) => child === section)));
-                cancelPanel = () => {
-                    persistList();
-                    if (sequenceRunning) pilot.stop();
-                    returnToMenu();
-                };
-            }
-            let dragged = null;
-            list.addEventListener('dragover', event => {
-                if (!dragged) return;
-                event.preventDefault();
-                event.dataTransfer.dropEffect = 'move';
-                const target = event.target.closest('li');
-                if (!target || target === dragged || target.parentElement !== list) return;
-                const bounds = target.getBoundingClientRect();
-                list.insertBefore(dragged, event.clientY < bounds.top + bounds.height / 2 ? target : target.nextSibling);
-            });
-            list.addEventListener('drop', event => {
-                if (!dragged) return;
-                event.preventDefault();
-                persistList();
-            });
-            for (const section of sections) {
+            const groups = { collection_main: 'MAIN', collection_events: 'EVENTS', collection_resources: 'RESOURCES', collection_exchange: 'EXCHANGE', collection_other: 'OTHER' };
+            let dragging = null;
+            const render = (node, parent) => {
                 const item = document.createElement('li');
-                item.dataset.script = section;
-                if (id === 'scripts' && collectChildren.some(([, child]) => child === section)) item.hidden = true;
+                item.dataset.nodeId = node.id;
+                item.className = 'interface-sequence-item';
                 item.draggable = true;
-                let previousOrder;
-                let dropped = false;
                 item.addEventListener('dragstart', event => {
-                    if (event.target.closest('input, button, select, a')) { event.preventDefault(); return; }
-                    dragged = item;
-                    previousOrder = [...list.children];
-                    dropped = false;
-                    item.classList.add('interface-dragging');
-                    event.dataTransfer.effectAllowed = 'move';
-                    event.dataTransfer.setData('text/plain', section);
+                    if (event.target !== item && event.target.closest('input, button, select, a')) { event.preventDefault(); return; }
+                    event.stopPropagation(); dragging = node.id; event.dataTransfer.setData('text/plain', node.id);
                 });
-                list.addEventListener('drop', () => { if (dragged === item) dropped = true; });
-                item.addEventListener('dragend', () => {
-                    if (!dropped && previousOrder) list.append(...previousOrder);
-                    item.classList.remove('interface-dragging');
+                item.addEventListener('dragend', () => { dragging = null; });
+                item.addEventListener('dragover', event => { if (dragging) { event.preventDefault(); event.stopPropagation(); } });
+                item.addEventListener('drop', event => {
+                    if (!dragging) return;
+                    event.preventDefault(); event.stopPropagation();
+                    const box = item.getBoundingClientRect();
+                    const relative = (event.clientY - box.top) / Math.max(box.height, 1);
+                    const position = menuTree.folders.has(node.id) && relative > .25 && relative < .75 ? 'inside' : relative < .5 ? 'before' : 'after';
+                    if (menuTree.move(dragging, node.id, position)) showSection('scripts');
+                    dragging = null;
+                });
+                const section = menuTree.scripts.get(node.id);
+                if (section) item.dataset.script = section;
+                const check = document.createElement('input'); check.type = 'checkbox';
+                check.checked = menuTree.enabled(node.id);
+                if (section) check.dataset.sequenceScript = section;
+                check.addEventListener('change', () => menuTree.setEnabled(node.id, check.checked));
+                check.id = `interfaceEnabled_${node.id}`;
+                const label = document.createElement('label'); label.htmlFor = check.id; label.className = 'interface-script-name';
+                label.textContent = I18N(section ? `NAV_${section}` : `SCRIPT_COLLECT_GROUP_${groups[node.id] ?? 'OTHER'}`);
+                const status = document.createElement('span'); status.className = 'interface-script-status';
+                if (section) { status.dataset.interfaceStatus = section; status.textContent = scriptReports.has(section) ? ` (${scriptReports.get(section)})` : ''; }
+                label.append(status);
+                const actions = document.createElement('div'); actions.className = 'interface-script-actions';
+                const children = document.createElement('ul'); children.className = 'interface-script-list interface-tree-children';
+                if (node.children) {
+                    children.hidden = !treeOpen.has(node.id);
+                    const toggle = document.createElement('button'); toggle.type = 'button';
+                    toggle.className = 'interface-menu-action menu__help-support-button'; toggle.textContent = I18N('SCRIPT_CONFIGURE');
+                    toggle.setAttribute('aria-expanded', String(!children.hidden));
+                    toggle.addEventListener('click', () => { children.hidden = !children.hidden; if (children.hidden) treeOpen.delete(node.id); else treeOpen.add(node.id); toggle.setAttribute('aria-expanded', String(!children.hidden)); });
+                    actions.append(toggle);
+                } else if (section && Object.keys(automation.definitions[section].fields).length) {
+                    const config = document.createElement('button'); config.type = 'button'; config.className = 'interface-menu-action menu__help-support-button';
+                    config.textContent = I18N('SCRIPT_CONFIGURE'); config.addEventListener('click', () => showScriptSettings(section)); actions.append(config);
+                }
+                if (section) {
+                    const run = document.createElement('button'); run.type = 'button'; run.className = 'interface-menu-action menu__help-support-button';
+                    run.dataset.interfaceRun = section; run.textContent = I18N('SCRIPT_RUN_CONFIGURED');
+                    run.addEventListener('click', () => {
+                        if (automation.running?.section === section) { if (sequenceRunning) pilot.stop(); automation.stop(); refreshRunButtons(); }
+                        else void runScript(section, run, status);
+                    });
+                    actions.append(run);
+                } else if (node.children) {
+                    const run = document.createElement('button'); run.type = 'button'; run.className = 'interface-menu-action menu__help-support-button';
+                    run.textContent = I18N('SCRIPT_RUN_CONFIGURED');
+                    run.addEventListener('click', () => void runSequence(menuTree.sequence(node.id, { atomicCollect: true, ignoreRootEnabled: true })));
+                    actions.append(run);
+                }
+                item.append(check, label, actions);
+                if (node.children) { for (const child of node.children) render(child, children); item.append(children); }
+                parent.append(item);
+            };
+            for (const node of menuTree.find('scripts')?.children ?? []) render(node, list);
+            list.addEventListener('dragover', event => { if (dragging && event.target === list) event.preventDefault(); });
+            list.addEventListener('drop', event => { if (dragging && event.target === list) { event.preventDefault(); if (menuTree.move(dragging, 'scripts')) showSection('scripts'); dragging = null; } });
+            panelBody.append(list); refreshRunButtons();
+        } else if (id === 'navigation') {
+            const list = document.createElement('ul'); list.className = 'interface-script-list';
+            const entries = menuTree.find('navigation')?.children ?? [];
+            let dragged = null;
+            for (const node of entries) {
+                const section = menuTree.navigation.get(node.id);
+                if (!section) continue;
+                const item = document.createElement('li'); item.dataset.script = section; item.dataset.nodeId = node.id; item.draggable = true;
+                item.addEventListener('dragstart', event => {
+                    if (event.target.closest('button, input, a')) { event.preventDefault(); return; }
+                    dragged = node.id; event.dataTransfer.setData('text/plain', node.id);
+                });
+                item.addEventListener('dragend', () => { dragged = null; });
+                item.addEventListener('dragover', event => { if (dragged) event.preventDefault(); });
+                item.addEventListener('drop', event => {
+                    if (!dragged) return;
+                    event.preventDefault();
+                    const box = item.getBoundingClientRect();
+                    if (menuTree.move(dragged, node.id, event.clientY < box.top + box.height / 2 ? 'before' : 'after')) showSection('navigation');
                     dragged = null;
                 });
-                const label = document.createElement(id === 'scripts' ? 'label' : 'span');
-                label.className = 'interface-script-name';
-                if (id === 'scripts') {
-                    item.classList.add('interface-sequence-item');
-                    const include = document.createElement('input');
-                    include.type = 'checkbox';
-                    include.id = `interfaceEnabled_${section}`;
-                    label.htmlFor = include.id;
-                    label.style.cursor = 'pointer';
-                    include.dataset.sequenceScript = section;
-                    include.checked = automation.settings(section).enabled;
-                    include.setAttribute('aria-label', `${I18N('SCRIPT_INCLUDE_SEQUENCE')}: ${I18N(`NAV_${section}`)}`);
-                    include.addEventListener('change', () => automation.save(section, { enabled: include.checked }));
-                    item.append(include);
-                }
-                const actions = document.createElement('div');
-                actions.className = 'interface-script-actions';
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.className = 'interface-script-link';
+                const button = document.createElement('button'); button.type = 'button'; button.className = 'interface-script-link';
                 button.textContent = I18N(`NAV_${section}`);
                 button.addEventListener('click', () => {
-                    try {
-                        navigateToGameSection(section);
-                        closeMenu();
-                        interfaceSidebar.classList.remove('sidebar_open');
+                    try { navigateToGameSection(section); closeMenu(); interfaceSidebar.classList.remove('sidebar_open');
                         if (!automation.requiresReload) syncOverlay?.classList.remove('sidebar__overlay_show');
-                    } catch (error) {
-                        console.error('Unable to open game section:', section, error);
-                        button.textContent = `${I18N(`NAV_${section}`)} — ${I18N('NAV_UNAVAILABLE')}`;
-                    }
+                    } catch (error) { console.error('Unable to open game section:', section, error); button.textContent = `${I18N(`NAV_${section}`)} — ${I18N('NAV_UNAVAILABLE')}`; }
                 });
-                if (id === 'navigation' && gameNavigationSections.includes(section)) label.append(button);
-                else label.append(document.createTextNode(I18N(`NAV_${section}`)));
-                const status = document.createElement('span');
-                status.className = 'interface-script-status';
-                status.setAttribute('role', 'status');
-                status.dataset.interfaceStatus = section;
-                status.textContent = scriptReports.has(section) ? ` (${scriptReports.get(section)})` : '';
-                label.append(status);
-                for (const action of ['SCRIPT_CONFIGURE', 'SCRIPT_RUN_CONFIGURED']) {
-                    if (!automation.definitions[section]) continue;
-                    if (action === 'SCRIPT_CONFIGURE' && !Object.keys(automation.definitions[section].fields).length) continue;
-                    const actionButton = document.createElement('button');
-                    actionButton.type = 'button';
-                    actionButton.className = 'interface-menu-action menu__help-support-button';
-                    actionButton.textContent = I18N(action);
-                    actionButton.disabled = !automation.definitions[section];
-                    if (actionButton.disabled) actionButton.title = I18N('SCRIPT_NOT_IMPLEMENTED');
-                    else {
-                        if (action === 'SCRIPT_RUN_CONFIGURED') actionButton.dataset.interfaceRun = section;
-                        actionButton.addEventListener('click', () => {
-                            if (action === 'SCRIPT_CONFIGURE' && section === 'COLLECT_ALL') {
-                                const content = item.querySelector('.interface-collect-accordion');
-                                collectAccordionOpen = !collectAccordionOpen;
-                                content.hidden = !collectAccordionOpen;
-                                actionButton.setAttribute('aria-expanded', String(collectAccordionOpen));
-                            } else if (action === 'SCRIPT_CONFIGURE') showScriptSettings(section);
-                            else if (automation.running?.section === section) {
-                                if (sequenceRunning) pilot.stop();
-                                automation.stop();
-                                reportScript(section, 'SCRIPT_STOPPING');
-                                refreshRunButtons();
-                            } else void runScript(section, actionButton, status);
-                        });
-                    }
-                    actions.append(actionButton);
-                }
-                item.append(label);
-                if (actions.childElementCount) item.append(actions);
-                if (id === 'scripts' && section === 'COLLECT_ALL') {
-                    const folder = document.createElement('div');
-                    folder.className = 'interface-collect-accordion';
-                    folder.hidden = !collectAccordionOpen;
-                    actions.querySelector('button').setAttribute('aria-expanded', String(collectAccordionOpen));
-                    const view = document.createElement('button');
-                    view.type = 'button';
-                    view.className = 'interface-menu-action menu__help-support-button interface-collect-order';
-                    view.dataset.collectView = 'toggle';
-                    view.textContent = I18N(collectOrderView ? 'SCRIPT_COLLECT_GROUP_VIEW' : 'SCRIPT_COLLECT_ORDER_VIEW');
-                    view.addEventListener('click', () => { collectOrderView = !collectOrderView; collectAccordionOpen = true; showSection('scripts'); });
-                    folder.append(view);
-                    if (!collectOrderView) {
-                        const hint = document.createElement('p'); hint.className = 'interface-collect-order-hint';
-                        hint.textContent = I18N('SCRIPT_COLLECT_GROUP_HINT'); folder.append(hint);
-                    }
-                    const children = document.createElement('div');
-                    children.className = 'interface-collect-children';
-                    const orderedSources = automation.orderedCollectionSources();
-                    const groupContainers = new Map();
-                    let draggedGroup = null, previousGroups = null, groupDropped = false;
-                    children.addEventListener('dragover', event => {
-                        if (!draggedGroup) return;
-                        event.preventDefault(); event.stopPropagation();
-                        event.dataTransfer.dropEffect = 'move';
-                        const target = event.target.closest('[data-collect-group]');
-                        if (!target || target === draggedGroup || target.parentElement !== children) return;
-                        const bounds = target.getBoundingClientRect();
-                        children.insertBefore(draggedGroup, event.clientY < bounds.top + bounds.height / 2 ? target : target.nextSibling);
-                    });
-                    children.addEventListener('drop', event => {
-                        if (!draggedGroup) return;
-                        event.preventDefault(); event.stopPropagation(); groupDropped = true;
-                        const order = [...children.children].flatMap(group => [...group.querySelectorAll('[data-collect-child]')].map(row => row.dataset.collectChild));
-                        userStorage.set('collectAllOrder', JSON.stringify(order));
-                        for (const badge of children.querySelectorAll('[data-collect-position]'))
-                            badge.textContent = `${order.indexOf(badge.dataset.collectPosition) + 1}.`;
-                    });
-                    const groupOrder = [...collectGroups].sort(([a, aMembers], [b, bMembers]) => {
-                        const position = (group, members) => orderedSources.findIndex(([, child]) => members.includes(child) || group === 'OTHER' && !collectGroups.some(([, list]) => list.includes(child)));
-                        const ai = position(a, aMembers), bi = position(b, bMembers);
-                        return (ai < 0 ? Infinity : ai) - (bi < 0 ? Infinity : bi);
-                    });
-                    if (!collectOrderView) for (const [group, members] of groupOrder) {
-                        const present = orderedSources.filter(([, child]) => members.includes(child) || group === 'OTHER' && !collectGroups.some(([, list]) => list.includes(child)));
-                        if (!present.length) continue;
-                        const details = document.createElement('details'); details.className = 'interface-collect-group';
-                        details.dataset.collectGroup = group; details.open = collectOpenGroups.has(group);
-                        details.draggable = true;
-                        details.addEventListener('dragstart', event => {
-                            event.stopPropagation();
-                            if (event.target.closest('[data-collect-child], input, button, select, a')) { event.preventDefault(); return; }
-                            draggedGroup = details; previousGroups = [...children.children]; groupDropped = false;
-                            details.classList.add('interface-dragging');
-                            event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', group);
-                        });
-                        details.addEventListener('dragend', event => {
-                            event.stopPropagation();
-                            if (!groupDropped && previousGroups) children.append(...previousGroups);
-                            details.classList.remove('interface-dragging'); draggedGroup = null;
-                        });
-                        details.addEventListener('toggle', () => { if (details.open) collectOpenGroups.add(group); else collectOpenGroups.delete(group); });
-                        const summary = document.createElement('summary'); summary.textContent = I18N(`SCRIPT_COLLECT_GROUP_${group}`);
-                        const body = document.createElement('div'); body.className = 'interface-collect-group-items';
-                        details.append(summary, body); children.append(details); groupContainers.set(group, body);
-                    }
-                    let draggedChild = null, draggedParent = null, previousChildren = null, childDropped = false;
-                    children.addEventListener('dragover', event => {
-                        if (!draggedChild) return;
-                        event.preventDefault(); event.stopPropagation();
-                        event.dataTransfer.dropEffect = 'move';
-                        const target = event.target.closest('[data-collect-child]');
-                        if (!target || target === draggedChild || target.parentElement !== draggedParent) return;
-                        const bounds = target.getBoundingClientRect();
-                        draggedParent.insertBefore(draggedChild, event.clientY < bounds.top + bounds.height / 2 ? target : target.nextSibling);
-                    });
-                    children.addEventListener('drop', event => {
-                        if (!draggedChild) return;
-                        event.preventDefault(); event.stopPropagation(); childDropped = true;
-                        const changed = [...draggedParent.children].map(row => row.dataset.collectChild);
-                        let order = changed;
-                        if (!collectOrderView) {
-                            const members = new Set(changed); let index = 0;
-                            order = automation.orderedCollectionSources().map(([, child]) => members.has(child) ? changed[index++] : child);
-                        }
-                        userStorage.set('collectAllOrder', JSON.stringify(order));
-                        for (const badge of children.querySelectorAll('[data-collect-position]'))
-                            badge.textContent = `${order.indexOf(badge.dataset.collectPosition) + 1}.`;
-                    });
-                    for (const [index, [option, child]] of orderedSources.entries()) {
-                        if (!automation.definitions[child]) continue;
-                        const row = document.createElement('div');
-                        row.className = 'interface-collect-child';
-                        row.dataset.collectChild = child;
-                        row.draggable = true;
-                        row.addEventListener('dragstart', event => {
-                            event.stopPropagation();
-                            if (event.target.closest('input, button, select, a')) { event.preventDefault(); return; }
-                            draggedChild = row; draggedParent = row.parentElement; previousChildren = [...draggedParent.children]; childDropped = false;
-                            row.classList.add('interface-dragging');
-                            event.dataTransfer.effectAllowed = 'move';
-                            event.dataTransfer.setData('text/plain', child);
-                        });
-                        row.addEventListener('dragend', event => {
-                            event.stopPropagation();
-                            if (!childDropped && previousChildren) draggedParent.append(...previousChildren);
-                            row.classList.remove('interface-dragging'); draggedChild = null; draggedParent = null;
-                        });
-                        const included = document.createElement('input');
-                        included.type = 'checkbox';
-                        included.id = `interfaceCollect_${option}`;
-                        included.dataset.collectOption = option;
-                        included.checked = automation.settings('COLLECT_ALL')[option] === true;
-                        included.addEventListener('change', () => automation.save('COLLECT_ALL', { [option]: included.checked }));
-                        const name = document.createElement('label');
-                        name.htmlFor = included.id;
-                        if (!collectOrderView) {
-                            const badge = document.createElement('span'); badge.className = 'interface-collect-position';
-                            badge.dataset.collectPosition = child; badge.textContent = `${index + 1}.`; name.append(badge);
-                        }
-                        name.append(document.createTextNode(I18N(`NAV_${child}`)));
-                        const childStatus = document.createElement('span');
-                        childStatus.className = 'interface-script-status';
-                        childStatus.dataset.interfaceStatus = child;
-                        childStatus.textContent = scriptReports.has(child) ? ` (${scriptReports.get(child)})` : '';
-                        name.append(childStatus);
-                        const childActions = document.createElement('div');
-                        childActions.className = 'interface-script-actions';
-                        if (Object.keys(automation.definitions[child].fields).length) {
-                            const configure = document.createElement('button');
-                            configure.type = 'button';
-                            configure.className = 'interface-menu-action menu__help-support-button';
-                            configure.textContent = I18N('SCRIPT_CONFIGURE');
-                            configure.addEventListener('click', () => { collectAccordionOpen = !folder.hidden; showScriptSettings(child); });
-                            childActions.append(configure);
-                        }
-                        const run = document.createElement('button');
-                        run.type = 'button';
-                        run.className = 'interface-menu-action menu__help-support-button';
-                        run.dataset.interfaceRun = child;
-                        run.textContent = I18N('SCRIPT_RUN_CONFIGURED');
-                        run.addEventListener('click', () => {
-                            if (automation.running?.section === child) {
-                                if (sequenceRunning) pilot.stop();
-                                automation.stop();
-                                reportScript(child, 'SCRIPT_STOPPING');
-                                refreshRunButtons();
-                            } else void runScript(child, run, childStatus);
-                        });
-                        childActions.append(run);
-                        row.append(included, name, childActions);
-                        const group = collectGroups.find(([, members]) => members.includes(child))?.[0] ?? 'OTHER';
-                        (collectOrderView ? children : groupContainers.get(group)).append(row);
-                    }
-                    folder.append(children);
-                    item.append(folder);
-                }
-                list.append(item);
+                item.append(button); list.append(item);
             }
             panelBody.append(list);
-            refreshRunButtons();
         } else {
             const text = document.createElement('p');
             text.textContent = I18N('MENU_SECTION_PENDING');

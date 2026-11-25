@@ -39,6 +39,10 @@ class InterfaceAutopilot {
     fingerprint(section) {
         const { enabled, ...settings } = this.automation.settings(section);
         if (section !== 'COLLECT_ALL') return JSON.stringify(settings);
+        if (this.automation.menuTree) {
+            const order = this.automation.menuTree.sequence('collect_all', { ignoreRootEnabled: true });
+            return JSON.stringify({ order, dependencies: order.map(child => [child, this.automation.settings(child)]) });
+        }
         const children = this.automation.orderedCollectionSources?.() ?? this.automation.collectionSources ?? [];
         const dependencies = {};
         for (const [option, child] of children) {
@@ -102,7 +106,7 @@ class InterfaceAutopilot {
             for (let index = 0; index < sections.length && !this.stopped; index++) {
                 const section = sections[index];
                 const definition = this.automation.definitions[section];
-                if (!definition || this.automation.collectionSources?.some(([, child]) => child === section)) continue;
+                if (!definition || !this.automation.menuTree && this.automation.collectionSources?.some(([, child]) => child === section)) continue;
                 if (!this.automation.settings(section).enabled) continue;
                 if (definition.endsSequence) {
                     const signature = this.restartSignature(sections, index);

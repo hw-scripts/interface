@@ -555,20 +555,25 @@ class InterfaceAutomation {
 
     async collectAll(settings, report, token) {
         const context = { letters: new Set() };
-        const sources = this.orderedCollectionSources();
+        const sources = this.menuTree
+            ? this.menuTree.sequence('collect_all', { ignoreRootEnabled: true }).map(section => {
+                const original = this.collectionSources.find(([, child]) => child === section);
+                return [original?.[0] ?? null, section, original?.[2] ?? false];
+            }) : this.orderedCollectionSources();
+        const selected = option => this.menuTree ? true : settings[option];
         let collected = false, firstPass = true, advanced;
         do {
             advanced = false;
             for (const [option, section, repeat] of sources) {
                 if (token.stopped) return;
-                if (!settings[option] || !firstPass && !repeat) continue;
+                if (!selected(option) || !firstPass && !repeat) continue;
                 const result = await this.availableRewardSource(section,
                     () => this.definitions[section].run(this.settings(section), report, token, context), report);
                 if (token.stopped) return;
                 if (result !== 'SCRIPT_NOTHING_TO_COLLECT') { advanced = true; collected = true; }
             }
             firstPass = false;
-        } while (advanced && !token.stopped && sources.some(([option,,repeat]) => repeat && settings[option]));
+        } while (advanced && !token.stopped && sources.some(([option,,repeat]) => repeat && selected(option)));
         if (!collected && !token.stopped) return 'SCRIPT_NOTHING_TO_COLLECT';
     }
 
@@ -1253,5 +1258,123 @@ class InterfaceAutomation {
             if (points.length) await this.api.call('tower_farmPointRewards', { points });
             if (skulls > 0) await this.api.call('tower_farmSkullReward');
         }
+    }
+}
+
+// Per-account layout. Identifiers belong to actions, not their position in the tree.
+class InterfaceMenuTree {
+    constructor(automation, storage, menuSections, navigationSections) {
+        Object.assign(this, { automation, storage });
+        this.menu = new Set(menuSections.map(section => section.id));
+        this.scripts = new Map(Object.keys(automation.definitions).map(section => [section.toLowerCase(), section]));
+        this.folders = new Set(['scripts', 'navigation', 'collect_all', 'collection_main', 'collection_events', 'collection_resources', 'collection_exchange', 'collection_other']);
+        const categories = {
+            collection_main: ['QUEST_REWARDS', 'MAIL', 'GRAND_ARENA_COINS', 'SOUL_ATRIUM_REFILL'],
+            collection_events: ['OFFER_GIFTS', 'FREE_OFFER_STAGES', 'BATTLE_PASS_REWARDS', 'SUBSCRIPTION_GIFT', 'ZEPPELIN_GIFT', 'NEW_YEAR_GIFTS', 'POWER_TOURNAMENT_REWARDS'],
+            collection_resources: ['HERO_ARTIFACT_CHESTS', 'TITAN_ARTIFACT_CHESTS', 'TITAN_SUMMONS', 'PET_EGGS', 'ASCENSION_FREE', 'INVENTORY_BOXES'],
+            collection_exchange: ['HERO_SOUL_EXCHANGE', 'TITAN_SOUL_EXCHANGE'],
+            collection_other: []
+        };
+        const sourceIds = new Set(automation.collectionSources.map(([, section]) => section));
+        const available = [...new Set([...navigationSections, ...Object.keys(automation.definitions)])]
+            .filter(section => automation.definitions[section]);
+        const read = key => { try { return JSON.parse(storage.get(key)); } catch { return null; } };
+        const oldScriptOrder = read('scriptOrder:scripts');
+        const ordered = [...new Set([...(Array.isArray(oldScriptOrder) ? oldScriptOrder : []), ...available])]
+            .filter(section => available.includes(section) && !sourceIds.has(section));
+        const sourceOrder = automation.orderedCollectionSources().map(([, section]) => section);
+        const oldNavigationOrder = read('scriptOrder:navigation');
+        const navAvailable = navigationSections.filter(section => !automation.definitions[section]);
+        const navOrder = [...new Set([...(Array.isArray(oldNavigationOrder) ? oldNavigationOrder : []), ...navAvailable])]
+            .filter(section => navAvailable.includes(section));
+        this.navigation = new Map(navAvailable.map(section => [`navigation_${section.toLowerCase()}`, section]));
+        const oldCollectionOrder = read('collectAllOrder');
+        const grouped = Object.entries(categories).map(([id, sections]) => ({ id, children: sourceOrder
+            .filter(section => sections.includes(section) || id === 'collection_other' && !Object.values(categories).some(items => items.includes(section)))
+            .map(section => ({ id: section.toLowerCase() })) }));
+        const collection = { id: 'collect_all', children: Array.isArray(oldCollectionOrder)
+            ? [...sourceOrder.map(section => ({ id: section.toLowerCase() })), ...grouped.map(group => ({ id: group.id, children: [] }))] : grouped };
+        this.defaults = menuSections.map(({id}) => id === 'scripts'
+            ? { id, children: ordered.map(section => section === 'COLLECT_ALL' ? collection : { id: section.toLowerCase() }) }
+            : id === 'navigation' ? { id, children: navOrder.map(section => ({ id: `navigation_${section.toLowerCase()}` })) } : { id });
+        const saved = read('menuTree:v1');
+        if (!Array.isArray(saved)) {
+            const options = automation.settings('COLLECT_ALL');
+            for (const [option, section] of automation.collectionSources)
+                automation.save(section, { enabled: options[option] === true });
+        }
+        this.nodes = this.reconcile(saved);
+        this.save();
+    }
+
+    reconcile(saved) {
+        const known = new Map(), defaults = new Map(), seen = new Set();
+        const register = (nodes, parent = null) => {
+            for (const node of nodes) { known.set(node.id, node); defaults.set(node.id, parent); register(node.children ?? [], node.id); }
+        };
+        register(this.defaults);
+        const read = nodes => (Array.isArray(nodes) ? nodes : []).flatMap(node => {
+            if (!node || !known.has(node.id) || seen.has(node.id)) return [];
+            seen.add(node.id);
+            const item = { id: node.id };
+            if (this.folders.has(node.id)) item.children = read(node.children);
+            return [item];
+        });
+        const result = read(Array.isArray(saved) ? saved : this.defaults);
+        const find = (nodes, id) => { for (const node of nodes) { if (node.id === id) return node; const found = find(node.children ?? [], id); if (found) return found; } };
+        const addMissing = nodes => { for (const node of nodes) {
+            if (!seen.has(node.id)) {
+                const parent = defaults.get(node.id), destination = parent && find(result, parent);
+                (destination?.children ?? result).push(this.folders.has(node.id) ? { id: node.id, children: [] } : { id: node.id });
+                seen.add(node.id);
+            }
+            addMissing(node.children ?? []);
+        } };
+        addMissing(this.defaults);
+        return result;
+    }
+
+    save() { this.storage.set('menuTree:v1', JSON.stringify(this.nodes)); }
+    find(id, nodes = this.nodes) {
+        for (const node of nodes) { if (node.id === id) return node; const found = this.find(id, node.children ?? []); if (found) return found; }
+    }
+    move(id, target, position = 'inside') {
+        const locate = nodes => { for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i].id === id) return [nodes, i];
+            const found = locate(nodes[i].children ?? []); if (found) return found;
+        } };
+        const source = locate(this.nodes), dest = this.find(target);
+        if (!source || !dest || id === target || this.find(target, [source[0][source[1]]])) return false;
+        if (position === 'inside' && !this.folders.has(target)) return false;
+        const node = source[0].splice(source[1], 1)[0];
+        if (position === 'inside') dest.children.push(node);
+        else {
+            const findTarget = nodes => { for (let i = 0; i < nodes.length; i++) { if (nodes[i] === dest) return [nodes, i]; const found = findTarget(nodes[i].children ?? []); if (found) return found; } };
+            const [siblings, index] = findTarget(this.nodes);
+            siblings.splice(index + (position === 'after' ? 1 : 0), 0, node);
+        }
+        this.save(); return true;
+    }
+    enabled(id) {
+        const section = this.scripts.get(id);
+        return section ? this.automation.settings(section).enabled : this.storage.get(`menuFolder:${id}`) !== 'false';
+    }
+    setEnabled(id, value) {
+        const section = this.scripts.get(id);
+        if (section) this.automation.save(section, { enabled: value });
+        else this.storage.set(`menuFolder:${id}`, String(value));
+    }
+    sequence(id, { atomicCollect = false, ignoreRootEnabled = false } = {}) {
+        const root = this.find(id), result = [];
+        const visit = (node, isRoot = false) => {
+            if ((!isRoot || !ignoreRootEnabled) && !this.enabled(node.id)) return;
+            const section = this.scripts.get(node.id);
+            if (section && (!isRoot || node.id !== 'collect_all')) {
+                if (node.id !== 'collect_all' || atomicCollect) { result.push(section); return; }
+            }
+            for (const child of node.children ?? []) visit(child);
+        };
+        if (root) visit(root, true);
+        return result;
     }
 }
