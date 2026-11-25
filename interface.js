@@ -1487,6 +1487,8 @@
     #interfacePanel .interface-script-list > li[hidden] { display: none; }
     #interfacePanel .interface-collect-accordion { grid-column: 1 / -1; min-width: 0; }
     #interfacePanel .interface-collect-children { display: grid; gap: 4px; padding-left: 16px; }
+    #interfacePanel .interface-collect-child[draggable] { cursor: grab; }
+    #interfacePanel .interface-collect-child.interface-dragging { opacity: .45; }
     #interfacePanel .interface-collect-child { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 8px; align-items: center; padding: 5px; border-left: 2px solid #d9bd7b; }
     #interfacePanel .interface-script-actions { display: flex; flex-wrap: wrap; gap: 4px; }
     #interfacePanel .interface-script-actions .interface-menu-action { flex: 0 1 auto; width: auto; padding: 4px 6px; min-height: 32px; font-size: 13px; text-align: center; }
@@ -2018,11 +2020,40 @@
                     actions.querySelector('button').setAttribute('aria-expanded', String(collectAccordionOpen));
                     const children = document.createElement('div');
                     children.className = 'interface-collect-children';
-                    for (const [option, child] of collectChildren) {
+                    let draggedChild = null, previousChildren = null, childDropped = false;
+                    children.addEventListener('dragover', event => {
+                        if (!draggedChild) return;
+                        event.preventDefault(); event.stopPropagation();
+                        event.dataTransfer.dropEffect = 'move';
+                        const target = event.target.closest('[data-collect-child]');
+                        if (!target || target === draggedChild || target.parentElement !== children) return;
+                        const bounds = target.getBoundingClientRect();
+                        children.insertBefore(draggedChild, event.clientY < bounds.top + bounds.height / 2 ? target : target.nextSibling);
+                    });
+                    children.addEventListener('drop', event => {
+                        if (!draggedChild) return;
+                        event.preventDefault(); event.stopPropagation(); childDropped = true;
+                        userStorage.set('collectAllOrder', JSON.stringify([...children.children].map(row => row.dataset.collectChild)));
+                    });
+                    for (const [option, child] of automation.orderedCollectionSources()) {
                         if (!automation.definitions[child]) continue;
                         const row = document.createElement('div');
                         row.className = 'interface-collect-child';
                         row.dataset.collectChild = child;
+                        row.draggable = true;
+                        row.addEventListener('dragstart', event => {
+                            event.stopPropagation();
+                            if (event.target.closest('input, button, select, a')) { event.preventDefault(); return; }
+                            draggedChild = row; previousChildren = [...children.children]; childDropped = false;
+                            row.classList.add('interface-dragging');
+                            event.dataTransfer.effectAllowed = 'move';
+                            event.dataTransfer.setData('text/plain', child);
+                        });
+                        row.addEventListener('dragend', event => {
+                            event.stopPropagation();
+                            if (!childDropped && previousChildren) children.append(...previousChildren);
+                            row.classList.remove('interface-dragging'); draggedChild = null;
+                        });
                         const included = document.createElement('input');
                         included.type = 'checkbox';
                         included.id = `interfaceCollect_${option}`;

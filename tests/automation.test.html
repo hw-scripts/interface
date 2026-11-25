@@ -991,6 +991,18 @@
         assert(membership.checked);equal(nestedMail.querySelectorAll('input[type="checkbox"]').length,1);
         membership.click(); assert(!engine.settings('COLLECT_ALL').includeMail && !engine.settings('MAIL').enabled);
         membership.click(); assert(engine.settings('COLLECT_ALL').includeMail && !engine.settings('MAIL').enabled);
+        const orderBefore = JSON.parse(storage.get('scriptOrder:scripts') ?? '[]');
+        const listChildren = folder.querySelector('.interface-collect-children');
+        const firstChild = folder.querySelector('[data-collect-child="QUEST_REWARDS"]');
+        const transfer = new DataTransfer();
+        nestedMail.dispatchEvent(new DragEvent('dragstart',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+        firstChild.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:transfer,clientY:firstChild.getBoundingClientRect().top-1}));
+        firstChild.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+        nestedMail.dispatchEvent(new DragEvent('dragend',{bubbles:true,dataTransfer:transfer}));
+        equal([...listChildren.children].slice(0,2).map(row=>row.dataset.collectChild),['MAIL','QUEST_REWARDS']);
+        equal(JSON.parse(storage.get('collectAllOrder')).slice(0,2),['MAIL','QUEST_REWARDS']);
+        equal(JSON.parse(storage.get('scriptOrder:scripts') ?? '[]'),orderBefore);
+        equal(new InterfaceAutomation({}, {}, storage).orderedCollectionSources().slice(0,2).map(source=>source[1]),['MAIL','QUEST_REWARDS']);
         const nestedRewards = folder.querySelector('[data-collect-child="QUEST_REWARDS"]');
         assert(nestedRewards.querySelector('[data-interface-run="QUEST_REWARDS"]'));
         nestedRewards.querySelector('.interface-script-actions button').click();
@@ -1540,6 +1552,18 @@
         await pilot.run(['MAIL','COLLECT_ALL']);equal(runs,[]);
         f.engine.save('COLLECT_ALL',{enabled:true});await pilot.run(['MAIL','COLLECT_ALL']);equal(runs,['COLLECT_ALL']);
         await f.engine.run('MAIL',()=>{});equal(runs,['COLLECT_ALL','MAIL']);
+    });
+    await test('collection uses account order and updates its autopilot fingerprint', async () => {
+        const f=fixture(), calls=[];
+        const settings=Object.fromEntries(f.engine.collectionSources.map(([option])=>[option,false]));
+        Object.assign(settings,{includeRewards:true,includeMail:true,includeHeroArtifacts:true});f.engine.save('COLLECT_ALL',settings);
+        for(const name of ['QUEST_REWARDS','MAIL','HERO_ARTIFACT_CHESTS'])f.engine.definitions[name].run=async()=>{calls.push(name);return 'SCRIPT_NOTHING_TO_COLLECT';};
+        const pilot=new InterfaceAutopilot(f.engine,f.storage,{now:()=>1000,setTimer:()=>0,clearTimer:()=>{}});
+        const before=pilot.fingerprint('COLLECT_ALL');
+        f.storage.set('collectAllOrder',JSON.stringify(['HERO_ARTIFACT_CHESTS','MAIL','QUEST_REWARDS','MAIL','UNKNOWN']));
+        assert(pilot.fingerprint('COLLECT_ALL')!==before);
+        await f.engine.run('COLLECT_ALL',()=>{});equal(calls,['HERO_ARTIFACT_CHESTS','MAIL','QUEST_REWARDS']);
+        const restored=new InterfaceAutomation({}, {}, f.storage);equal(restored.orderedCollectionSources().slice(0,3).map(s=>s[1]),['HERO_ARTIFACT_CHESTS','MAIL','QUEST_REWARDS']);
     });
     await test('collect all follows displayed child order and only repeats reward sources', async () => {
         const f=fixture(), calls=[];

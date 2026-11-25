@@ -39,14 +39,14 @@ class InterfaceAutopilot {
     fingerprint(section) {
         const { enabled, ...settings } = this.automation.settings(section);
         if (section !== 'COLLECT_ALL') return JSON.stringify(settings);
-        const children = this.automation.collectionSources ?? [];
+        const children = this.automation.orderedCollectionSources?.() ?? this.automation.collectionSources ?? [];
         const dependencies = {};
         for (const [option, child] of children) {
             if (!settings[option]) continue;
             const { enabled: ignored, ...values } = this.automation.settings(child);
             dependencies[child] = values;
         }
-        return JSON.stringify({ settings, dependencies });
+        return JSON.stringify({ settings, order: children.filter(([option]) => settings[option]).map(([, child]) => child), dependencies });
     }
 
     due(section) {

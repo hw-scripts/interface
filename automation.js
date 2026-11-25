@@ -545,12 +545,21 @@ class InterfaceAutomation {
         if (!collected) return 'SCRIPT_NOTHING_TO_COLLECT';
     }
 
+    orderedCollectionSources() {
+        let saved;
+        try { saved = JSON.parse(this.storage.get('collectAllOrder') ?? '[]'); } catch { saved = []; }
+        const byName = new Map(this.collectionSources.map(source => [source[1], source]));
+        const order = [...new Set([...(Array.isArray(saved) ? saved : []), ...byName.keys()])];
+        return order.filter(name => byName.has(name)).map(name => byName.get(name));
+    }
+
     async collectAll(settings, report, token) {
         const context = { letters: new Set() };
+        const sources = this.orderedCollectionSources();
         let collected = false, firstPass = true, advanced;
         do {
             advanced = false;
-            for (const [option, section, repeat] of this.collectionSources) {
+            for (const [option, section, repeat] of sources) {
                 if (token.stopped) return;
                 if (!settings[option] || !firstPass && !repeat) continue;
                 const result = await this.availableRewardSource(section,
@@ -559,7 +568,7 @@ class InterfaceAutomation {
                 if (result !== 'SCRIPT_NOTHING_TO_COLLECT') { advanced = true; collected = true; }
             }
             firstPass = false;
-        } while (advanced && !token.stopped && this.collectionSources.some(([option,,repeat]) => repeat && settings[option]));
+        } while (advanced && !token.stopped && sources.some(([option,,repeat]) => repeat && settings[option]));
         if (!collected && !token.stopped) return 'SCRIPT_NOTHING_TO_COLLECT';
     }
 
