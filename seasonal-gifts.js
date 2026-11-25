@@ -8,7 +8,6 @@ class InterfaceSeasonalGifts {
             response = await this.api.call('newYearGiftGet', { type: 0 });
         } catch (error) {
             if (error?.message !== 'Undefined call newYearGiftGet()') throw error;
-            console.warn('New Year gifts unavailable:', error);
             report('SCRIPT_NEW_YEAR_UNAVAILABLE');
             return 'SCRIPT_NOTHING_TO_COLLECT';
         }

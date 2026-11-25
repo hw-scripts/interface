@@ -3548,5 +3548,9 @@
         "en": "No winning tournament battle found",
         "uk": "Переможний бій турніру не знайдено",
         "ru": "Победный бой турнира не найден"
-    }
+    },
+    "NAV_POWER_TOURNAMENT_REWARDS": {"en": "Power tournament rewards", "uk": "Нагороди турніру сили", "ru": "Награды турнира силы"},
+    "SCRIPT_OPTION_INCLUDEPOWERTOURNAMENT": {"en": "Collect power tournament rewards", "uk": "Збирати нагороди турніру сили", "ru": "Собирать награды турнира силы"},
+    "SCRIPT_POWER_TOURNAMENT_COLLECTED": {"en": "Power tournament rewards collected", "uk": "Зібрано нагород турніру сили", "ru": "Собрано наград турнира силы"},
+    "SCRIPT_SHOWCASE_COLLECTED": {"en": "Daily showcase reward collected", "uk": "Зібрано щоденну нагороду вітрини", "ru": "Собрана ежедневная награда витрины"}
 }

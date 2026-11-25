@@ -708,5 +708,9 @@
     "SCRIPT_NEW_YEAR_UNAVAILABLE":  "Новорічні подарунки недоступні",
     "SCRIPT_REWARD_SOURCE_FAILED":  "Помилка джерела нагород; продовжуємо",
     "SCRIPT_REWARD_ERRORS":  "Збір завершено з помилками",
-    "SCRIPT_TITAN_ARENA_NO_WIN":  "Переможний бій турніру не знайдено"
+    "SCRIPT_TITAN_ARENA_NO_WIN":  "Переможний бій турніру не знайдено",
+    "NAV_POWER_TOURNAMENT_REWARDS": "Нагороди турніру сили",
+    "SCRIPT_OPTION_INCLUDEPOWERTOURNAMENT": "Збирати нагороди турніру сили",
+    "SCRIPT_POWER_TOURNAMENT_COLLECTED": "Зібрано нагород турніру сили",
+    "SCRIPT_SHOWCASE_COLLECTED": "Зібрано щоденну нагороду вітрини"
 }

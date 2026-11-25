@@ -197,7 +197,7 @@ class InterfaceAutomation {
             const readOnly = new Set(['userGetInfo', 'expeditionGet', 'dailyBonusGetInfo',
                 'mailGetAll', 'questGetAll', 'battlePass_getInfo', 'battlePass_getSpecial',
                 'bossGetAll', 'heroGetAll', 'pet_getAll', 'teamGetAll', 'teamGetFavor', 'inventoryGet',
-                'newYearGiftGet', 'adventure_getInfo', 'adventureSolo_getInfo', 'clanRaid_getInfo', 'titanArenaGetStatus', 'towerGetInfo', 'dungeonGetInfo', 'clanGetInfo', 'titanGetAll', 'specialOffer_getAll', 'offerGetAll', 'shopGetAll', 'subscriptionGetInfo', 'zeppelinGiftGet', 'adventure_raidGetInfo']);
+                'powerTournament_getState', 'saleShowcase_rewardInfo', 'newYearGiftGet', 'adventure_getInfo', 'adventureSolo_getInfo', 'clanRaid_getInfo', 'titanArenaGetStatus', 'towerGetInfo', 'dungeonGetInfo', 'clanGetInfo', 'titanGetAll', 'specialOffer_getAll', 'offerGetAll', 'shopGetAll', 'subscriptionGetInfo', 'zeppelinGiftGet', 'adventure_raidGetInfo']);
             const synchronized = new Set(['expeditionFarm', 'expeditionSendHeroes', 'artifactChestOpen']);
             if (!readOnly.has(name) && !synchronized.has(name)) {
                 this.requiresReload = true;
@@ -224,7 +224,7 @@ class InterfaceAutomation {
                 fields: { includeRewards: true, includeMail: true, includeHeroArtifacts: false,
                     includeTitanArtifacts: false, includeTitanSummons: false, includePetEggs: false, includeAscension: false,
                     includeHeroSouls: false, includeTitanSouls: false, includeOfferGifts: false, includeStageOffers: false, includeBattlePass: false,
-                    includeSubscription: false, includeZeppelin: false, includeGrandCoins: false, includeSoulAtrium: false, includeInventoryBoxes: false, includeNewYearGifts: false },
+                    includeSubscription: false, includeZeppelin: false, includeGrandCoins: false, includeSoulAtrium: false, includeInventoryBoxes: false, includeNewYearGifts: false, includePowerTournament: true },
                 run: (settings, report, token) => this.collectAll(settings, report, token)
             },
             QUEST_REWARDS: {
@@ -235,6 +235,7 @@ class InterfaceAutomation {
                 fields: {},
                 run: (settings, report, token, context) => this.mail(settings, report, token, undefined, context?.letters)
             },
+            POWER_TOURNAMENT_REWARDS: { fields: {}, run: (s, r, t, context) => this.powerTournamentRewards(r, t, context) },
             NEW_YEAR_GIFTS: { fields: {}, run: (s, r, t) => new InterfaceSeasonalGifts(this.api).run(r, t) },
             HERO_POWER: { fields: {}, run: (s, r, t) => this.heroPower(r, t) },
             ENERGY_BOXES: { fields: { maxBoxes: 1, targetEnergy: 100 }, run: (s, r, t) => new InterfaceEnergyBoxes(this.api).run(s, r, t) },
@@ -459,6 +460,7 @@ class InterfaceAutomation {
         try { return await action(); }
         catch (error) {
             const message = String(error?.message ?? '');
+            if (/(^|[:\\])(NotAvailable|Already)$/.test(String(error?.rpcErrorName ?? '')) || /^Undefined call [A-Za-z0-9_]+\(\)$/.test(message)) return 'SCRIPT_NOTHING_TO_COLLECT';
             this.rewardFailures?.push({ section, error });
             console.warn('Reward source failed:', section, error);
             report('SCRIPT_REWARD_SOURCE_FAILED', `${section}: ${message || 'SCRIPT_API_ERROR'}`);
@@ -475,6 +477,7 @@ class InterfaceAutomation {
         }
         if (token.stopped) return;
         const claimedOffers = context.claimedOffers ??= new Set();
+        const claimedShowcases = context.claimedShowcases ??= new Set();
         const claimedPrestige = context.claimedPrestige ??= new Set();
         const claimedQuests = context.claimedQuests ??= new Set();
         const unavailableQuests = context.unavailableQuests ??= new Set();
@@ -487,7 +490,7 @@ class InterfaceAutomation {
                         ...(result?.farmedPrestigeLevelsPaid ?? []).map(id => `paid:${id}`)];
                     for (const level of levels) if (!claimedPrestige.has(level)) { claimedPrestige.add(level); advanced = true; }
                 } catch (error) {
-                    this.rewardFailures?.push({ section: 'CLAN_PRESTIGE', error }); console.warn('Reward source failed:', 'CLAN_PRESTIGE', error); report('SCRIPT_REWARD_SOURCE_FAILED', `CLAN_PRESTIGE: ${error?.message ?? 'SCRIPT_API_ERROR'}`);
+                    if (error?.message !== 'Level reward not available' && !/(^|[:\\])NotAvailable$/.test(String(error?.rpcErrorName ?? ''))) { this.rewardFailures?.push({ section: 'CLAN_PRESTIGE', error }); console.warn('Reward source failed:', 'CLAN_PRESTIGE', error); report('SCRIPT_REWARD_SOURCE_FAILED', `CLAN_PRESTIGE: ${error?.message ?? 'SCRIPT_API_ERROR'}`); }
                 }
             }
             if (token.stopped) return;
@@ -500,9 +503,22 @@ class InterfaceAutomation {
                         await this.api.call('specialOffer_farmReward', { offerId: offer.id });
                         advanced = true;
                     } catch (error) {
-                        this.rewardFailures?.push({ section: 'DAILY_OFFERS', error }); console.warn('Reward source failed:', 'DAILY_OFFERS', error); report('SCRIPT_REWARD_SOURCE_FAILED', `DAILY_OFFERS: ${error?.message ?? 'SCRIPT_API_ERROR'}`);
+                        if (error?.message !== 'Reward has been farmed' && !/(^|[:\\])(NotAvailable|Already)$/.test(String(error?.rpcErrorName ?? ''))) { this.rewardFailures?.push({ section: 'DAILY_OFFERS', error }); console.warn('Reward source failed:', 'DAILY_OFFERS', error); report('SCRIPT_REWARD_SOURCE_FAILED', `DAILY_OFFERS: ${error?.message ?? 'SCRIPT_API_ERROR'}`); }
                     }
                     claimedOffers.add(String(offer.id));
+                }
+                for (const offer of Object.values(offers === 'SCRIPT_NOTHING_TO_COLLECT' ? {} : offers ?? {})) {
+                    if (token.stopped) return;
+                    if (offer?.offerType !== 'saleShowcase' || !offer?.offerData?.refill || offer.id == null || claimedShowcases.has(String(offer.id))) continue;
+                    if (Number(offer.endTime) > 0 && Number(offer.endTime) <= Date.now() / 1000) continue;
+                    const info = await this.availableRewardSource('SALE_SHOWCASE', () => this.api.call('saleShowcase_rewardInfo', { offerId: offer.id }), report);
+                    if (token.stopped) return;
+                    if (info === 'SCRIPT_NOTHING_TO_COLLECT') { claimedShowcases.add(String(offer.id)); continue; }
+                    const nextRefill = Number(info?.nextRefill);
+                    if (info?.nextRefill == null || !Number.isFinite(nextRefill) || nextRefill < 0 || nextRefill > Date.now() / 1000) continue;
+                    const result = await this.availableRewardSource('SALE_SHOWCASE', () => this.api.call('saleShowcase_farmReward', { offerId: offer.id }), report);
+                    claimedShowcases.add(String(offer.id));
+                    if (result !== 'SCRIPT_NOTHING_TO_COLLECT') { advanced = true; report('SCRIPT_SHOWCASE_COLLECTED', offer.id); }
                 }
             }
             if (token.stopped) return;
@@ -542,7 +558,7 @@ class InterfaceAutomation {
             ['includeOfferGifts', 'OFFER_GIFTS'], ['includeStageOffers', 'FREE_OFFER_STAGES'],
             ['includeBattlePass', 'BATTLE_PASS_REWARDS'], ['includeSubscription', 'SUBSCRIPTION_GIFT'],
             ['includeZeppelin', 'ZEPPELIN_GIFT'], ['includeGrandCoins', 'GRAND_ARENA_COINS'],
-            ['includeSoulAtrium', 'SOUL_ATRIUM_REFILL']];
+            ['includeSoulAtrium', 'SOUL_ATRIUM_REFILL'], ['includePowerTournament', 'POWER_TOURNAMENT_REWARDS']];
         while (!token.stopped && repeat.some(([option]) => settings[option])) {
             let advanced = false;
             for (const [option, section] of repeat) {
@@ -556,6 +572,23 @@ class InterfaceAutomation {
             collected = true;
         }
         if (!collected && !token.stopped) return 'SCRIPT_NOTHING_TO_COLLECT';
+    }
+
+    async powerTournamentRewards(report, token, context = {}) {
+        const state = await this.availableRewardSource('POWER_TOURNAMENT_REWARDS', () => this.api.call('powerTournament_getState'), report);
+        if (token.stopped || state === 'SCRIPT_NOTHING_TO_COLLECT' || !state) return 'SCRIPT_NOTHING_TO_COLLECT';
+        if (!Array.isArray(state.currentDayRewards) || !Number.isFinite(Number(state.currentDailyPoints))) return 'SCRIPT_NOTHING_TO_COLLECT';
+        const claimed = context.powerTournamentRewards ??= new Set();
+        let count = 0;
+        for (const reward of state.currentDayRewards) {
+            if (token.stopped) return;
+            const id = Number(reward?.id), points = Number(reward?.points), key = `${state.id}:${id}`;
+            if (!Number.isSafeInteger(id) || id <= 0 || !Number.isFinite(points) || points < 0 || points > Number(state.currentDailyPoints) || Number(reward?.isFarmed) !== 0 || claimed.has(key)) continue;
+            const result = await this.availableRewardSource('POWER_TOURNAMENT_REWARDS', async () => { const response = await this.api.call('powerTournament_dailyFarm', { id }); if (response?.success !== true) throw new Error('SCRIPT_API_ERROR'); return response; }, report);
+            claimed.add(key);
+            if (result !== 'SCRIPT_NOTHING_TO_COLLECT') report('SCRIPT_POWER_TOURNAMENT_COLLECTED', ++count);
+        }
+        if (!count) return 'SCRIPT_NOTHING_TO_COLLECT';
     }
 
     async heroPower(report, token) {

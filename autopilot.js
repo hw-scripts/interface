@@ -44,7 +44,7 @@ class InterfaceAutopilot {
             ['includeOfferGifts', 'OFFER_GIFTS'], ['includeStageOffers', 'FREE_OFFER_STAGES'],
             ['includeBattlePass', 'BATTLE_PASS_REWARDS'], ['includeSubscription', 'SUBSCRIPTION_GIFT'],
             ['includeZeppelin', 'ZEPPELIN_GIFT'], ['includeGrandCoins', 'GRAND_ARENA_COINS'],
-            ['includeSoulAtrium', 'SOUL_ATRIUM_REFILL'], ['includeInventoryBoxes', 'INVENTORY_BOXES'], ['includeNewYearGifts', 'NEW_YEAR_GIFTS']
+            ['includeSoulAtrium', 'SOUL_ATRIUM_REFILL'], ['includeInventoryBoxes', 'INVENTORY_BOXES'], ['includeNewYearGifts', 'NEW_YEAR_GIFTS'], ['includePowerTournament', 'POWER_TOURNAMENT_REWARDS']
         ];
         const dependencies = {};
         for (const [option, child] of children) {

@@ -708,5 +708,9 @@
     "SCRIPT_NEW_YEAR_UNAVAILABLE":  "New Year gifts are unavailable",
     "SCRIPT_REWARD_SOURCE_FAILED":  "Reward source failed; continuing",
     "SCRIPT_REWARD_ERRORS":  "Collection finished with errors",
-    "SCRIPT_TITAN_ARENA_NO_WIN":  "No winning tournament battle found"
+    "SCRIPT_TITAN_ARENA_NO_WIN":  "No winning tournament battle found",
+    "NAV_POWER_TOURNAMENT_REWARDS": "Power tournament rewards",
+    "SCRIPT_OPTION_INCLUDEPOWERTOURNAMENT": "Collect power tournament rewards",
+    "SCRIPT_POWER_TOURNAMENT_COLLECTED": "Power tournament rewards collected",
+    "SCRIPT_SHOWCASE_COLLECTED": "Daily showcase reward collected"
 }

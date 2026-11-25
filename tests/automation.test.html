@@ -1290,6 +1290,29 @@
         stopped.engine.save('ENERGY_BOXES',{maxBoxes:20,targetEnergy:0});await stopped.engine.run('ENERGY_BOXES',()=>{});
         equal(stopped.calls.filter(c=>c.name==='consumableUseLootBox').length,1);
     });
+    await test('power tournament gathers all reached daily rewards and skips claimed thresholds', async () => {
+        const state={id:123,currentDailyPoints:1417,currentDayRewards:[{id:9,points:300,isFarmed:0},{id:10,points:800,isFarmed:0},{id:11,points:1500,isFarmed:0},{id:12,points:10,isFarmed:1}]};
+        const f=fixture({powerTournament_getState:state,powerTournament_dailyFarm:{success:true}});await f.engine.run('POWER_TOURNAMENT_REWARDS',()=>{});
+        equal(f.calls.filter(c=>c.name==='powerTournament_dailyFarm').map(c=>c.args.id),[9,10]);
+        const none=fixture({powerTournament_getState:{...state,currentDailyPoints:0}});await none.engine.run('POWER_TOURNAMENT_REWARDS',()=>{});
+        assert(none.engine.lastResult.completed);assert(!none.calls.some(c=>c.name==='powerTournament_dailyFarm'));
+    });
+    await test('daily showcase checks active refill and avoids repeat claims', async () => {
+        const offers=[{id:'123',offerType:'saleShowcase',endTime:Math.floor(Date.now()/1000)+1000,offerData:{refill:{coin:{1:1}}}},
+            {id:'456',offerType:'saleShowcase',offerData:{refill:{coin:{1:1}}}}];
+        const f=fixture({specialOffer_getAll:offers,saleShowcase_rewardInfo:args=>({nextRefill:args.offerId==='123'?1:Math.floor(Date.now()/1000)+100}),saleShowcase_farmReward:{reward:{coin:{1:1}}}});
+        f.engine.save('QUEST_REWARDS',{collectDailyBonus:false,collectGuildPrestige:false,collectDailyOffers:true,collectQuests:false});
+        await f.engine.run('QUEST_REWARDS',()=>{});
+        equal(f.calls.filter(c=>c.name==='saleShowcase_farmReward').map(c=>c.args.offerId),['123']);
+    });
+    await test('no available prestige or already collected offer is a normal zero result', async () => {
+        const no=Object.assign(new Error('Level reward not available'),{rpcErrorName:'NotAvailable'});
+        const already=Object.assign(new Error('Reward has been farmed'),{rpcErrorName:'Already'});
+        const f=fixture({clan_prestigeFarmAllRewards:()=>{throw no;},specialOffer_getAll:[{id:1,offerType:'dailyReward',type:'reward',reward:{gold:1}}],specialOffer_farmReward:()=>{throw already;}});
+        f.engine.save('QUEST_REWARDS',{collectDailyBonus:false,collectGuildPrestige:true,collectDailyOffers:true,collectQuests:false});
+        const reports=[];await f.engine.run('QUEST_REWARDS',key=>reports.push(key));assert(f.engine.lastResult.completed);
+        assert(reports.includes('SCRIPT_NOTHING_TO_COLLECT'));assert(!reports.includes('SCRIPT_REWARD_ERRORS'));
+    });
     await test('collection records arbitrary source errors and continues later sources without false success', async () => {
         const f=fixture();let next=0;
         f.engine.definitions.HERO_ARTIFACT_CHESTS.run=async()=>{throw new Error('network failed');};
