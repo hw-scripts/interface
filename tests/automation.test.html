@@ -291,12 +291,12 @@
         const f = pilotFixture();
         f.engine.definitions.A.run = async () => 'SCRIPT_TOWER_NEEDS_BATTLE';
         await f.pilot.run(['A', 'B']);
-        equal(f.executed, []);
+        equal(f.executed, ['B']);
         assert(!f.pilot.state.completed.A);
         f.engine.definitions.A.run = async () => { throw new Error('unavailable'); };
         await f.pilot.run(['A', 'B']);
         assert(!f.pilot.state.completed.A);
-        equal(f.executed, []);
+        equal(f.executed, ['B']);
     });
     await test('disabled autopilot does not run and frequent input persists inactivity across reloads', async () => {
         const f = pilotFixture();
@@ -1048,7 +1048,7 @@
         order.length = 0;
         accept();
         await new Promise(resolve => setTimeout(resolve, 0));
-        equal(order, ['failure']);
+        equal(order, ['failure', 'BOSS']);
         engine.definitions.DAILY_BONUS.run = async () => { order.push('stop'); engine.stop(); };
         pilot.state.completed = {};
         order.length = 0;
@@ -1289,6 +1289,40 @@
         const stopped=fixture({inventoryGet:{consumable:{148:20}},consumableUseLootBox:()=>{stopped.engine.stop();return {};}});
         stopped.engine.save('ENERGY_BOXES',{maxBoxes:20,targetEnergy:0});await stopped.engine.run('ENERGY_BOXES',()=>{});
         equal(stopped.calls.filter(c=>c.name==='consumableUseLootBox').length,1);
+    });
+    await test('collection records arbitrary source errors and continues later sources without false success', async () => {
+        const f=fixture();let next=0;
+        f.engine.definitions.HERO_ARTIFACT_CHESTS.run=async()=>{throw new Error('network failed');};
+        f.engine.definitions.TITAN_ARTIFACT_CHESTS.run=async()=>{next++;};
+        f.engine.save('COLLECT_ALL',{includeRewards:false,includeMail:false,includeHeroArtifacts:true,includeTitanArtifacts:true});
+        const reports=[];await f.engine.run('COLLECT_ALL',(key,detail)=>reports.push([key,detail]));
+        equal(next,1);assert(reports.some(([key,detail])=>key==='SCRIPT_REWARD_SOURCE_FAILED'&&detail.includes('network failed')));
+        assert(reports.some(([key])=>key==='SCRIPT_REWARD_ERRORS'));assert(!f.engine.lastResult.completed);
+    });
+    await test('failed quest batch falls back to individual quests', async () => {
+        const quests=[{id:1,state:2,reward:{gold:1}},{id:2,state:2,reward:{gold:1}}];
+        const f=fixture({questGetAll:quests,quest_farmNonClan:args=>{if(args.questIds.includes(1))throw new Error('bad quest');return {};}});
+        f.engine.save('QUEST_REWARDS',{collectDailyBonus:false,collectGuildPrestige:false,collectDailyOffers:false,collectQuests:true});
+        await f.engine.run('QUEST_REWARDS',()=>{});
+        equal(f.calls.filter(c=>c.name==='quest_farmNonClan').map(c=>c.args.questIds),[[1,2],[1],[2]]);
+        assert(!f.engine.lastResult.completed);
+    });
+    await test('quest collection continues after a failed guild quest', async () => {
+        const quests=[{id:20000182,state:1,farmCount:1,reward:{gold:1}},{id:20000185,state:1,farmCount:1,reward:{gold:1}}];
+        const f=fixture({questGetAll:quests,questFarm:args=>{if(args.questId===20000182)throw new Error('unavailable');return {};}});
+        f.engine.save('QUEST_REWARDS',{collectDailyBonus:false,collectGuildPrestige:false,collectDailyOffers:false,collectQuests:true});
+        const reports=[];await f.engine.run('QUEST_REWARDS',(key,detail)=>reports.push([key,detail]));
+        equal(f.calls.filter(c=>c.name==='questFarm').map(c=>c.args.questId),[20000182,20000185]);
+        assert(reports.some(([key])=>key==='SCRIPT_REWARD_ERRORS'));assert(!f.engine.lastResult.completed);
+    });
+    await test('collect all skips unavailable New Year API but still gathers other rewards', async () => {
+        const f=fixture({newYearGiftGet:()=>{throw new Error('Undefined call newYearGiftGet()');},mailGetAll:{letters:[]},questGetAll:[]});
+        let ran=false;f.engine.definitions.MAIL.run=async()=>{ran=true;return 'SCRIPT_NOTHING_TO_COLLECT';};
+        f.engine.save('COLLECT_ALL',{includeNewYearGifts:true,includeMail:true,includeRewards:false});
+        const reports=[];await f.engine.run('COLLECT_ALL',key=>reports.push(key));
+        assert(ran);assert(reports.includes('SCRIPT_NEW_YEAR_UNAVAILABLE'));assert(f.engine.lastResult.completed);
+        const g=fixture({newYearGiftGet:()=>{throw new Error('network failed');}});
+        let failed=false;try{await g.engine.run('NEW_YEAR_GIFTS',()=>{});}catch(e){failed=e.message==='network failed';}assert(failed);
     });
     await test('new year gifts open only unopened unique gifts and honor cancellation', async () => {
         const f=fixture({newYearGiftGet:{gifts:[{id:1,opened:0},{id:2,opened:1},{id:1,opened:0},{id:3,opened:0}]}});

@@ -3,7 +3,15 @@ class InterfaceSeasonalGifts {
     constructor(api) { this.api = api; }
 
     async run(report, token) {
-        const response = await this.api.call('newYearGiftGet', { type: 0 });
+        let response;
+        try {
+            response = await this.api.call('newYearGiftGet', { type: 0 });
+        } catch (error) {
+            if (error?.message !== 'Undefined call newYearGiftGet()') throw error;
+            console.warn('New Year gifts unavailable:', error);
+            report('SCRIPT_NEW_YEAR_UNAVAILABLE');
+            return 'SCRIPT_NOTHING_TO_COLLECT';
+        }
         if (token.stopped) return;
         if (!Array.isArray(response?.gifts)) throw new Error('SCRIPT_API_ERROR');
         const seen = new Set();

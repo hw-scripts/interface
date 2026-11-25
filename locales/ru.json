@@ -704,5 +704,8 @@
     "SCRIPT_OPTION_TARGETENERGY": "Цель энергии (0 = без цели; проверка после каждой партии)",
     "SCRIPT_ENERGY_BOX_PROGRESS": "Открыто наборов и получено энергии",
     "SCRIPT_TITAN_ARENA_CALCULATING": "Расчёт боёв рейда турнира",
-    "SCRIPT_TITAN_ARENA_FINISHING": "Завершение рейда турнира"
+    "SCRIPT_TITAN_ARENA_FINISHING": "Завершение рейда турнира",
+    "SCRIPT_NEW_YEAR_UNAVAILABLE": "Новогодние подарки недоступны",
+    "SCRIPT_REWARD_SOURCE_FAILED": "Ошибка источника наград; продолжаем",
+    "SCRIPT_REWARD_ERRORS": "Сбор завершён с ошибками"
 }

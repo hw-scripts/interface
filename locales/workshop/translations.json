@@ -3528,5 +3528,8 @@
                                          "en":  "Submitting tournament raid",
                                          "uk":  "Завершення рейду турніру",
                                          "ru":  "Завершение рейда турнира"
-                                     }
+                                     },
+    "SCRIPT_NEW_YEAR_UNAVAILABLE": {"en": "New Year gifts are unavailable", "uk": "Новорічні подарунки недоступні", "ru": "Новогодние подарки недоступны"},
+    "SCRIPT_REWARD_SOURCE_FAILED": {"en": "Reward source failed; continuing", "uk": "Помилка джерела нагород; продовжуємо", "ru": "Ошибка источника наград; продолжаем"},
+    "SCRIPT_REWARD_ERRORS": {"en": "Collection finished with errors", "uk": "Збір завершено з помилками", "ru": "Сбор завершён с ошибками"}
 }

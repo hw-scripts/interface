@@ -344,15 +344,17 @@ class InterfaceAutomation {
         this.running = token;
         this.boundaries = [];
         this.lastResult = null;
+        this.rewardFailures = [];
         try {
-            const outcome = await this.definitions[section].run(this.settings(section), report, token);
+            let outcome = await this.definitions[section].run(this.settings(section), report, token);
+            if (this.rewardFailures.length && !token.stopped) outcome = 'SCRIPT_REWARD_ERRORS';
             this.lastResult = { completed: !token.stopped && [undefined, 'SCRIPT_DONE',
                 'SCRIPT_DAILY_BONUS_ALREADY_COLLECTED', 'SCRIPT_DAILY_BONUS_COLLECTED', 'SCRIPT_NOTHING_TO_COLLECT'].includes(outcome),
-                boundaries: this.boundaries };
+                boundaries: this.boundaries, stopped: token.stopped };
             report(token.stopped ? 'SCRIPT_STOPPED' : outcome || 'SCRIPT_DONE');
         } catch (error) {
             if (!token.stopped) throw error;
-            this.lastResult = { completed: false, boundaries: this.boundaries };
+            this.lastResult = { completed: false, boundaries: this.boundaries, stopped: true };
             report('SCRIPT_STOPPED');
         } finally { this.running = null; }
     }
@@ -387,7 +389,7 @@ class InterfaceAutomation {
         report('SCRIPT_MAIL_COLLECTED', letterIds.length);
     }
 
-    async questRewards(settings, report, token, rewardFilter = reward => Boolean(reward && Object.keys(reward).length), collected = new Set()) {
+    async questRewards(settings, report, token, rewardFilter = reward => Boolean(reward && Object.keys(reward).length), collected = new Set(), unavailable = new Set()) {
         let passes;
         // Confirmed by Runner HAR: these quests can hold rewards while state is 1.
         const accumulatedGuildQuests = new Set([20000182, 20000185, 20000186, 20000188, 20000189, 20000191, 20000901, 20000902]);
@@ -396,7 +398,7 @@ class InterfaceAutomation {
             if (token.stopped) return;
             const ready = Object.values(quests ?? {}).filter(quest => (quest.state == 2
                 || quest.state == 1 && accumulatedGuildQuests.has(Number(quest.id)) && Number(quest.farmCount) > 0)
-                && !collected.has(`${quest.id}:${quest.createTime ?? ''}:${quest.farmCount ?? 0}`) && rewardFilter(quest.reward));
+                && !collected.has(`${quest.id}:${quest.createTime ?? ''}:${quest.farmCount ?? 0}`) && !unavailable.has(`${quest.id}:${quest.createTime ?? ''}:${quest.farmCount ?? 0}`) && rewardFilter(quest.reward));
             const eligible = [];
             for (const quest of ready) {
                 const questId = Number(quest.id);
@@ -430,34 +432,52 @@ class InterfaceAutomation {
             const nonClan = eligible.filter(quest => Number(quest.id) < 1e6);
             if (nonClan.length) {
                 if (token.stopped) return;
-                await this.api.call('quest_farmNonClan', { questIds: nonClan.map(quest => Number(quest.id)) });
-                nonClan.forEach(quest => collected.add(claimKey(quest)));
-                report('SCRIPT_QUESTS_COLLECTED', collected.size);
+                const result = await this.availableRewardSource('QUEST_REWARDS', () => this.api.call('quest_farmNonClan', { questIds: nonClan.map(quest => Number(quest.id)) }), report);
+                if (result === 'SCRIPT_NOTHING_TO_COLLECT') {
+                    for (const quest of nonClan) {
+                        if (token.stopped) return;
+                        const single = await this.availableRewardSource('QUEST_REWARDS', () => this.api.call('quest_farmNonClan', { questIds: [Number(quest.id)] }), report);
+                        if (single === 'SCRIPT_NOTHING_TO_COLLECT') unavailable.add(claimKey(quest));
+                        else { collected.add(claimKey(quest)); report('SCRIPT_QUESTS_COLLECTED', collected.size); }
+                    }
+                } else { nonClan.forEach(quest => collected.add(claimKey(quest))); report('SCRIPT_QUESTS_COLLECTED', collected.size); }
             }
             for (const quest of eligible.filter(quest => Number(quest.id) >= 1e6)) {
                 if (token.stopped) return;
                 const questId = Number(quest.id);
-                if (questId >= 2e7 && questId < 14e8 && questId !== 20000181 && !accumulatedGuildQuests.has(questId))
-                    await this.api.call('quest_questsFarm', { questIds: [questId] });
-                else await this.api.call('questFarm', { questId });
-                collected.add(claimKey(quest));
-                report('SCRIPT_QUESTS_COLLECTED', collected.size);
+                const result = await this.availableRewardSource('QUEST_REWARDS', () =>
+                    questId >= 2e7 && questId < 14e8 && questId !== 20000181 && !accumulatedGuildQuests.has(questId)
+                        ? this.api.call('quest_questsFarm', { questIds: [questId] }) : this.api.call('questFarm', { questId }), report);
+                if (result === 'SCRIPT_NOTHING_TO_COLLECT') unavailable.add(claimKey(quest));
+                else { collected.add(claimKey(quest)); report('SCRIPT_QUESTS_COLLECTED', collected.size); }
             }
         } while (settings.followChains !== false && !token.stopped);
         if (!collected.size) return 'SCRIPT_NOTHING_TO_COLLECT';
+    }
+
+    async availableRewardSource(section, action, report) {
+        try { return await action(); }
+        catch (error) {
+            const message = String(error?.message ?? '');
+            this.rewardFailures?.push({ section, error });
+            console.warn('Reward source failed:', section, error);
+            report('SCRIPT_REWARD_SOURCE_FAILED', `${section}: ${message || 'SCRIPT_API_ERROR'}`);
+            return 'SCRIPT_NOTHING_TO_COLLECT';
+        }
     }
 
     async allRewards(settings, report, token, context = {}) {
         if (!['collectDailyBonus', 'collectGuildPrestige', 'collectDailyOffers', 'collectQuests'].some(key => settings[key])) return 'SCRIPT_NOTHING_TO_COLLECT';
         let collected = false;
         if (settings.collectDailyBonus && !context.dailyChecked) {
-            collected = await this.dailyBonus(token) === 'SCRIPT_DAILY_BONUS_COLLECTED';
+            collected = await this.availableRewardSource('DAILY_BONUS', () => this.dailyBonus(token), report) === 'SCRIPT_DAILY_BONUS_COLLECTED';
             context.dailyChecked = true;
         }
         if (token.stopped) return;
         const claimedOffers = context.claimedOffers ??= new Set();
         const claimedPrestige = context.claimedPrestige ??= new Set();
         const claimedQuests = context.claimedQuests ??= new Set();
+        const unavailableQuests = context.unavailableQuests ??= new Set();
         while (!token.stopped) {
             let advanced = false;
             if (settings.collectGuildPrestige) {
@@ -467,20 +487,20 @@ class InterfaceAutomation {
                         ...(result?.farmedPrestigeLevelsPaid ?? []).map(id => `paid:${id}`)];
                     for (const level of levels) if (!claimedPrestige.has(level)) { claimedPrestige.add(level); advanced = true; }
                 } catch (error) {
-                    if (error?.message !== 'Level reward not available') throw error;
+                    this.rewardFailures?.push({ section: 'CLAN_PRESTIGE', error }); console.warn('Reward source failed:', 'CLAN_PRESTIGE', error); report('SCRIPT_REWARD_SOURCE_FAILED', `CLAN_PRESTIGE: ${error?.message ?? 'SCRIPT_API_ERROR'}`);
                 }
             }
             if (token.stopped) return;
             if (settings.collectDailyOffers) {
-                const offers = await this.api.call('specialOffer_getAll');
-                for (const offer of Object.values(offers ?? {})) {
+                const offers = await this.availableRewardSource('DAILY_OFFERS', () => this.api.call('specialOffer_getAll'), report);
+                for (const offer of Object.values(offers === 'SCRIPT_NOTHING_TO_COLLECT' ? {} : offers ?? {})) {
                     if (token.stopped) return;
                     if (offer.offerType !== 'dailyReward' || offer.type !== 'reward' || !offer.reward || claimedOffers.has(String(offer.id))) continue;
                     try {
                         await this.api.call('specialOffer_farmReward', { offerId: offer.id });
                         advanced = true;
                     } catch (error) {
-                        if (error?.message !== 'Reward has been farmed') throw error;
+                        this.rewardFailures?.push({ section: 'DAILY_OFFERS', error }); console.warn('Reward source failed:', 'DAILY_OFFERS', error); report('SCRIPT_REWARD_SOURCE_FAILED', `DAILY_OFFERS: ${error?.message ?? 'SCRIPT_API_ERROR'}`);
                     }
                     claimedOffers.add(String(offer.id));
                 }
@@ -488,7 +508,7 @@ class InterfaceAutomation {
             if (token.stopped) return;
             if (settings.collectQuests) {
                 const before = claimedQuests.size;
-                await this.questRewards({ followChains: true }, report, token, undefined, claimedQuests);
+                await this.availableRewardSource('QUEST_REWARDS', () => this.questRewards({ followChains: true }, report, token, undefined, claimedQuests, unavailableQuests), report);
                 if (token.stopped) return;
                 if (claimedQuests.size > before) advanced = true;
             }
@@ -514,7 +534,7 @@ class InterfaceAutomation {
         for (const [option, section] of selected) {
             if (token.stopped) return;
             if (!settings[option]) continue;
-            const result = await this.definitions[section].run(this.settings(section), report, token);
+            const result = await this.availableRewardSource(section, () => this.definitions[section].run(this.settings(section), report, token), report);
             if (result !== 'SCRIPT_NOTHING_TO_COLLECT') collected = true;
         }
         const context = { letters: new Set() };
@@ -528,7 +548,7 @@ class InterfaceAutomation {
             for (const [option, section] of repeat) {
                 if (token.stopped) return;
                 if (!settings[option]) continue;
-                const result = await this.definitions[section].run(this.settings(section), report, token, context);
+                const result = await this.availableRewardSource(section, () => this.definitions[section].run(this.settings(section), report, token, context), report);
                 if (token.stopped) return;
                 if (result !== 'SCRIPT_NOTHING_TO_COLLECT') advanced = true;
             }

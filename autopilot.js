@@ -133,9 +133,13 @@ class InterfaceAutopilot {
                 }
                 if (!this.due(section)) continue;
                 const settings = this.fingerprint(section);
-                if (!await this.execute(section) || this.stopped) {
+                let succeeded = false;
+                try { succeeded = await this.execute(section); }
+                catch (error) { console.warn('Autopilot script failed:', section, error); }
+                if (this.stopped || this.automation.lastResult?.stopped) return;
+                if (!succeeded) {
                     this.retryAt = this.now() + this.interval(section);
-                    return;
+                    continue;
                 }
                 this.checkpoint(section, settings);
             }

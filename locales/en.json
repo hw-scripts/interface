@@ -704,5 +704,8 @@
     "SCRIPT_OPTION_TARGETENERGY": "Target energy (0 = no target; checked after each batch)",
     "SCRIPT_ENERGY_BOX_PROGRESS": "Boxes opened and energy gained",
     "SCRIPT_TITAN_ARENA_CALCULATING": "Calculating tournament raid battles",
-    "SCRIPT_TITAN_ARENA_FINISHING": "Submitting tournament raid"
+    "SCRIPT_TITAN_ARENA_FINISHING": "Submitting tournament raid",
+    "SCRIPT_NEW_YEAR_UNAVAILABLE": "New Year gifts are unavailable",
+    "SCRIPT_REWARD_SOURCE_FAILED": "Reward source failed; continuing",
+    "SCRIPT_REWARD_ERRORS": "Collection finished with errors"
 }
