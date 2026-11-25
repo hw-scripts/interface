@@ -712,5 +712,6 @@
     "NAV_POWER_TOURNAMENT_REWARDS": "Награды турнира силы",
     "SCRIPT_OPTION_INCLUDEPOWERTOURNAMENT": "Собирать награды турнира силы",
     "SCRIPT_POWER_TOURNAMENT_COLLECTED": "Собрано наград турнира силы",
-    "SCRIPT_SHOWCASE_COLLECTED": "Собрана ежедневная награда витрины"
+    "SCRIPT_SHOWCASE_COLLECTED": "Собрана ежедневная награда витрины",
+    "SCRIPT_COLLECT_CONTENTS": "Состав сбора"
 }

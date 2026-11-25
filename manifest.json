@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Interface",
-  "version": "3.4.14",
+  "version": "3.4.15",
   "description": "Extension interface testing",
   "author": "Miish",
   "homepage_url": "https://github.com/hw-scripts/interface",

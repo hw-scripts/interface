@@ -712,5 +712,6 @@
     "NAV_POWER_TOURNAMENT_REWARDS": "Power tournament rewards",
     "SCRIPT_OPTION_INCLUDEPOWERTOURNAMENT": "Collect power tournament rewards",
     "SCRIPT_POWER_TOURNAMENT_COLLECTED": "Power tournament rewards collected",
-    "SCRIPT_SHOWCASE_COLLECTED": "Daily showcase reward collected"
+    "SCRIPT_SHOWCASE_COLLECTED": "Daily showcase reward collected",
+    "SCRIPT_COLLECT_CONTENTS": "Collection contents"
 }

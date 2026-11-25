@@ -1484,6 +1484,12 @@
     @media (max-width: 720px) { #interfaceLog { right: 16px; bottom: 55vh; } #interfaceSidebar.interface-section-open { top: 45vh; height: 55vh; width: 100vw; } }
     #interfacePanel .interface-script-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
     #interfacePanel .interface-script-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 8px; padding: 6px 8px; border: 1px solid #e2cd98; background: #fff4c4; border-radius: 4px; font-size: 13px; }
+    #interfacePanel .interface-script-list > li[hidden] { display: none; }
+    #interfacePanel .interface-collect-accordion { grid-column: 1 / -1; min-width: 0; }
+    #interfacePanel .interface-collect-accordion summary { cursor: pointer; padding: 4px 0; }
+    #interfacePanel .interface-collect-children { display: grid; gap: 4px; padding-left: 16px; }
+    #interfacePanel .interface-collect-child { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 8px; align-items: center; padding: 5px; border-left: 2px solid #d9bd7b; }
+    #interfacePanel .interface-collect-sequence { grid-column: 2 / -1; display: flex; gap: 6px; align-items: center; font-size: 12px; }
     #interfacePanel .interface-script-actions { display: flex; flex-wrap: wrap; gap: 4px; }
     #interfacePanel .interface-script-actions .interface-menu-action { flex: 0 1 auto; width: auto; padding: 4px 6px; min-height: 32px; font-size: 13px; text-align: center; }
     #interfacePanel .interface-script-name { min-width: 0; overflow-wrap: anywhere; }
@@ -1726,8 +1732,7 @@
     const reportScript = (section, key, detail, options = {}) => {
         const text = `${scriptText(key)}${detail == null ? '' : `: ${detail}`}`;
         scriptReports.set(section, text);
-        const status = panelBody.querySelector(`[data-interface-status="${section}"]`);
-        if (status) status.textContent = ` (${text})`;
+        for (const status of panelBody.querySelectorAll(`[data-interface-status="${section}"]`)) status.textContent = ` (${text})`;
         const entry = { ...options, id: options.id ?? Symbol() };
         const line = `${I18N(`NAV_${section}`)}: ${text}`;
         currentLog.write(line, entry);
@@ -1829,6 +1834,19 @@
             for (const name of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'])
                 doc.removeEventListener(name, onActivity, true);
     }, { once: true });
+    // The visible accordion edits existing COLLECT_ALL options, not the independent sequence flags.
+    const collectChildren = [
+        ['includeRewards', 'QUEST_REWARDS'], ['includeMail', 'MAIL'],
+        ['includeHeroArtifacts', 'HERO_ARTIFACT_CHESTS'], ['includeTitanArtifacts', 'TITAN_ARTIFACT_CHESTS'],
+        ['includeTitanSummons', 'TITAN_SUMMONS'], ['includePetEggs', 'PET_EGGS'], ['includeAscension', 'ASCENSION_FREE'],
+        ['includeHeroSouls', 'HERO_SOUL_EXCHANGE'], ['includeTitanSouls', 'TITAN_SOUL_EXCHANGE'],
+        ['includeOfferGifts', 'OFFER_GIFTS'], ['includeStageOffers', 'FREE_OFFER_STAGES'],
+        ['includeBattlePass', 'BATTLE_PASS_REWARDS'], ['includeSubscription', 'SUBSCRIPTION_GIFT'],
+        ['includeZeppelin', 'ZEPPELIN_GIFT'], ['includeGrandCoins', 'GRAND_ARENA_COINS'],
+        ['includeSoulAtrium', 'SOUL_ATRIUM_REFILL'], ['includeInventoryBoxes', 'INVENTORY_BOXES'],
+        ['includeNewYearGifts', 'NEW_YEAR_GIFTS'], ['includePowerTournament', 'POWER_TOURNAMENT_REWARDS']
+    ];
+    let collectAccordionOpen = false;
     const showSection = id => {
         const section = menuSections.find(item => item.id === id);
         if (!section) return;
@@ -1917,6 +1935,7 @@
             for (const section of sections) {
                 const item = document.createElement('li');
                 item.dataset.script = section;
+                if (id === 'scripts' && collectChildren.some(([, child]) => child === section)) item.hidden = true;
                 item.draggable = true;
                 let previousOrder;
                 let dropped = false;
@@ -1977,7 +1996,7 @@
                 label.append(status);
                 for (const action of ['SCRIPT_CONFIGURE', 'SCRIPT_RUN_CONFIGURED']) {
                     if (!automation.definitions[section]) continue;
-                    if (action === 'SCRIPT_CONFIGURE' && !Object.keys(automation.definitions[section].fields).length) continue;
+                    if (action === 'SCRIPT_CONFIGURE' && (section === 'COLLECT_ALL' || !Object.keys(automation.definitions[section].fields).length)) continue;
                     const actionButton = document.createElement('button');
                     actionButton.type = 'button';
                     actionButton.className = 'interface-menu-action menu__help-support-button';
@@ -2000,6 +2019,77 @@
                 }
                 item.append(label);
                 if (actions.childElementCount) item.append(actions);
+                if (id === 'scripts' && section === 'COLLECT_ALL') {
+                    const folder = document.createElement('details');
+                    folder.className = 'interface-collect-accordion';
+                    folder.open = collectAccordionOpen;
+                    folder.addEventListener('toggle', () => { collectAccordionOpen = folder.open; });
+                    const summary = document.createElement('summary');
+                    summary.textContent = I18N('SCRIPT_COLLECT_CONTENTS');
+                    folder.append(summary);
+                    const children = document.createElement('div');
+                    children.className = 'interface-collect-children';
+                    for (const [option, child] of collectChildren) {
+                        if (!automation.definitions[child]) continue;
+                        const row = document.createElement('div');
+                        row.className = 'interface-collect-child';
+                        row.dataset.collectChild = child;
+                        const included = document.createElement('input');
+                        included.type = 'checkbox';
+                        included.id = `interfaceCollect_${option}`;
+                        included.dataset.collectOption = option;
+                        included.checked = automation.settings('COLLECT_ALL')[option] === true;
+                        included.addEventListener('change', () => automation.save('COLLECT_ALL', { [option]: included.checked }));
+                        const name = document.createElement('label');
+                        name.htmlFor = included.id;
+                        name.textContent = I18N(`NAV_${child}`);
+                        const childStatus = document.createElement('span');
+                        childStatus.className = 'interface-script-status';
+                        childStatus.dataset.interfaceStatus = child;
+                        childStatus.textContent = scriptReports.has(child) ? ` (${scriptReports.get(child)})` : '';
+                        name.append(childStatus);
+                        const childActions = document.createElement('div');
+                        childActions.className = 'interface-script-actions';
+                        if (Object.keys(automation.definitions[child].fields).length) {
+                            const configure = document.createElement('button');
+                            configure.type = 'button';
+                            configure.className = 'interface-menu-action menu__help-support-button';
+                            configure.textContent = I18N('SCRIPT_CONFIGURE');
+                            configure.addEventListener('click', () => { collectAccordionOpen = folder.open; showScriptSettings(child); });
+                            childActions.append(configure);
+                        }
+                        const run = document.createElement('button');
+                        run.type = 'button';
+                        run.className = 'interface-menu-action menu__help-support-button';
+                        run.dataset.interfaceRun = child;
+                        run.textContent = I18N('SCRIPT_RUN_CONFIGURED');
+                        run.addEventListener('click', () => {
+                            if (automation.running?.section === child) {
+                                if (sequenceRunning) pilot.stop();
+                                automation.stop();
+                                reportScript(child, 'SCRIPT_STOPPING');
+                                refreshRunButtons();
+                            } else void runScript(child, run, childStatus);
+                        });
+                        childActions.append(run);
+                        const sequenceLabel = document.createElement('label');
+                        sequenceLabel.className = 'interface-collect-sequence';
+                        const sequence = document.createElement('input');
+                        sequence.type = 'checkbox';
+                        sequence.dataset.collectSequence = child;
+                        sequence.checked = automation.settings(child).enabled;
+                        sequence.addEventListener('change', () => {
+                            automation.save(child, { enabled: sequence.checked });
+                            const original = list.querySelector(`[data-sequence-script="${child}"]`);
+                            if (original) original.checked = sequence.checked;
+                        });
+                        sequenceLabel.append(sequence, document.createTextNode(I18N('SCRIPT_INCLUDE_SEQUENCE')));
+                        row.append(included, name, childActions, sequenceLabel);
+                        children.append(row);
+                    }
+                    folder.append(children);
+                    item.append(folder);
+                }
                 list.append(item);
             }
             panelBody.append(list);

@@ -960,6 +960,7 @@
             const input = panel.querySelector(`[data-sequence-script="${section}"]`);
             assert(input.parentElement.matches('li'), 'Selection must be separate from the navigation button');
             assert(!input.disabled);
+            if (input.parentElement.hidden) continue;
             input.scrollIntoView({ block: 'nearest' });
             const bounds = input.getBoundingClientRect();
             assert(document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2) === input,
@@ -979,6 +980,25 @@
             caption.click();
             assert(!input.checked && !engine.settings(section).enabled);
         }
+        const folder = panel.querySelector('[data-script="COLLECT_ALL"] details');
+        assert(folder && !folder.open); folder.open = true;
+        const nestedMail = folder.querySelector('[data-collect-child="MAIL"]');
+        assert(nestedMail && panel.querySelector('[data-script="MAIL"]').hidden);
+        const membership = nestedMail.querySelector('[data-collect-option="includeMail"]');
+        const standalone = nestedMail.querySelector('[data-collect-sequence="MAIL"]');
+        assert(membership.checked && !standalone.checked);
+        membership.click(); assert(!engine.settings('COLLECT_ALL').includeMail && !engine.settings('MAIL').enabled);
+        standalone.click(); assert(engine.settings('MAIL').enabled && !engine.settings('COLLECT_ALL').includeMail);
+        assert(panel.querySelector('[data-sequence-script="MAIL"]').checked);
+        membership.click(); standalone.click();
+        assert(engine.settings('COLLECT_ALL').includeMail && !engine.settings('MAIL').enabled);
+        const nestedRewards = folder.querySelector('[data-collect-child="QUEST_REWARDS"]');
+        assert(nestedRewards.querySelector('[data-interface-run="QUEST_REWARDS"]'));
+        nestedRewards.querySelector('.interface-script-actions button').click();
+        assert(panel.querySelector('input[type="checkbox"]'));
+        cancel();
+        assert(panel.querySelector('[data-script="COLLECT_ALL"] details').open);
+
         const row = section => panel.querySelector(`[data-script="${section}"]`);
         row('EXPEDITIONS').querySelector('.interface-script-actions button').click();
         panel.querySelector('input').checked = false;
