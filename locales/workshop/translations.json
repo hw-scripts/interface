@@ -3553,5 +3553,13 @@
     "SCRIPT_OPTION_INCLUDEPOWERTOURNAMENT": {"en": "Collect power tournament rewards", "uk": "Збирати нагороди турніру сили", "ru": "Собирать награды турнира силы"},
     "SCRIPT_POWER_TOURNAMENT_COLLECTED": {"en": "Power tournament rewards collected", "uk": "Зібрано нагород турніру сили", "ru": "Собрано наград турнира силы"},
     "SCRIPT_SHOWCASE_COLLECTED": {"en": "Daily showcase reward collected", "uk": "Зібрано щоденну нагороду вітрини", "ru": "Собрана ежедневная награда витрины"},
-    "SCRIPT_COLLECT_CONTENTS": {"en": "Collection contents", "uk": "Склад збору", "ru": "Состав сбора"}
+    "SCRIPT_COLLECT_CONTENTS": {"en": "Collection contents", "uk": "Склад збору", "ru": "Состав сбора"},
+    "SCRIPT_COLLECT_GROUP_MAIN": {"en": "Mail and general rewards", "uk": "Пошта та загальні нагороди", "ru": "Почта и общие награды"},
+    "SCRIPT_COLLECT_GROUP_EVENTS": {"en": "Events and gifts", "uk": "Події та подарунки", "ru": "События и подарки"},
+    "SCRIPT_COLLECT_GROUP_RESOURCES": {"en": "Chests and resources", "uk": "Скрині та ресурси", "ru": "Сундуки и ресурсы"},
+    "SCRIPT_COLLECT_GROUP_EXCHANGE": {"en": "Soul exchange", "uk": "Обмін душ", "ru": "Обмен душ"},
+    "SCRIPT_COLLECT_GROUP_OTHER": {"en": "Other", "uk": "Інше", "ru": "Другое"},
+    "SCRIPT_COLLECT_ORDER_VIEW": {"en": "Execution order", "uk": "Порядок виконання", "ru": "Порядок выполнения"},
+    "SCRIPT_COLLECT_GROUP_VIEW": {"en": "Groups", "uk": "Групи", "ru": "Группы"},
+    "SCRIPT_COLLECT_GROUP_HINT": {"en": "Numbers show execution order. Use Execution order to reorder across groups.", "uk": "Числа показують порядок виконання. Для зміни порядку між групами відкрийте «Порядок виконання».", "ru": "Числа показывают порядок выполнения. Для изменения порядка между группами откройте «Порядок выполнения»."}
 }

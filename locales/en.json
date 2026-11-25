@@ -713,5 +713,13 @@
     "SCRIPT_OPTION_INCLUDEPOWERTOURNAMENT": "Collect power tournament rewards",
     "SCRIPT_POWER_TOURNAMENT_COLLECTED": "Power tournament rewards collected",
     "SCRIPT_SHOWCASE_COLLECTED": "Daily showcase reward collected",
-    "SCRIPT_COLLECT_CONTENTS": "Collection contents"
+    "SCRIPT_COLLECT_CONTENTS": "Collection contents",
+    "SCRIPT_COLLECT_GROUP_MAIN": "Mail and general rewards",
+    "SCRIPT_COLLECT_GROUP_EVENTS": "Events and gifts",
+    "SCRIPT_COLLECT_GROUP_RESOURCES": "Chests and resources",
+    "SCRIPT_COLLECT_GROUP_EXCHANGE": "Soul exchange",
+    "SCRIPT_COLLECT_GROUP_OTHER": "Other",
+    "SCRIPT_COLLECT_ORDER_VIEW": "Execution order",
+    "SCRIPT_COLLECT_GROUP_VIEW": "Groups",
+    "SCRIPT_COLLECT_GROUP_HINT": "Numbers show execution order. Use Execution order to reorder across groups."
 }
