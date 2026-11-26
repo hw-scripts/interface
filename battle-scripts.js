@@ -75,11 +75,28 @@ class InterfaceAsgardScripts extends InterfaceScriptGroup {
 }
 
 class InterfaceTitanScripts extends InterfaceScriptGroup {
+    async titanArenaRewards(report, token) {
+        if (token.stopped) return;
+        let rewards;
+        try {
+            rewards = await this.api.call('titanArenaFarmDailyReward');
+        } catch (error) {
+            if (error?.rpcErrorName === 'NotAvailable' && error?.message === 'titan arena daily reward') return 'SCRIPT_NOTHING_TO_COLLECT';
+            throw error;
+        }
+        if (!rewards || typeof rewards !== 'object' || Array.isArray(rewards)) throw new Error('SCRIPT_API_ERROR');
+        const count = Object.keys(rewards).length;
+        if (!count) return 'SCRIPT_NOTHING_TO_COLLECT';
+        report('SCRIPT_TITAN_ARENA_REWARDS_COLLECTED', count);
+    }
+
     async titanArena(settings, report, token) {
         const tests = Number(settings.testBattles), retries = Number(settings.retryBattles);
         if (!Number.isSafeInteger(tests) || tests < 0 || tests > 100 ||
             !Number.isSafeInteger(retries) || retries < 0 || retries > 100) throw new Error('SCRIPT_UPGRADE_INVALID_LIMIT');
         let status = await this.api.call('titanArenaGetStatus');
+        if (token.stopped) return;
+        await this.titanArenaRewards(report, token);
         if (token.stopped || status?.status === 'disabled' || status?.status === 'peace_time') return;
         const teams = await this.api.call('teamGetAll');
         if (token.stopped) return;
@@ -98,7 +115,10 @@ class InterfaceTitanScripts extends InterfaceScriptGroup {
                 await new Promise(resolve => setTimeout(resolve, Math.min(250, until - performance.now())));
         };
         while (!token.stopped) {
-            if (!status || status.status === 'disabled' || status.status === 'peace_time') return;
+            if (!status || status.status === 'disabled' || status.status === 'peace_time') {
+                await this.titanArenaRewards(report, token);
+                return;
+            }
             report('SCRIPT_TITAN_ARENA_TIER', status.tier);
             if (status.status === 'completed_tier') {
                 status = await this.api.call('titanArenaCompleteTier'); checked = false; continue;
@@ -127,12 +147,7 @@ class InterfaceTitanScripts extends InterfaceScriptGroup {
                 continue;
             }
             if (checked) {
-                try {
-                    await this.api.call('titanArenaFarmDailyReward');
-                } catch (error) {
-                    // The server reports this exact condition when no daily reward is available.
-                    if (error?.rpcErrorName !== 'NotAvailable' || error?.message !== 'titan arena daily reward') throw error;
-                }
+                await this.titanArenaRewards(report, token);
                 if (unresolved) return 'SCRIPT_TITAN_ARENA_NO_WIN';
                 return;
             }

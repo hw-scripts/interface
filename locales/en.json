@@ -1,6 +1,4 @@
 {
-    "NAV_HERO_POWER":  "Hero power record",
-    "SCRIPT_HERO_POWER":  "Current / record (difference)",
     "NAV_INVENTORY_BOXES":  "Open inventory boxes",
     "SCRIPT_OPTION_INCLUDEINVENTORYBOXES":  "Open inventory boxes",
     "SCRIPT_OPTION_EQUIPMENTBOXES":  "Equipment fragment boxes",
@@ -709,6 +707,8 @@
     "SCRIPT_REWARD_SOURCE_FAILED":  "Reward source failed; continuing",
     "SCRIPT_REWARD_ERRORS":  "Collection finished with errors",
     "SCRIPT_TITAN_ARENA_NO_WIN":  "No winning tournament battle found",
+    "NAV_TITAN_ARENA_REWARDS": "Titan tournament rewards",
+    "SCRIPT_TITAN_ARENA_REWARDS_COLLECTED": "Titan tournament rewards collected",
     "NAV_POWER_TOURNAMENT_REWARDS": "Power tournament rewards",
     "SCRIPT_OPTION_INCLUDEPOWERTOURNAMENT": "Collect power tournament rewards",
     "SCRIPT_POWER_TOURNAMENT_COLLECTED": "Power tournament rewards collected",
@@ -723,6 +723,7 @@
     "SCRIPT_COLLECT_GROUP_VIEW": "Groups",
     "SCRIPT_COLLECT_GROUP_HINT": "Numbers show execution order. Use Execution order to reorder across groups.",
     "MESSAGE_LOG_SAVE":  "Save log",
+    "MESSAGE_LOG_CLEAR": "Clear log",
     "NAV_COMMUNITY_GIFTS":  "Community gifts",
     "SCRIPT_OPTION_INCLUDECOMMUNITYGIFTS":  "Collect Community gifts",
     "SCRIPT_COMMUNITY_GIFTS_COLLECTED":  "Community gifts collected",
@@ -733,6 +734,8 @@
     "SCRIPT_RENAME_FOLDER": "Rename",
     "SCRIPT_REMOVE_FOLDER": "Delete folder",
     "SCRIPT_SEQUENCE_NAME": "Group",
+    "SCRIPT_NO_SETTINGS": "This script has no separate settings",
+    "SCRIPT_CHECKED_NO_ACTION": "Checked — nothing to do",
     "NAV_SEND_GUILD_GIFTS": "Send guild gifts",
     "SCRIPT_GUILD_GIFTS_SENT": "Guild gifts sent"
 }

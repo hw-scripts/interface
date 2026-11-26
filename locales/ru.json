@@ -1,6 +1,4 @@
 {
-    "NAV_HERO_POWER":  "Рекорд силы героев",
-    "SCRIPT_HERO_POWER":  "Текущая / рекордная сила (разница)",
     "NAV_INVENTORY_BOXES":  "Открыть наборы из инвентаря",
     "SCRIPT_OPTION_INCLUDEINVENTORYBOXES":  "Открыть наборы из инвентаря",
     "SCRIPT_OPTION_EQUIPMENTBOXES":  "Сундуки фрагментов экипировки",
@@ -709,6 +707,8 @@
     "SCRIPT_REWARD_SOURCE_FAILED":  "Ошибка источника наград; продолжаем",
     "SCRIPT_REWARD_ERRORS":  "Сбор завершён с ошибками",
     "SCRIPT_TITAN_ARENA_NO_WIN":  "Победный бой турнира не найден",
+    "NAV_TITAN_ARENA_REWARDS": "??????? ??????? ??????",
+    "SCRIPT_TITAN_ARENA_REWARDS_COLLECTED": "??????? ?????? ??????? ??????",
     "NAV_POWER_TOURNAMENT_REWARDS": "Награды турнира силы",
     "SCRIPT_OPTION_INCLUDEPOWERTOURNAMENT": "Собирать награды турнира силы",
     "SCRIPT_POWER_TOURNAMENT_COLLECTED": "Собрано наград турнира силы",
@@ -723,6 +723,7 @@
     "SCRIPT_COLLECT_GROUP_VIEW": "Группы",
     "SCRIPT_COLLECT_GROUP_HINT": "Числа показывают порядок выполнения. Для изменения порядка между группами откройте «Порядок выполнения».",
     "MESSAGE_LOG_SAVE":  "Сохранить лог",
+    "MESSAGE_LOG_CLEAR": "Очистить лог",
     "NAV_COMMUNITY_GIFTS":  "Подарки Community",
     "SCRIPT_OPTION_INCLUDECOMMUNITYGIFTS":  "Собирать подарки Community",
     "SCRIPT_COMMUNITY_GIFTS_COLLECTED":  "Получено подарков Community",
@@ -733,6 +734,8 @@
     "SCRIPT_RENAME_FOLDER": "Переименовать",
     "SCRIPT_REMOVE_FOLDER": "Удалить папку",
     "SCRIPT_SEQUENCE_NAME": "Группа",
+    "SCRIPT_NO_SETTINGS": "Для этого скрипта нет отдельных настроек",
+    "SCRIPT_CHECKED_NO_ACTION": "Проверено — нет действий",
     "NAV_SEND_GUILD_GIFTS": "Отправить подарки",
     "SCRIPT_GUILD_GIFTS_SENT": "Подарков отправлено"
 }

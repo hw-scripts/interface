@@ -26,7 +26,7 @@
         const storage = { get: key => values[key] ?? null, set: (key, value) => { values[key] = value; } };
         const api = { call: async (name, args = {}) => {
             calls.push({ name, args });
-            const response = responses[name];
+            const response = name === 'titanArenaFarmDailyReward' && !(name in responses) ? {} : responses[name];
             if (typeof response === 'function') return response(args);
             return structuredClone(response);
         } };
@@ -97,6 +97,15 @@
         equal(JSON.parse(storage.get('scriptReferences:startup:duplicates:v1')), original);
         refs.remove('startup', 'a');
         assert(refs.add('startup', 'TOWER'));
+    });
+    await test('removed hero power script is ignored in saved trees', () => {
+        const { engine, storage } = fixture();
+        storage.set('menuTree:v1', JSON.stringify([{ id: 'scripts', children: [{ id: 'hero_power' }, { id: 'tower' }] }]));
+        storage.set('scriptReferences:startup:v1', JSON.stringify([{ id: 'old', section: 'HERO_POWER', settings: {} }, { id: 'keep', section: 'TOWER', settings: {} }]));
+        const tree = new InterfaceMenuTree(engine, storage, [{ id: 'scripts' }], []);
+        assert(!engine.definitions.HERO_POWER && !tree.find('hero_power') && tree.find('tower'));
+        const refs = new InterfaceScriptReferences(engine, storage);
+        equal(refs.entries('startup').map(item => item.section), ['TOWER']);
     });
     await test('copying a manual folder moves existing references into source order without changing settings', () => {
         const { engine, storage } = fixture();
@@ -1195,12 +1204,12 @@
         [...panel.querySelectorAll('label')].find(label => label.textContent.includes(I18N('SETTING_DUNGEON_AVOID_DEATHS'))).querySelector('input').checked = true;
         accept();
         assert(!main.hidden && panel.hidden);
+        assert(main.querySelector('[data-interface-log-save]') && main.querySelector('[data-interface-log-clear]'));
         open('startup');
-        const startupSelect = panel.querySelector('select'); startupSelect.value = 'TOWER';
-        [...panel.querySelectorAll('button')].find(button => button.textContent === I18N('SCRIPT_ADD_REFERENCE')).click();
+        panel.querySelector('[data-picker-script="TOWER"]').click();
         let startupEntry = panel.querySelector('[data-reference-id]'); assert(startupEntry);
-        assert(![...panel.querySelector('select').options].some(option => option.value === 'TOWER'));
-        [...startupEntry.querySelectorAll('button')].find(button => button.textContent === I18N('SCRIPT_CONFIGURE')).click();
+        assert(!panel.querySelector('[data-picker-script="TOWER"]'));
+        startupEntry.querySelector('[aria-label="' + I18N('SCRIPT_CONFIGURE') + '"]').click();
         panel.querySelector('input[type=checkbox]').checked = false;
         accept();
         const savedStartup = JSON.parse(storage.get('scriptReferences:startup:v1'));
@@ -1208,15 +1217,21 @@
         startupEntry = panel.querySelector('[data-reference-id]');
         startupEntry.querySelector('[aria-label="' + I18N('SCRIPT_REMOVE_REFERENCE') + '"]').click();
         assert(JSON.parse(storage.get('scriptReferences:startup:v1')).length === 0 && engine.definitions.TOWER);
-        assert([...panel.querySelector('select').options].some(option => option.value === 'TOWER'));
-        const sourceFolder = engine.menuTree.addFolder(); engine.menuTree.move('tower', sourceFolder);
+        assert(panel.querySelector('[data-picker-script="TOWER"]'));
+        const sourceFolder = engine.menuTree.addFolder(), sourceChild = engine.menuTree.addFolder(sourceFolder); engine.menuTree.move('tower', sourceChild);
         open('startup');
-        const sourceChoice = panel.querySelector('select');
-        assert([...sourceChoice.options].some(option => option.value === `folder:${sourceFolder}`));
-        sourceChoice.value = `folder:${sourceFolder}`;
-        [...panel.querySelectorAll('button')].find(button => button.textContent === I18N('SCRIPT_ADD_REFERENCE')).click();
-        assert(JSON.parse(storage.get('scriptReferences:startup:v1')).some(item => item.section === 'TOWER'));
-        assert(![...panel.querySelector('select').options].some(option => option.value === 'TOWER'));
+        const sourceChoice = panel.querySelector(`[data-picker-folder="${sourceFolder}"]`);
+        const nestedChoice = sourceChoice.querySelector(`[data-picker-folder="${sourceChild}"]`);
+        assert(nestedChoice && nestedChoice.querySelector('[data-picker-script="TOWER"]'));
+        sourceChoice.open = true; nestedChoice.open = true;
+        assert(sourceChoice.open && nestedChoice.open);
+        nestedChoice.querySelector('[data-picker-script="TOWER"]').click();
+        const existingTower = JSON.parse(storage.get('scriptReferences:startup:v1')).find(item => item.section === 'TOWER');
+        assert(existingTower);
+        panel.querySelector(`[data-picker-folder="${sourceFolder}"] > summary > button`).click();
+        const movedTower = JSON.parse(storage.get('scriptReferences:startup:v1')).find(item => item.section === 'TOWER');
+        assert(movedTower && movedTower.id === existingTower.id && movedTower.parent);
+        assert(!panel.querySelector('[data-picker-script="TOWER"]'));
         for (const entry of JSON.parse(storage.get('scriptReferences:startup:v1'))) {
             const element = panel.querySelector(`[data-reference-id="${entry.id}"]`);
             element?.querySelector('[aria-label="' + I18N(entry.folder ? 'SCRIPT_REMOVE_FOLDER' : 'SCRIPT_REMOVE_REFERENCE') + '"]')?.click();
@@ -1226,10 +1241,20 @@
         open('scripts');
         assert(!log.hidden);
         const tree = engine.menuTree;
+        const noSettingsRow = panel.querySelector('[data-script="SEND_GUILD_GIFTS"]');
+        assert(noSettingsRow && !noSettingsRow.querySelector('[aria-label="' + I18N('SCRIPT_CONFIGURE') + '"]'));
         const collectRow = panel.querySelector('[data-node-id="collect_all"]');
         assert(collectRow && collectRow.querySelector('.interface-tree-children').hidden);
+        assert(panel.querySelector('[data-interface-add-folder]') && !panel.querySelector('[data-interface-log-save]'));
+        assert(collectRow.querySelector(':scope > .interface-script-actions .interface-run') && collectRow.querySelectorAll(':scope > .interface-script-actions > button').length === 3);
+        const folderButtons = collectRow.querySelectorAll(':scope > .interface-script-actions > button');
+        assert(Math.abs(folderButtons[2].getBoundingClientRect().width / folderButtons[0].getBoundingClientRect().width - 4) < .05);
+        assert([...folderButtons].every(button => button.querySelector('svg') && button.title && button.getAttribute('aria-label')));
         collectRow.querySelector('.interface-script-actions button').click();
         assert(!collectRow.querySelector('.interface-tree-children').hidden);
+        const folderName = collectRow.querySelector('.interface-folder-edit input'); assert(folderName);
+        folderName.value = 'Custom group'; folderName.dispatchEvent(new Event('change'));
+        assert(collectRow.querySelector('.interface-script-name').textContent.includes('Custom group'));
         const group = panel.querySelector('[data-node-id="collection_main"]');
         group.querySelector('.interface-script-actions button').click();
         const mail = panel.querySelector('[data-node-id="mail"]');
@@ -1273,7 +1298,7 @@
         };
         pilot.state.completed = {};
         await pilot.run(['BOSS']);
-        const button = panel.querySelector('[data-interface-log-save]');
+        const button = main.querySelector('[data-interface-log-save]');
         assert(button && !button.hidden);
         const oldCreate = URL.createObjectURL, oldClick = HTMLAnchorElement.prototype.click;
         let savedBlob, savedName;
@@ -1288,6 +1313,25 @@
             assert(savedText.includes('Request:') && savedText.includes('Response:') && savedText.includes('"id": 42') && savedText.includes('"code": 123'));
             assert(savedText.includes('secret-cookie') && savedText.includes('secret-token'));
             assert(!savedText.includes(I18N('SCRIPT_RUNNING')));
+            main.querySelector('[data-interface-log-clear]').click();
+            equal(JSON.parse(storage.get('executionLog:v1')), []);
+            engine.definitions.BOSS.run = async (settings, report) => {
+                report('SCRIPT_BOSS_ATTACK', 1);
+                report('SCRIPT_RESOURCE_OPENED', 1);
+                report('SCRIPT_RESOURCE_OPENED', 3);
+                report('SCRIPT_SHOP_BOUGHT', 2);
+                engine.mutationRevision++;
+            };
+            pilot.state.completed = {};
+            await pilot.run(['BOSS']);
+            const after = JSON.parse(storage.get('executionLog:v1'));
+            equal(after.length, 1);
+            const summary = after[0][3].map(event => event[3]).join(' ');
+            assert(summary.includes('3') && summary.includes('2') && !summary.includes(I18N('SCRIPT_BOSS_ATTACK')));
+            engine.definitions.DAILY_BONUS.run = async () => 'SCRIPT_NOTHING_TO_COLLECT';
+            pilot.state.completed = {}; await pilot.run(['DAILY_BONUS']);
+            const empty = JSON.parse(storage.get('executionLog:v1')).find(row => row[0] === 'DAILY_BONUS');
+            assert(empty[3].some(event => event[3] === I18N('SCRIPT_CHECKED_NO_ACTION')));
         } finally { URL.createObjectURL = oldCreate; HTMLAnchorElement.prototype.click = oldClick; }
         const row = section => panel.querySelector(`[data-script="${section}"]`);
         // Scrollable content stays below the panel header.
@@ -1311,7 +1355,7 @@
         numbers()[0].value = '0';
         accept();
         equal(log.children.length, 1);
-        equal(message.children.length, 2);
+        equal(message.children.length, 1);
         open('autopilot');
         const autoIdle = panel.querySelector('input[type="number"]');
         const autoEnabled = panel.querySelector('input[type="checkbox"]');
@@ -1612,6 +1656,24 @@
         await f.engine.run('ASGARD_MINIONS',()=>{});
         const end=f.calls.find(c=>c.name==='clanRaid_endNodeBattle');assert(end);assert(end.args.progress[0].attackers.heroes[1].energy>0);
     });
+    await test('titan tournament rewards collect independently and before battle prerequisites', async () => {
+        const rewards={500:{coin:{18:100}},1200:{coin:{18:150}},2000:{coin:{18:200}},3500:{coin:{18:250}},7000:{coin:{18:300}},10000:{coin:{18:350}}};
+        const f=fixture({titanArenaFarmDailyReward:rewards});
+        const reports=[];await f.engine.run('TITAN_ARENA_REWARDS',(key,value)=>reports.push([key,value]));
+        equal(f.calls.map(c=>c.name),['titanArenaFarmDailyReward']);
+        assert(reports.some(([key,value])=>key==='SCRIPT_TITAN_ARENA_REWARDS_COLLECTED' && value===6));
+        assert(f.engine.lastResult.changed);
+        const empty=fixture({titanArenaFarmDailyReward:{}});await empty.engine.run('TITAN_ARENA_REWARDS',()=>{});
+        assert(!empty.engine.lastResult.changed);
+        const peace=fixture({titanArenaGetStatus:{status:'peace_time'},titanArenaFarmDailyReward:rewards});
+        await peace.engine.run('TITAN_ARENA',()=>{});
+        equal(peace.calls.map(c=>c.name),['titanArenaGetStatus','titanArenaFarmDailyReward']);
+        assert(peace.engine.lastResult.changed);
+        const missingTeam=fixture({titanArenaGetStatus:{status:'battle'},titanArenaFarmDailyReward:rewards,teamGetAll:{}});
+        let error;try { await missingTeam.engine.run('TITAN_ARENA',()=>{}); } catch (e) { error=e; }
+        equal(error?.message,'SCRIPT_TITAN_ARENA_NO_TEAM');
+        equal(missingTeam.calls.map(c=>c.name),['titanArenaGetStatus','titanArenaFarmDailyReward','teamGetAll']);
+    });
     await test('titan tournament ignores only the specific unavailable daily reward', async () => {
         for (const [name,message,allowed] of [['NotAvailable','titan arena daily reward',true],['NotAvailable','other reward',false],['Other','titan arena daily reward',false]]) {
             let statusCalls=0;
@@ -1620,7 +1682,7 @@
                 teamGetAll:{titan_arena:[1]},titanArenaFarmDailyReward:()=>{throw failure;}});
             f.engine.battleCalculator={assertAvailable:()=>{}};
             let caught;try{await f.engine.run('TITAN_ARENA',()=>{});}catch(e){caught=e;}
-            equal(Boolean(caught),!allowed);equal(statusCalls,2);
+            equal(Boolean(caught),!allowed);equal(statusCalls,allowed ? 2 : 1);
         }
     });
     await test('titan tournament submits raid without summing individual battle timers', async () => {
@@ -1645,12 +1707,12 @@
         f.engine.battleCalculator={assertAvailable:()=>{},calculate:async()=>({result:{win:true},progress:[],waitSeconds:0})};
         f.engine.save('TITAN_ARENA',{testBattles:0,retryBattles:0});
         await f.engine.run('TITAN_ARENA',()=>{});
-        equal(f.calls.map(c=>c.name),['titanArenaGetStatus','teamGetAll','titanArenaCompleteTier','titanArenaStartRaid','titanArenaEndRaid','titanArenaCompleteTier','titanArenaStartBattle','titanArenaEndBattle','titanArenaGetStatus','titanArenaFarmDailyReward']);
+        equal(f.calls.map(c=>c.name),['titanArenaGetStatus','titanArenaFarmDailyReward','teamGetAll','titanArenaCompleteTier','titanArenaStartRaid','titanArenaEndRaid','titanArenaCompleteTier','titanArenaStartBattle','titanArenaEndBattle','titanArenaGetStatus','titanArenaFarmDailyReward']);
         equal(f.calls.find(c=>c.name==='titanArenaStartBattle').args,{rivalId:'1',titans:[1,2]});
         const stopped=fixture({titanArenaGetStatus:()=>{stopped.engine.stop();return {status:'battle'};}});
         await stopped.engine.run('TITAN_ARENA',()=>{});equal(stopped.calls.length,1);
         const peace=fixture({titanArenaGetStatus:{status:'peace_time'}});
-        await peace.engine.run('TITAN_ARENA',()=>{});equal(peace.calls.length,1);
+        await peace.engine.run('TITAN_ARENA',()=>{});equal(peace.calls.map(c=>c.name),['titanArenaGetStatus','titanArenaFarmDailyReward']);
     });
     await test('titan tournament submits victories only and stops simulations when victory is found', async () => {
         for (const win of [true,false]) {
@@ -1730,12 +1792,6 @@
             {libId:62,amount:10,playerRewardChoiceIndex:4},{libId:62,amount:1,playerRewardChoiceIndex:4}]);
         const stopped=fixture({inventoryGet:{consumable:{362:111}},consumableUseLootBox:()=>stopped.engine.stop()});
         await stopped.engine.run('INVENTORY_BOXES',()=>{});equal(stopped.calls.filter(c=>c.name==='consumableUseLootBox').length,1);
-    });
-    await test('hero power compares current owned heroes with recorded peak', async () => {
-        const f=fixture({userGetInfo:{maxSumPower:{heroes:1000}},heroGetAll:{1:{power:400},2:{power:250}}});
-        const reports=[];await f.engine.run('HERO_POWER',(key,detail)=>reports.push([key,detail]));
-        assert(reports.some(([key,value])=>key==='SCRIPT_HERO_POWER'&&value==='650 / 1000 (350)'));
-        assert(!f.calls.some(c=>!['userGetInfo','heroGetAll'].includes(c.name)));
     });
     document.getElementById('result').textContent = results.join('\n') + `\n${results.filter(result => result.startsWith('PASS')).length}/${results.length} passed`;
 })();

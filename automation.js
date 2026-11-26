@@ -215,7 +215,8 @@ class InterfaceAutomation {
             try { response = await api.call(name, args, context); }
             catch (error) { if (error && typeof error === 'object' && !error.rpcMethod) error.rpcMethod = name; throw error; }
             if (!readOnly.has(name) && response != null && response !== false && response?.success !== false &&
-                (!Array.isArray(response) || response.length > 0)) this.mutationRevision++;
+                (!Array.isArray(response) || response.length > 0) &&
+                !(name === 'titanArenaFarmDailyReward' && typeof response === 'object' && !Object.keys(response).length)) this.mutationRevision++;
             if (name === 'userGetInfo') this.userInfo = response;
             if (name === 'expeditionGet') {
                 for (const expedition of Object.values(response ?? {})) {
@@ -236,7 +237,8 @@ class InterfaceAutomation {
             ['includeBattlePass', 'BATTLE_PASS_REWARDS', true], ['includeSubscription', 'SUBSCRIPTION_GIFT', true],
             ['includeZeppelin', 'ZEPPELIN_GIFT', true], ['includeGrandCoins', 'GRAND_ARENA_COINS', true],
             ['includeSoulAtrium', 'SOUL_ATRIUM_REFILL', true], ['includeInventoryBoxes', 'INVENTORY_BOXES', false],
-            ['includeNewYearGifts', 'NEW_YEAR_GIFTS', false], ['includePowerTournament', 'POWER_TOURNAMENT_REWARDS', true]
+            ['includeNewYearGifts', 'NEW_YEAR_GIFTS', false], ['includePowerTournament', 'POWER_TOURNAMENT_REWARDS', true],
+            ['includeTitanArenaRewards', 'TITAN_ARENA_REWARDS', false]
         ];
         this.definitions = {
             DAILY_BONUS: {
@@ -253,13 +255,13 @@ class InterfaceAutomation {
             },
             POWER_TOURNAMENT_REWARDS: { fields: {}, run: (s, r, t, context) => this.powerTournamentRewards(r, t, context) },
             NEW_YEAR_GIFTS: { fields: {}, run: (s, r, t) => new InterfaceSeasonalGifts(this.api).run(r, t) },
-            HERO_POWER: { fields: {}, run: (s, r, t) => this.heroPower(r, t) },
             ENERGY_BOXES: { fields: { maxBoxes: 1, targetEnergy: 100 }, run: (s, r, t) => new InterfaceEnergyBoxes(this.api).run(s, r, t) },
             INVENTORY_BOXES: { fields: { equipmentBoxes: true, randomBoxes: true, artifactBoxes: true }, run: (s, r, t) => this.openInventoryBoxes(s, r, t) },
             HERO_ARTIFACT_UPGRADE: { fields: { levels: 10 }, run: (s, r, t) => this.upgradeCosmetics('heroArtifact', s, r, t) },
             TITAN_ARTIFACT_UPGRADE: { fields: { levels: 1 }, run: (s, r, t) => this.upgradeCosmetics('titanArtifact', s, r, t) },
             HERO_SKIN_UPGRADE: { fields: { levels: 10 }, run: (s, r, t) => this.upgradeCosmetics('heroSkin', s, r, t) },
             ASGARD_MINIONS: { fields: {}, run: (s, r, t) => new InterfaceAsgardScripts(this).asgardMinions(r, t) },
+            TITAN_ARENA_REWARDS: { fields: {}, run: (s, r, t) => new InterfaceTitanScripts(this).titanArenaRewards(r, t) },
             TITAN_ARENA: { fields: { testBattles: 10, retryBattles: 10 }, run: (s, r, t) => new InterfaceTitanScripts(this).titanArena(s, r, t) },
             ADVENTURE: { fields: { path: '', testBattles: 10, retryBattles: 10 }, run: (s, r, t) => new InterfaceAdventureScripts(this).adventure(false, s, r, t) },
             ADVENTURE_SOLO: { fields: { path: '', testBattles: 10, retryBattles: 10 }, run: (s, r, t) => new InterfaceAdventureScripts(this).adventure(true, s, r, t) },
@@ -365,13 +367,14 @@ class InterfaceAutomation {
         this.boundaries = [];
         this.lastResult = null;
         this.rewardFailures = [];
+        const initialRevision = this.mutationRevision;
         try {
             let outcome = await this.definitions[section].run(overrideSettings ? { ...this.settings(section), ...overrideSettings } : this.settings(section), report, token);
             if (this.rewardFailures.length && !token.stopped) outcome = 'SCRIPT_REWARD_ERRORS';
             this.lastResult = { completed: !token.stopped && [undefined, 'SCRIPT_DONE',
                 'SCRIPT_DAILY_BONUS_ALREADY_COLLECTED', 'SCRIPT_DAILY_BONUS_COLLECTED', 'SCRIPT_NOTHING_TO_COLLECT'].includes(outcome),
-                boundaries: this.boundaries, stopped: token.stopped };
-            report(token.stopped ? 'SCRIPT_STOPPED' : outcome || 'SCRIPT_DONE');
+                boundaries: this.boundaries, stopped: token.stopped, changed: this.mutationRevision !== initialRevision };
+            report(token.stopped ? 'SCRIPT_STOPPED' : outcome || 'SCRIPT_DONE', undefined, { final: true });
         } catch (error) {
             if (!token.stopped) throw error;
             this.lastResult = { completed: false, boundaries: this.boundaries, stopped: true };
@@ -576,19 +579,6 @@ class InterfaceAutomation {
             if (result !== 'SCRIPT_NOTHING_TO_COLLECT') report('SCRIPT_POWER_TOURNAMENT_COLLECTED', ++count);
         }
         if (!count) return 'SCRIPT_NOTHING_TO_COLLECT';
-    }
-
-    async heroPower(report, token) {
-        const user = await this.api.call('userGetInfo');
-        if (token.stopped) return;
-        const heroes = await this.api.call('heroGetAll');
-        if (token.stopped) return;
-        const peak = Number(user?.maxSumPower?.heroes);
-        if (!Number.isFinite(peak) || !heroes || typeof heroes !== 'object') throw new Error('SCRIPT_API_ERROR');
-        const values = Object.values(heroes).map(hero => Number(hero?.power));
-        if (values.some(value => !Number.isFinite(value))) throw new Error('SCRIPT_API_ERROR');
-        const current = values.reduce((sum, value) => sum + value, 0);
-        report('SCRIPT_HERO_POWER', `${current} / ${peak} (${peak - current})`);
     }
 
     async openInventoryBoxes(settings, report, token) {
@@ -1311,7 +1301,7 @@ class InterfaceMenuTree {
         for (const id of this.removedFolders) this.folders.delete(id);
         const categories = {
             collection_main: ['QUEST_REWARDS', 'MAIL', 'GRAND_ARENA_COINS', 'SOUL_ATRIUM_REFILL'],
-            collection_events: ['COMMUNITY_GIFTS', 'OFFER_GIFTS', 'FREE_OFFER_STAGES', 'BATTLE_PASS_REWARDS', 'SUBSCRIPTION_GIFT', 'ZEPPELIN_GIFT', 'NEW_YEAR_GIFTS', 'POWER_TOURNAMENT_REWARDS'],
+            collection_events: ['COMMUNITY_GIFTS', 'OFFER_GIFTS', 'FREE_OFFER_STAGES', 'BATTLE_PASS_REWARDS', 'SUBSCRIPTION_GIFT', 'ZEPPELIN_GIFT', 'NEW_YEAR_GIFTS', 'POWER_TOURNAMENT_REWARDS', 'TITAN_ARENA_REWARDS'],
             collection_resources: ['HERO_ARTIFACT_CHESTS', 'TITAN_ARTIFACT_CHESTS', 'TITAN_SUMMONS', 'PET_EGGS', 'ASCENSION_FREE', 'INVENTORY_BOXES'],
             collection_exchange: ['HERO_SOUL_EXCHANGE', 'TITAN_SOUL_EXCHANGE'],
             collection_other: []

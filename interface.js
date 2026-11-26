@@ -1456,15 +1456,19 @@
 <style>
     #interfaceSidebar .interface-menu-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
     #interfaceSidebar .interface-menu-brand { flex: 1; color: inherit; text-decoration: none; font-weight: 700; }
-    #interfaceSidebar .interface-menu-version { display: block; font-size: 12px; font-weight: 400; opacity: .7; }
-    #interfaceSidebar .interface-language { flex: 0 0 auto; padding: 4px 6px; border: 1px solid #d9bd7b; border-radius: 6px; background: #fffad6; color: #47230e; font: inherit; font-size: 12px; cursor: pointer; }
+    #interfaceSidebar .interface-menu-version { display: block; font-size: 14px; font-weight: 400; opacity: .7; }
+    #interfaceSidebar .interface-language { flex: 0 0 auto; padding: 4px 6px; border: 1px solid #d9bd7b; border-radius: 6px; background: #fffad6; color: #47230e; font: inherit; font-size: 16px; cursor: pointer; }
     #interfaceSidebar .interface-language:focus-visible { outline: 2px solid #f2bf69; outline-offset: 3px; }
     #interfaceSidebar .interface-menu-close, #interfacePanel .interface-cancel { background: transparent; border: 0; color: inherit; font: inherit; font-size: 26px; cursor: pointer; padding: 4px 10px; }
     #interfaceSidebar .interface-menu-actions { display: grid; gap: 5px; padding: 10px 12px; }
-    #interfaceSidebar .interface-menu-action, #interfacePanel .interface-menu-action { box-sizing: border-box; width: 100%; padding: 7px 10px; margin: 0; height: auto; min-height: 36px; justify-content: flex-start; font: inherit; font-size: 14px; line-height: 1.3; text-align: left; cursor: pointer; }
+    #interfaceSidebar .interface-menu-action, #interfacePanel .interface-menu-action { box-sizing: border-box; width: 100%; padding: 7px 10px; margin: 0; height: auto; min-height: 36px; justify-content: flex-start; font: inherit; font-size: 16px; line-height: 1.3; text-align: left; cursor: pointer; }
+    #interfaceSidebar .interface-menu-row { display: flex; align-items: center; gap: 5px; min-width: 0; }
+    #interfaceSidebar .interface-menu-row > .interface-menu-action { flex: 1; min-width: 0; }
+    #interfaceSidebar .interface-log-action { box-sizing: border-box; flex: 0 0 38px; width: 38px; height: 38px; padding: 8px; border: 1px solid #d9bd7b; border-radius: 7px; background: #fffad6; color: #704018; cursor: pointer; }
+    #interfaceSidebar .interface-log-action svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     #interfaceSidebar .interface-menu-action:hover, #interfacePanel .interface-menu-action:hover { background: #ffebab; }
     #interfaceSidebar button:focus-visible, #interfaceSidebar a:focus-visible, #interfacePanel button:focus-visible { outline: 2px solid #f2bf69; outline-offset: 3px; }
-    #interfaceSidebar { position: fixed; top: 0; right: 0; bottom: 0; width: min(360px, 90vw); height: 100dvh; z-index: 10002; transform: translateX(100%); color: #47230e; font-family: "Noto Sans", sans-serif; font-size: 14px; }
+    #interfaceSidebar { position: fixed; top: 0; right: 0; bottom: 0; width: min(360px, 90vw); height: 100dvh; z-index: 10002; transform: translateX(100%); color: #47230e; font-family: "Noto Sans", sans-serif; font-size: 16px; }
     #interfaceSidebar.sidebar_open { transform: translateX(0); }
     #interfaceSidebar .sidebar__content { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
     #interfaceSidebar .interface-menu-header { flex-shrink: 0; }
@@ -1475,18 +1479,25 @@
     #interfacePanelForm { display: flex; flex-direction: column; height: 100%; }
     #interfacePanel .interface-panel-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #d9bd7b; }
     #interfacePanel h2 { flex: 1; margin: 0; font-size: 18px; }
-    #interfacePanel .interface-log-save { width: auto; min-height: 0; padding: 5px 8px; font-size: 13px; }
+    #interfacePanel .interface-log-save, #interfacePanel .interface-header-add { flex: 0 0 38px; }
     #interfacePanel .interface-confirm, #interfacePanel .interface-cancel { border: 0; border-radius: 4px; padding: 6px 12px; color: white; font-size: 20px; cursor: pointer; }
     #interfacePanel .interface-confirm { background: #28783c; }
     #interfacePanel .interface-cancel { background: #a33333; }
     #interfacePanel .interface-panel-body { overflow-y: auto; min-height: 0; padding: 10px 12px; }
     #interfacePanel .interface-setting { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    #interfacePanel input, #interfacePanel select, #interfacePanel .interface-script-picker { font: inherit; }
     #interfacePanel input[type="number"] { width: 80px; }
     #interfaceLog { position: fixed; z-index: 10001; top: 16px; left: 16px; right: calc(min(560px, 90vw) + 16px); bottom: 16px; overflow-y: auto; color: #f5f5f5; text-shadow: 0 1px 2px #000; overflow-wrap: anywhere; pointer-events: none; }
     #interfaceLog > div { margin-bottom: 6px; padding: 8px 12px; background: #fffad6ed; color: #47230e; text-shadow: none; border-radius: 8px; font: 14px/1.5 "Noto Sans", sans-serif; }
     @media (max-width: 720px) { #interfaceLog { right: 16px; bottom: 55vh; } #interfaceSidebar.interface-section-open { top: 45vh; height: 55vh; width: 100vw; } }
     #interfacePanel .interface-script-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-    #interfacePanel .interface-script-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 8px; padding: 6px 8px; border: 1px solid #e2cd98; background: #fff4c4; border-radius: 4px; font-size: 13px; }
+    #interfacePanel .interface-script-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 8px; padding: 6px 8px; border: 1px solid #e2cd98; background: #fff4c4; border-radius: 4px; font-size: 16px; }
+    #interfacePanel .interface-script-picker { margin: 0 0 10px; font-size: 16px; }
+    #interfacePanel .interface-script-picker summary { cursor: pointer; padding: 6px; }
+    #interfacePanel .interface-picker-children { margin-left: 16px; border-left: 1px solid #d9bd7b; padding-left: 8px; }
+    #interfacePanel .interface-picker-row { display: list-item; min-height: 42px; }
+    #interfacePanel .interface-picker-row > .interface-tree-icon { float: right; }
+    #interfacePanel .interface-picker-script { width: 100%; text-align: left; padding: 7px; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
     #interfacePanel .interface-script-list > li[hidden] { display: none; }
     #interfacePanel .interface-collect-accordion { grid-column: 1 / -1; min-width: 0; }
     #interfacePanel .interface-collect-children { display: grid; gap: 4px; padding-left: 16px; }
@@ -1499,9 +1510,22 @@
     #interfacePanel .interface-collect-child[draggable] { cursor: grab; }
     #interfacePanel .interface-collect-child.interface-dragging { opacity: .45; }
     #interfacePanel .interface-collect-child { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 8px; align-items: center; padding: 5px; border-left: 2px solid #d9bd7b; }
-    #interfacePanel .interface-script-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+    #interfacePanel .interface-script-actions { display: flex; flex-wrap: nowrap; align-items: center; gap: 5px; }
     #interfacePanel .interface-tree-tools { display: flex; flex-wrap: nowrap; gap: 3px; align-items: center; }
-    #interfacePanel .interface-tree-icon { flex: 0 0 28px; width: 28px; height: 28px; border: 1px solid #d9bd7b; border-radius: 5px; background: #fffad6; color: #704018; font: inherit; line-height: 1; cursor: pointer; padding: 0; }
+    #interfacePanel .interface-tree-icon { box-sizing: border-box; display: inline-flex; flex: 0 0 38px; width: 38px; height: 38px; align-items: center; justify-content: center; border: 1px solid #d9bd7b; border-radius: 7px; background: #fffad6; color: #704018; cursor: pointer; padding: 8px; }
+    #interfacePanel .interface-tree-icon svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    #interfacePanel .interface-tree-icon:hover { background: #f7e8b5; }
+    #interfacePanel .interface-tree-icon.interface-run { flex-basis: 152px; width: 152px; background: #28783c; border-color: #28783c; color: white; }
+    #interfacePanel .interface-tree-icon.interface-run:hover { background: #1e6330; }
+    #interfacePanel .interface-tree-icon.interface-confirm { background: #28783c; color: white; border-color: #28783c; padding: 8px; }
+    #interfacePanel .interface-tree-icon.interface-confirm.interface-header-run { flex-basis: 152px; width: 152px; }
+    #interfacePanel .interface-header-run svg { width: 20px; height: 20px; }
+    #interfacePanel .interface-tree-icon.interface-cancel { background: #a33333; color: white; border-color: #a33333; padding: 8px; }
+    #interfacePanel .interface-tree-icon.interface-run svg { width: 20px; height: 20px; }
+    #interfacePanel .interface-tree-children .interface-tree-icon:not(.interface-run) { flex-basis: 34px; width: 34px; height: 34px; }
+    #interfacePanel .interface-tree-children .interface-tree-icon.interface-run { flex-basis: 136px; width: 136px; }
+    #interfacePanel .interface-folder-edit { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; padding: 6px 0 2px 18px; }
+    #interfacePanel .interface-folder-edit input { flex: 1; min-width: 0; }
     #interfacePanel .interface-script-actions .interface-menu-action { flex: 0 1 auto; width: auto; padding: 4px 6px; min-height: 32px; font-size: 13px; text-align: center; }
     #interfacePanel .interface-script-name { min-width: 0; overflow-wrap: anywhere; }
     #interfacePanel .interface-script-list li.interface-sequence-item { grid-template-columns: auto minmax(0, 1fr) auto; }
@@ -1517,7 +1541,7 @@
     @media (max-width: 520px) { #interfacePanel .interface-script-list li { grid-template-columns: minmax(0, 1fr); } }
     #interfacePanel .interface-menu-action:disabled { opacity: .45; cursor: default; }
     #interfacePanel .interface-tree-children { grid-column: 1 / -1; margin-left: 20px; padding-left: 12px; border-left: 1px solid #d9bd7b; }
-    #interfacePanel .interface-script-status { opacity: .6; font-size: 12px; }
+    #interfacePanel .interface-script-status { opacity: .7; font-size: 14px; }
 </style>
 <section id="interfaceSidebar" class="sidebar">
     <div class="sidebar__content">
@@ -1534,15 +1558,15 @@
             <button type="button" class="interface-menu-close" data-interface-close aria-label="{{ I18N('MENU_CLOSE') }}">&times;</button>
         </div>
         <nav class="interface-menu-actions">
-            ${menuSections.filter(section => !section.hidden).map(section => `<button type="button" class="interface-menu-action menu__help-support-button" data-interface-dialog="${section.id}">{{ I18N('${section.title}') }}</button>`).join('')}
+            ${menuSections.filter(section => !section.hidden).map(section => `<div class="interface-menu-row"><button type="button" class="interface-menu-action menu__help-support-button" data-interface-dialog="${section.id}">{{ I18N('${section.title}') }}</button>${section.id === 'settings' ? `<button type="button" class="interface-log-action" data-interface-log-save title="{{ I18N('MESSAGE_LOG_SAVE') }}" aria-label="{{ I18N('MESSAGE_LOG_SAVE') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12l2 2v16H5zM8 3v6h8V3M8 21v-8h8v8"/></svg></button><button type="button" class="interface-log-action" data-interface-log-clear title="{{ I18N('MESSAGE_LOG_CLEAR') }}" aria-label="{{ I18N('MESSAGE_LOG_CLEAR') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 10v7M14 10v7"/></svg></button>` : ''}</div>`).join('')}
         </nav>
         <section id="interfacePanel" hidden aria-labelledby="interfacePanelTitle">
             <form id="interfacePanelForm">
                 <div class="interface-panel-header">
                     <h2 id="interfacePanelTitle" class="menu__help-title"></h2>
-                    <button type="button" class="interface-menu-action menu__help-support-button interface-log-save" data-interface-log-save hidden>{{ I18N('MESSAGE_LOG_SAVE') }}</button>
-                    <button type="submit" class="interface-confirm" aria-label="{{ I18N('SCRIPT_SAVE') }}">&#10003;</button>
-                    <button type="button" class="interface-cancel" aria-label="{{ I18N('MENU_CLOSE') }}">&#10005;</button>
+                    <button type="button" class="interface-tree-icon interface-header-add" data-interface-add-folder title="{{ I18N('SCRIPT_ADD_FOLDER') }}" aria-label="{{ I18N('SCRIPT_ADD_FOLDER') }}" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+                    <button type="submit" class="interface-tree-icon interface-confirm" aria-label="{{ I18N('SCRIPT_SAVE') }}" title="{{ I18N('SCRIPT_SAVE') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L19 7"/></svg></button>
+                    <button type="button" class="interface-tree-icon interface-cancel" aria-label="{{ I18N('MENU_CLOSE') }}" title="{{ I18N('MENU_CLOSE') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
                 </div>
                 <div class="interface-panel-body"></div>
             </form>
@@ -1704,6 +1728,7 @@
             try { this.storage.set('executionLog:v1', this.trim()); }
             catch (error) { console.warn('Unable to save execution log:', error); }
         }
+        clear() { this.entries = []; this.pending.clear(); this.persist(); }
         start(section, name) {
             this.trim();
             let row = this.entries.find(item => item[0] === section);
@@ -1763,7 +1788,11 @@
     const panelBody = panel.querySelector('.interface-panel-body');
     const mainMenu = interfaceSidebar.querySelector('.interface-menu-actions');
     const executionLog = new CompactExecutionLog(userStorage);
-    const logSave = panel.querySelector('[data-interface-log-save]');
+    const logSave = mainMenu.querySelector('[data-interface-log-save]');
+    const logClear = mainMenu.querySelector('[data-interface-log-clear]');
+    const headerAdd = panel.querySelector('[data-interface-add-folder]');
+    let headerAddAction = null;
+    headerAdd.addEventListener('click', () => headerAddAction?.());
     logSave.addEventListener('click', () => {
         const blob = new Blob(['\uFEFF', executionLog.text()], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
@@ -1774,6 +1803,7 @@
         link.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
     });
+    logClear.addEventListener('click', () => executionLog.clear());
     const logElement = document.getElementById('interfaceLog');
     const messageLog = new MessageLog(logElement, userStorage.get('messageTTL') ?? 0);
     const scriptText = value => i18n.translations[value] || value;
@@ -1820,12 +1850,14 @@
         panelBody.replaceChildren();
         interfaceSidebar.classList.add('interface-section-open');
         logElement.hidden = !scripts;
-        logSave.hidden = !scripts;
+        headerAdd.hidden = true; headerAddAction = null;
         savePanel = cancelPanel = returnToMenu;
         sequenceView = false;
         panel.querySelector('.interface-confirm').disabled = false;
         panel.querySelector('.interface-confirm').setAttribute('aria-label', I18N('SCRIPT_SAVE'));
         panel.querySelector('.interface-confirm').title = I18N('SCRIPT_SAVE');
+        panel.querySelector('.interface-confirm').classList.remove('interface-header-run');
+        panel.querySelector('.interface-confirm').innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L19 7"/></svg>';
     };
     panelForm.addEventListener('submit', event => {
         event.preventDefault();
@@ -1844,7 +1876,9 @@
         if (sequenceView) panel.querySelector('.interface-confirm').disabled = sequenceRunning || Boolean(automation.running);
         for (const button of panelBody.querySelectorAll('[data-interface-run]')) {
             const active = automation.running?.section === button.dataset.interfaceRun;
-            button.textContent = I18N(active ? 'SCRIPT_STOP' : 'SCRIPT_RUN_CONFIGURED');
+            const label = I18N(active ? 'SCRIPT_STOP' : 'SCRIPT_RUN_CONFIGURED');
+            button.title = label; button.setAttribute('aria-label', label);
+            button.innerHTML = active ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10H7z"/></svg>' : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>';
             button.disabled = Boolean(automation.running && (!active || automation.running.stopped)) || sequenceRunning && !active;
         }
     };
@@ -1853,12 +1887,13 @@
         scriptReports.set(section, text);
         for (const status of panelBody.querySelectorAll(`[data-interface-status="${section}"]`)) status.textContent = ` (${text})`;
         const entry = { ...options, id: options.id ?? Symbol() };
-        const line = `${I18N(`NAV_${section}`)}: ${text}`;
-        currentLog.write(line, entry);
         const isError = /FAILED|ERROR/.test(key);
-        const final = ['SCRIPT_DONE', 'SCRIPT_STOPPED', 'SCRIPT_NOTHING_TO_COLLECT', 'SCRIPT_DAILY_BONUS_ALREADY_COLLECTED', 'SCRIPT_DAILY_BONUS_COLLECTED'].includes(key);
+        const final = options.final === true || ['SCRIPT_DONE', 'SCRIPT_STOPPED', 'SCRIPT_NOTHING_TO_COLLECT', 'SCRIPT_DAILY_BONUS_ALREADY_COLLECTED', 'SCRIPT_DAILY_BONUS_COLLECTED'].includes(key);
         if (isError || final) {
-            const result = key === 'SCRIPT_DONE' ? logProgress.get(section) || text : text;
+            const progress = logProgress.get(section);
+            const noAction = automation.lastResult?.changed === false && ['SCRIPT_DONE', 'SCRIPT_NOTHING_TO_COLLECT', 'SCRIPT_DAILY_BONUS_ALREADY_COLLECTED'].includes(key);
+            const summary = [...(progress?.results?.values() || [])].join('; ');
+            const result = noAction ? I18N('SCRIPT_CHECKED_NO_ACTION') : key === 'SCRIPT_DONE' || key === 'SCRIPT_NOTHING_TO_COLLECT' && automation.lastResult?.changed ? summary || progress?.last || text : text;
             const diagnostic = options.error ? [options.error.rpcMethod && `RPC: ${options.error.rpcMethod}`,
                 options.error.rpcErrorName && `RPC error: ${options.error.rpcErrorName}`,
                 options.error.httpStatus && `HTTP: ${options.error.httpStatus}`,
@@ -1866,10 +1901,16 @@
                 Object.prototype.hasOwnProperty.call(options.error, 'rpcResponse') && `Response: ${CompactExecutionLog.diagnostic(options.error.rpcResponse)}`,
                 options.error.stack].filter(Boolean).join('\n') : '';
             const record = diagnostic ? `${result}\n${diagnostic}` : result;
+            currentLog.write(`${I18N(`NAV_${section}`)}: ${result}`, entry);
             messageLog.write(`${I18N(`NAV_${section}`)}: ${record}`, entry);
             const errorKey = isError ? `${key}:${detail ?? ''}:${options.error?.rpcRequest ? CompactExecutionLog.diagnostic(options.error.rpcRequest, 300) : ''}` : key;
             executionLog.write(section, errorKey, record, entry);
-        } else if (key !== 'SCRIPT_RUNNING' && !options.pending) logProgress.set(section, text);
+        } else if (key !== 'SCRIPT_RUNNING' && !options.pending) {
+            const progress = logProgress.get(section) || { last: '', results: new Map() };
+            progress.last = text;
+            if (/COLLECTED|SENT|OPENED|RAIDED|CHEST|BOUGHT|UPGRADED|EXCHANGE_COINS|_DONE|GIFT_AMOUNT|GIFT_COLLECTED/.test(key)) progress.results.set(key, text);
+            logProgress.set(section, progress);
+        }
     };
     const settingInput = (label, type, value, min = 0) => {
         const wrapper = document.createElement('label');
@@ -1890,6 +1931,7 @@
             inputs[name] = settingInput(I18N(section === 'BOSS' && name === 'battles'
                 ? 'SCRIPT_OPTION_OUTLANDBATTLES' : `SCRIPT_OPTION_${name.toUpperCase()}`),
                 typeof initial === 'number' ? 'number' : typeof initial === 'string' ? 'text' : 'checkbox', typeof initial === 'boolean' ? settings[name] === true : settings[name], section === 'HERO_UPGRADE' || section === 'ITEM_EXCHANGE' || section === 'ENERGY_BOXES' || section === 'TITAN_ARENA' || section === 'ADVENTURE' || section === 'ADVENTURE_SOLO' || name === 'limit' ? 0 : 1);
+        if (!Object.keys(inputs).length) { const note = document.createElement('p'); note.textContent = I18N('SCRIPT_NO_SETTINGS'); panelBody.append(note); }
         if (section === 'HERO_UPGRADE') {
             const note = document.createElement('p');
             note.textContent = I18N('SCRIPT_UPGRADE_STAGE');
@@ -1955,7 +1997,7 @@
     const applyMenuOrder = () => {
         for (const node of menuTree.nodes) {
             const button = mainMenu.querySelector(`[data-interface-dialog="${node.id}"]`);
-            if (button) { button.dataset.nodeId = node.id; mainMenu.append(button); }
+            if (button) { button.dataset.nodeId = node.id; mainMenu.append(button.closest('.interface-menu-row')); }
         }
     };
     applyMenuOrder();
@@ -2016,7 +2058,12 @@
     let autopilotDraft = null;
     const treeIcon = (symbol, label, action) => {
         const button = document.createElement('button'); button.type = 'button'; button.className = 'interface-tree-icon';
-        button.textContent = symbol; button.title = label; button.setAttribute('aria-label', label); button.addEventListener('click', action); return button;
+        const icons = { '+': 'M12 5v14M5 12h14', '✎': 'M4 20l4-.7L19 8l-3-3L5 16zM14.5 6.5l3 3',
+            '×': 'M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 10v7M14 10v7',
+            '▶': 'M8 5l11 7-11 7z', '▸': 'M9 6l6 6-6 6', '▾': 'M6 9l6 6 6-6',
+            '⚙': 'M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z' };
+        button.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${icons[symbol] || icons['⚙']}"/></svg>`;
+        button.title = label; button.setAttribute('aria-label', label); button.addEventListener('click', action); return button;
     };
     const manualFolderLabel = folderId => {
         const groups = { collection_main: 'MAIN', collection_events: 'EVENTS', collection_resources: 'RESOURCES', collection_exchange: 'EXCHANGE', collection_other: 'OTHER' };
@@ -2059,28 +2106,28 @@
                 cancelPanel = () => { autopilotDraft = null; returnToMenu(); };
             }
             const inputs = {};
-            const select = document.createElement('select');
             const existing = new Set(references.list(id).filter(entry => !entry.folder).map(entry => entry.section));
-            const addOptions = (nodes, depth = 0) => { for (const node of nodes) {
+            const picker = document.createElement('details'); picker.className = 'interface-script-picker';
+            const pickerTitle = document.createElement('summary'); pickerTitle.textContent = I18N('SCRIPT_ADD_REFERENCE'); picker.append(pickerTitle);
+            const addOptions = (nodes, parent) => { for (const node of nodes) {
                 if (node.children) {
-                    const option = document.createElement('option'); option.value = `folder:${node.id}`; option.textContent = `${'　'.repeat(depth)}▸ ${manualFolderLabel(node.id)}`; select.append(option);
-                    addOptions(node.children, depth + 1);
+                    const folder = document.createElement('details'); folder.dataset.pickerFolder = node.id;
+                    const summary = document.createElement('summary'); summary.className = 'interface-picker-row';
+                    const name = document.createElement('span'); name.textContent = manualFolderLabel(node.id); summary.append(name);
+                    const add = treeIcon('+', I18N('SCRIPT_ADD_FOLDER'), event => { event.preventDefault(); event.stopPropagation(); for (const added of references.addTree(id, node.id) || []) treeOpen.add(added); showSection(id); });
+                    summary.append(add); folder.append(summary);
+                    const children = document.createElement('div'); children.className = 'interface-picker-children';
+                    addOptions(node.children, children); folder.append(children); parent.append(folder);
                 } else {
                     const section = menuTree.scripts.get(node.id); if (!section || existing.has(section)) continue;
-                    const option = document.createElement('option'); option.value = section; option.textContent = `${'　'.repeat(depth)}${I18N(`NAV_${section}`)}`; select.append(option);
+                    const button = document.createElement('button'); button.type = 'button'; button.className = 'interface-picker-script'; button.dataset.pickerScript = section;
+                    button.textContent = I18N(`NAV_${section}`); button.addEventListener('click', () => { references.add(id, section); showSection(id); }); parent.append(button);
                 }
             } };
-            addOptions(menuTree.find('scripts')?.children ?? []);
-            const add = document.createElement('button'); add.type = 'button'; add.textContent = I18N('SCRIPT_ADD_REFERENCE');
-            add.addEventListener('click', () => { if (select.value) {
-                if (select.value.startsWith('folder:')) for (const folder of references.addTree(id, select.value.slice(7)) || []) treeOpen.add(folder);
-                else references.add(id, select.value);
-                showSection(id);
-            } });
-            const addFolder = document.createElement('button'); addFolder.type = 'button'; addFolder.textContent = I18N('SCRIPT_ADD_FOLDER');
-            addFolder.addEventListener('click', () => { const name = prompt(I18N('SCRIPT_ADD_FOLDER'), I18N('SCRIPT_SEQUENCE_NAME')); if (name?.trim()) { references.addFolder(id, name.trim()); showSection(id); } });
-            if (select.options.length) panelBody.append(select, add);
-            panelBody.append(addFolder);
+            addOptions(menuTree.find('scripts')?.children ?? [], picker);
+            headerAdd.hidden = false;
+            headerAddAction = () => { const name = prompt(I18N('SCRIPT_ADD_FOLDER'), I18N('SCRIPT_SEQUENCE_NAME')); if (name?.trim()) { references.addFolder(id, name.trim()); showSection(id); } };
+            panelBody.append(picker);
             const list = document.createElement('ul'); list.className = 'interface-script-list';
             let dragged = null;
             const referenceItems = references.ordered(id);
@@ -2103,15 +2150,24 @@
                     inputs[entry.id] = input; item.append(input);
                 }
                 if (entry.folder) {
-                    item.append(treeIcon(treeOpen.has(entry.id) ? '▾' : '▸', I18N('SCRIPT_CONFIGURE'), () => { if (treeOpen.has(entry.id)) treeOpen.delete(entry.id); else treeOpen.add(entry.id); showSection(id); }));
-                    item.append(treeIcon('+', I18N('SCRIPT_ADD_FOLDER'), () => { const child = references.addFolder(id, I18N('SCRIPT_SEQUENCE_NAME'), entry.id); treeOpen.add(entry.id); treeOpen.add(child); showSection(id); }));
-                    item.append(treeIcon('✎', I18N('SCRIPT_RENAME_FOLDER'), () => { const value = prompt(I18N('SCRIPT_RENAME_FOLDER'), folderName); if (value !== null) { references.renameFolder(id, entry.id, i18n.language, value); showSection(id); } }));
+                    item.append(treeIcon('✎', I18N('SCRIPT_CONFIGURE'), () => { if (treeOpen.has(entry.id)) treeOpen.delete(entry.id); else treeOpen.add(entry.id); showSection(id); }));
                     item.append(treeIcon('×', I18N('SCRIPT_REMOVE_FOLDER'), () => { references.remove(id, entry.id); showSection(id); }));
+                    const run = treeIcon('▶', I18N('SCRIPT_RUN_CONFIGURED'), () => {
+                        const descendants = new Set([entry.id]); let changed;
+                        do { changed = false; for (const value of references.list(id)) if (descendants.has(value.parent) && !descendants.has(value.id)) { descendants.add(value.id); changed = true; } } while (changed);
+                        void pilot.run(references.entries(id).filter(value => descendants.has(value.id)), 'manual_explicit');
+                    }); run.classList.add('interface-run'); item.append(run);
+                    if (treeOpen.has(entry.id)) {
+                        const edit = document.createElement('div'); edit.className = 'interface-folder-edit'; edit.style.flexBasis = '100%';
+                        const input = document.createElement('input'); input.type = 'text'; input.value = folderName; input.setAttribute('aria-label', I18N('SCRIPT_RENAME_FOLDER'));
+                        input.addEventListener('change', () => { references.renameFolder(id, entry.id, i18n.language, input.value); name.textContent = input.value || folderName; });
+                        edit.append(input, treeIcon('+', I18N('SCRIPT_ADD_FOLDER'), () => { const child = references.addFolder(id, I18N('SCRIPT_SEQUENCE_NAME'), entry.id); treeOpen.add(entry.id); treeOpen.add(child); showSection(id); })); item.append(edit);
+                    }
                 } else {
-                    const config = document.createElement('button'); config.type = 'button'; config.textContent = I18N('SCRIPT_CONFIGURE');
-                    config.addEventListener('click', () => showScriptSettings(entry.section, entry, id));
-                    if (Object.keys(automation.definitions[entry.section].fields).length) item.append(config);
+                    if (Object.keys(automation.definitions[entry.section].fields).length) item.append(treeIcon('⚙', I18N('SCRIPT_CONFIGURE'), () => showScriptSettings(entry.section, entry, id)));
                     item.append(treeIcon('×', I18N('SCRIPT_REMOVE_REFERENCE'), () => { references.remove(id, entry.id); showSection(id); }));
+                    const run = treeIcon('▶', I18N('SCRIPT_RUN_CONFIGURED'), () => { if (pilot.running) pilot.stop(); else void pilot.run([entry], 'manual_explicit'); });
+                    run.classList.add('interface-run'); run.dataset.interfaceRun = entry.section; item.append(run);
                 }
                 list.append(item);
             }
@@ -2133,12 +2189,14 @@
             sequenceView = true;
             panel.querySelector('.interface-confirm').setAttribute('aria-label', I18N('SCRIPT_RUN_SEQUENCE'));
             panel.querySelector('.interface-confirm').title = I18N('SCRIPT_RUN_SEQUENCE');
+            panel.querySelector('.interface-confirm').classList.add('interface-header-run');
+            panel.querySelector('.interface-confirm').innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>';
+            headerAdd.hidden = false;
+            headerAddAction = () => { const folder = menuTree.addFolder(); treeOpen.add(folder); showSection('scripts'); };
             savePanel = () => void runSequence(menuTree.sequence('scripts', { atomicCollect: true }));
             cancelPanel = () => { if (sequenceRunning) pilot.stop(); returnToMenu(); };
             const list = document.createElement('ul');
             list.className = 'interface-script-list';
-            const addFolder = document.createElement('button'); addFolder.type = 'button'; addFolder.textContent = I18N('SCRIPT_ADD_FOLDER');
-            addFolder.addEventListener('click', () => { const folder = menuTree.addFolder(); treeOpen.add(folder); showSection('scripts'); }); panelBody.append(addFolder);
             let dragging = null;
             const render = (node, parent) => {
                 const item = document.createElement('li');
@@ -2168,39 +2226,41 @@
                 check.addEventListener('change', () => menuTree.setEnabled(node.id, check.checked));
                 check.id = `interfaceEnabled_${node.id}`;
                 const label = document.createElement('label'); label.htmlFor = check.id; label.className = 'interface-script-name';
-                const defaultName = node.id.startsWith('sequence_') ? I18N('SCRIPT_SEQUENCE_NAME') : manualFolderLabel(node.id);
                 label.textContent = node.children ? manualFolderLabel(node.id) : I18N(`NAV_${section}`);
                 const status = document.createElement('span'); status.className = 'interface-script-status';
                 if (section) { status.dataset.interfaceStatus = section; status.textContent = scriptReports.has(section) ? ` (${scriptReports.get(section)})` : ''; }
                 label.append(status);
                 const actions = document.createElement('div'); actions.className = 'interface-script-actions';
                 const children = document.createElement('ul'); children.className = 'interface-script-list interface-tree-children';
+                let folderEditor = null;
                 if (node.children) {
                     children.hidden = !treeOpen.has(node.id);
                     actions.classList.add('interface-tree-tools');
-                    const toggle = treeIcon(children.hidden ? '▸' : '▾', I18N('SCRIPT_CONFIGURE'), () => { children.hidden = !children.hidden; toggle.textContent = children.hidden ? '▸' : '▾'; if (children.hidden) treeOpen.delete(node.id); else treeOpen.add(node.id); toggle.setAttribute('aria-expanded', String(!children.hidden)); });
+                    folderEditor = document.createElement('div'); folderEditor.className = 'interface-folder-edit'; folderEditor.hidden = children.hidden;
+                    const name = document.createElement('input'); name.type = 'text'; name.value = manualFolderLabel(node.id); name.setAttribute('aria-label', I18N('SCRIPT_RENAME_FOLDER'));
+                    name.addEventListener('change', () => { menuTree.renameFolder(node.id, i18n.language, name.value); label.firstChild.textContent = manualFolderLabel(node.id); });
+                    folderEditor.append(name, treeIcon('+', I18N('SCRIPT_ADD_FOLDER'), () => { const child = menuTree.addFolder(node.id); if (child) { treeOpen.add(node.id); treeOpen.add(child); showSection('scripts'); } }));
+                    const toggle = treeIcon('✎', I18N('SCRIPT_CONFIGURE'), () => { children.hidden = !children.hidden; folderEditor.hidden = children.hidden; if (children.hidden) treeOpen.delete(node.id); else treeOpen.add(node.id); toggle.setAttribute('aria-expanded', String(!children.hidden)); });
                     toggle.setAttribute('aria-expanded', String(!children.hidden));
                     actions.append(toggle);
-                    actions.append(treeIcon('+', I18N('SCRIPT_ADD_FOLDER'), () => { const child = menuTree.addFolder(node.id); if (child) { treeOpen.add(node.id); treeOpen.add(child); showSection('scripts'); } }));
-                    actions.append(treeIcon('✎', I18N('SCRIPT_RENAME_FOLDER'), () => { const name = prompt(I18N('SCRIPT_RENAME_FOLDER'), menuTree.folderName(node.id, i18n.language, defaultName)); if (name !== null) { menuTree.renameFolder(node.id, i18n.language, name); showSection('scripts'); } }));
                     actions.append(treeIcon('×', I18N('SCRIPT_REMOVE_FOLDER'), () => { menuTree.removeFolder(node.id); showSection('scripts'); }));
                 } else if (section && Object.keys(automation.definitions[section].fields).length) {
-                    const config = document.createElement('button'); config.type = 'button'; config.className = 'interface-menu-action menu__help-support-button';
-                    config.textContent = I18N('SCRIPT_CONFIGURE'); config.addEventListener('click', () => showScriptSettings(section)); actions.append(config);
+                    actions.append(treeIcon('⚙', I18N('SCRIPT_CONFIGURE'), () => showScriptSettings(section)));
                 }
                 if (section) {
-                    const run = document.createElement('button'); run.type = 'button'; run.className = 'interface-menu-action menu__help-support-button';
-                    run.dataset.interfaceRun = section; run.textContent = I18N('SCRIPT_RUN_CONFIGURED');
-                    run.addEventListener('click', () => {
+                    const run = treeIcon('▶', I18N('SCRIPT_RUN_CONFIGURED'), () => {
                         if (automation.running?.section === section) { if (sequenceRunning) pilot.stop(); automation.stop(); refreshRunButtons(); }
                         else void runScript(section, run, status);
                     });
+                    run.classList.add('interface-run'); run.dataset.interfaceRun = section;
                     actions.append(run);
                 } else if (node.children) {
                     const run = treeIcon('▶', I18N('SCRIPT_RUN_CONFIGURED'), () => void runSequence(menuTree.sequence(node.id, { atomicCollect: true, ignoreRootEnabled: true })));
+                    run.classList.add('interface-run');
                     actions.append(run);
                 }
                 item.append(check, label, actions);
+                if (folderEditor) item.append(folderEditor);
                 if (node.children) { for (const child of node.children) render(child, children); item.append(children); }
                 parent.append(item);
             };
