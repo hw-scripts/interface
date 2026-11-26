@@ -647,7 +647,7 @@
     "SETTINGS_BATTLES":  "Battles",
     "SETTINGS_ADDITIONAL":  "Additional",
     "MENU_GENERAL_SETTINGS":  "General settings",
-    "MENU_SCRIPTS":  "Scripts",
+    "MENU_SCRIPTS":  "Scripts (manual start)",
     "MENU_SEQUENCE":  "Create a sequence",
     "MENU_FARM_HEROES":  "Farm heroes",
     "MENU_AUTOPILOT":  "Autopilot",
@@ -722,5 +722,17 @@
     "SCRIPT_COLLECT_ORDER_VIEW": "Execution order",
     "SCRIPT_COLLECT_GROUP_VIEW": "Groups",
     "SCRIPT_COLLECT_GROUP_HINT": "Numbers show execution order. Use Execution order to reorder across groups.",
-    "MESSAGE_LOG_SAVE":  "Save log"
+    "MESSAGE_LOG_SAVE":  "Save log",
+    "NAV_COMMUNITY_GIFTS":  "Community gifts",
+    "SCRIPT_OPTION_INCLUDECOMMUNITYGIFTS":  "Collect Community gifts",
+    "SCRIPT_COMMUNITY_GIFTS_COLLECTED":  "Community gifts collected",
+    "MENU_STARTUP": "Run at startup",
+    "SCRIPT_ADD_REFERENCE": "Add script",
+    "SCRIPT_REMOVE_REFERENCE": "Remove",
+    "SCRIPT_ADD_FOLDER": "Add folder",
+    "SCRIPT_RENAME_FOLDER": "Rename",
+    "SCRIPT_REMOVE_FOLDER": "Delete folder",
+    "SCRIPT_SEQUENCE_NAME": "Group",
+    "NAV_SEND_GUILD_GIFTS": "Send guild gifts",
+    "SCRIPT_GUILD_GIFTS_SENT": "Guild gifts sent"
 }

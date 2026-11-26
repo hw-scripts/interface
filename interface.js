@@ -1028,6 +1028,7 @@
     phase('Waiting for userGetInfo');
     const userStorage = new UserStorage(await userStorageReady); // Await the real login and user info retrieval to ensure userStorage is ready for use
     const automation = new InterfaceAutomation(theGame, gameApi, userStorage);
+    automation.communityRequest = (url, options) => bridge.get(url, options);
     valkyriesBlessing = userStorage.get('valkyriesBlessing') === 'true';
 
     phase('UserStorage ready');
@@ -1445,10 +1446,11 @@
     ];
     const menuSections = [
         { id: 'settings', title: 'MENU_GENERAL_SETTINGS' },
+        { id: 'startup', title: 'MENU_STARTUP' },
         { id: 'scripts', title: 'MENU_SCRIPTS' },
-        { id: 'navigation', title: 'MENU_NAVIGATION' },
-        { id: 'heroes', title: 'MENU_FARM_HEROES' },
-        { id: 'autopilot', title: 'MENU_AUTOPILOT' }
+        { id: 'autopilot', title: 'MENU_AUTOPILOT' },
+        { id: 'navigation', title: 'MENU_NAVIGATION', hidden: true },
+        { id: 'heroes', title: 'MENU_FARM_HEROES', hidden: true }
     ];
     const menuTemplate = `
 <style>
@@ -1498,9 +1500,14 @@
     #interfacePanel .interface-collect-child.interface-dragging { opacity: .45; }
     #interfacePanel .interface-collect-child { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 8px; align-items: center; padding: 5px; border-left: 2px solid #d9bd7b; }
     #interfacePanel .interface-script-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+    #interfacePanel .interface-tree-tools { display: flex; flex-wrap: nowrap; gap: 3px; align-items: center; }
+    #interfacePanel .interface-tree-icon { flex: 0 0 28px; width: 28px; height: 28px; border: 1px solid #d9bd7b; border-radius: 5px; background: #fffad6; color: #704018; font: inherit; line-height: 1; cursor: pointer; padding: 0; }
     #interfacePanel .interface-script-actions .interface-menu-action { flex: 0 1 auto; width: auto; padding: 4px 6px; min-height: 32px; font-size: 13px; text-align: center; }
     #interfacePanel .interface-script-name { min-width: 0; overflow-wrap: anywhere; }
     #interfacePanel .interface-script-list li.interface-sequence-item { grid-template-columns: auto minmax(0, 1fr) auto; }
+    #interfacePanel .interface-script-list li[data-reference-id] { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    #interfacePanel [data-reference-id] .interface-script-name { flex: 1 1 120px; }
+    #interfacePanel [data-reference-id] input[type=number] { width: 65px; }
     #interfacePanel [data-sequence-script] { position: relative; z-index: 1; pointer-events: auto; cursor: pointer; margin: 0 4px 0 0; }
     #interfacePanel .interface-script-link { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
     #interfacePanel .interface-script-link:hover { text-decoration: underline; }
@@ -1527,7 +1534,7 @@
             <button type="button" class="interface-menu-close" data-interface-close aria-label="{{ I18N('MENU_CLOSE') }}">&times;</button>
         </div>
         <nav class="interface-menu-actions">
-            ${menuSections.map(section => `<button type="button" class="interface-menu-action menu__help-support-button" data-interface-dialog="${section.id}">{{ I18N('${section.title}') }}</button>`).join('')}
+            ${menuSections.filter(section => !section.hidden).map(section => `<button type="button" class="interface-menu-action menu__help-support-button" data-interface-dialog="${section.id}">{{ I18N('${section.title}') }}</button>`).join('')}
         </nav>
         <section id="interfacePanel" hidden aria-labelledby="interfacePanelTitle">
             <form id="interfacePanelForm">
@@ -1661,7 +1668,7 @@
         location.reload();
     });
     class CompactExecutionLog {
-        constructor(storage, limit = 32768, recordLimit = 2048, retention = 48 * 60 * 60 * 1000) {
+        constructor(storage, limit = 131072, recordLimit = 32768, retention = 48 * 60 * 60 * 1000) {
             Object.assign(this, { storage, limit, recordLimit, retention });
             this.pending = new Map();
             try {
@@ -1709,7 +1716,7 @@
             this.trim();
             let row = this.entries.find(item => item[0] === section);
             if (!row) { this.start(section, section); row = this.entries.find(item => item[0] === section); }
-            const now = Date.now(), value = String(text).slice(0, 512), eventKey = String(key).slice(0, 128);
+            const now = Date.now(), raw = String(text), value = raw.length > 24000 ? `${raw.slice(0, 24000)}\n[truncated]` : raw, eventKey = String(key).slice(0, 512);
             let event = row[3].find(item => item[0] === eventKey);
             const prior = id !== undefined ? this.pending.get(id) : null;
             const isNew = !event;
@@ -1734,6 +1741,20 @@
             this.trim();
             return this.entries.map(([, time, name, events]) => `${name} (${new Date(time).toLocaleString()})\n  ${events.map(([, buckets, eventTime, text]) => { const count = buckets.reduce((sum, bucket) => sum + bucket[1], 0); return `${new Date(eventTime).toLocaleString()} ${text}${count > 1 ? ` ×${count}` : ''}`; }).join('\n  ')}`).join('\n\n');
         }
+        static diagnostic(value, limit = 10000) {
+            const seen = new WeakSet();
+            try {
+                const json = JSON.stringify(value, (key, item) => {
+                    if (item && typeof item === 'object') {
+                        if (seen.has(item)) return '[circular]';
+                        seen.add(item);
+                    }
+                    return item;
+                }, 2);
+                if (json === undefined) return 'null';
+                return json.length > limit ? `${json.slice(0, limit)}\n[truncated]` : json;
+            } catch { return '[unserializable]'; }
+        }
     }
     const interfaceSidebar = document.getElementById('interfaceSidebar');
     const panel = document.getElementById('interfacePanel');
@@ -1747,7 +1768,9 @@
         const blob = new Blob(['\uFEFF', executionLog.text()], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = url; link.download = `interface-log-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
+        const nickname = String(memoryStorage.memoryStorage.user?.info?.name || memoryStorage.memoryStorage.user?.info?.id || 'account')
+            .replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').trim() || 'account';
+        link.href = url; link.download = `${nickname}-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
         link.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
     });
@@ -1755,6 +1778,7 @@
     const messageLog = new MessageLog(logElement, userStorage.get('messageTTL') ?? 0);
     const scriptText = value => i18n.translations[value] || value;
     const scriptReports = new Map();
+    const logProgress = new Map();
     let savePanel;
     let cancelPanel;
     let sequenceRunning = false;
@@ -1831,8 +1855,21 @@
         const entry = { ...options, id: options.id ?? Symbol() };
         const line = `${I18N(`NAV_${section}`)}: ${text}`;
         currentLog.write(line, entry);
-        messageLog.write(line, entry);
-        executionLog.write(section, key, text, entry);
+        const isError = /FAILED|ERROR/.test(key);
+        const final = ['SCRIPT_DONE', 'SCRIPT_STOPPED', 'SCRIPT_NOTHING_TO_COLLECT', 'SCRIPT_DAILY_BONUS_ALREADY_COLLECTED', 'SCRIPT_DAILY_BONUS_COLLECTED'].includes(key);
+        if (isError || final) {
+            const result = key === 'SCRIPT_DONE' ? logProgress.get(section) || text : text;
+            const diagnostic = options.error ? [options.error.rpcMethod && `RPC: ${options.error.rpcMethod}`,
+                options.error.rpcErrorName && `RPC error: ${options.error.rpcErrorName}`,
+                options.error.httpStatus && `HTTP: ${options.error.httpStatus}`,
+                options.error.rpcRequest && `Request: ${CompactExecutionLog.diagnostic(options.error.rpcRequest)}`,
+                Object.prototype.hasOwnProperty.call(options.error, 'rpcResponse') && `Response: ${CompactExecutionLog.diagnostic(options.error.rpcResponse)}`,
+                options.error.stack].filter(Boolean).join('\n') : '';
+            const record = diagnostic ? `${result}\n${diagnostic}` : result;
+            messageLog.write(`${I18N(`NAV_${section}`)}: ${record}`, entry);
+            const errorKey = isError ? `${key}:${detail ?? ''}:${options.error?.rpcRequest ? CompactExecutionLog.diagnostic(options.error.rpcRequest, 300) : ''}` : key;
+            executionLog.write(section, errorKey, record, entry);
+        } else if (key !== 'SCRIPT_RUNNING' && !options.pending) logProgress.set(section, text);
     };
     const settingInput = (label, type, value, min = 0) => {
         const wrapper = document.createElement('label');
@@ -1845,9 +1882,9 @@
         panelBody.append(wrapper);
         return input;
     };
-    const showScriptSettings = section => {
+    const showScriptSettings = (section, reference = null, kind = null) => {
         openPanel(`${I18N(`NAV_${section}`)} — ${I18N('SCRIPT_CONFIGURE')}`, true);
-        const settings = automation.settings(section);
+        const settings = reference ? { ...automation.settings(section), ...reference.settings } : automation.settings(section);
         const inputs = {};
         for (const [name, initial] of Object.entries(automation.definitions[section].fields))
             inputs[name] = settingInput(I18N(section === 'BOSS' && name === 'battles'
@@ -1861,18 +1898,20 @@
         savePanel = () => {
             if (section === 'HERO_UPGRADE' && Object.values(inputs).some(input =>
                 !Number.isSafeInteger(Number(input.value)) || Number(input.value) < 0)) return;
-            automation.save(section, Object.fromEntries(Object.entries(inputs).map(([name, input]) =>
-                [name, input.type === 'number' ? Number(input.value) : input.type === 'checkbox' ? input.checked : input.value])));
-            showSection('scripts');
+            const values = Object.fromEntries(Object.entries(inputs).map(([name, input]) =>
+                [name, input.type === 'number' ? Number(input.value) : input.type === 'checkbox' ? input.checked : input.value]));
+            if (reference) references.update(kind, reference.id, values); else automation.save(section, values);
+            showSection(kind || 'scripts');
         };
-        cancelPanel = () => showSection('scripts');
+        cancelPanel = () => showSection(kind || 'scripts');
     };
-    const runScript = async (section, button, status, inSequence = false) => {
+    const runScript = async (section, button, status, inSequence = false, overrideSettings = null) => {
         if (automation.running || sequenceRunning && !inSequence) {
             if (status) status.textContent = I18N('SCRIPT_ALREADY_RUNNING');
             return false;
         }
         currentLog.clear();
+        logProgress.delete(section);
         executionLog.start(section, I18N(`NAV_${section}`));
         const executedSettings = pilot.fingerprint(section);
         let stopped = false;
@@ -1882,7 +1921,7 @@
         };
         report('SCRIPT_RUNNING');
         try {
-            const execution = automation.run(section, report);
+            const execution = automation.run(section, report, overrideSettings);
             refreshRunButtons();
             await execution;
             const completed = !stopped && automation.lastResult?.completed !== false;
@@ -1890,11 +1929,29 @@
             return completed;
         } catch (error) {
             console.error('Automation failed:', section, error);
-            report('SCRIPT_FAILED', scriptText(error.message));
+            report('SCRIPT_FAILED', scriptText(error.message), { error });
             return false;
         } finally { refreshRunButtons(); }
     };
     const menuTree = automation.menuTree = new InterfaceMenuTree(automation, userStorage, menuSections, gameNavigationSections);
+    const references = new InterfaceScriptReferences(automation, userStorage);
+    if (userStorage.get('scriptReferences:autopilot:v1') === null) {
+        let oldOptions; try { oldOptions = JSON.parse(userStorage.get('autopilotSettings') || '{}'); } catch { oldOptions = {}; }
+        let oldProgress; try { oldProgress = JSON.parse(userStorage.get('autopilotProgress') || '{}'); } catch { oldProgress = {}; }
+        oldProgress.completed ??= {};
+        oldOptions.intervals ??= {};
+        for (const section of menuTree.sequence('scripts', { atomicCollect: true })) {
+            const entry = references.add('autopilot', section);
+            if (!entry) continue;
+            if (oldOptions.intervals[section] != null) oldOptions.intervals[entry.id] = oldOptions.intervals[section];
+            const checkpoint = oldProgress.completed[section];
+            if (section !== 'COLLECT_ALL' && checkpoint?.settings === JSON.stringify(entry.settings))
+                oldProgress.completed[entry.id] = { ...checkpoint, settings: JSON.stringify({ section, settings: entry.settings }) };
+        }
+        userStorage.set('autopilotSettings', JSON.stringify(oldOptions));
+        userStorage.set('autopilotProgress', JSON.stringify(oldProgress));
+        if (userStorage.get('scriptReferences:autopilot:v1') === null) references.save('autopilot', []);
+    }
     const applyMenuOrder = () => {
         for (const node of menuTree.nodes) {
             const button = mainMenu.querySelector(`[data-interface-dialog="${node.id}"]`);
@@ -1917,8 +1974,8 @@
         });
     }
     pilot = new InterfaceAutopilot(automation, userStorage, {
-        execute: section => runScript(section, null, null, true),
-        sections: () => menuTree.sequence('scripts', { atomicCollect: true }),
+        execute: entry => typeof entry === 'object' ? runScript(entry.section, null, null, true, entry.settings) : runScript(entry, null, null, true),
+        sections: () => references.entries('autopilot'),
         ready: () => Boolean(gameApi.headers && theGame.lib),
         userInfo: () => memoryStorage.memoryStorage.user.info,
         changed: () => {
@@ -1926,7 +1983,14 @@
             refreshRunButtons();
         }
     });
-    const runSequence = sections => pilot.run(sections);
+    const runSequence = sections => pilot.run(sections, 'manual_explicit');
+    if (!pilot.state.pending && references.entries('startup').length) {
+        const startWhenReady = () => {
+            if (!gameApi.headers || !theGame.lib || pilot.running || automation.running) { setTimeout(startWhenReady, 500); return; }
+            void pilot.run(references.entries('startup'), 'startup');
+        };
+        setTimeout(startWhenReady, 0);
+    }
     const inputDocuments = new Set();
     const onActivity = event => { if (event.isTrusted) pilot.activity(); };
     const watchActivity = doc => {
@@ -1949,6 +2013,16 @@
                 doc.removeEventListener(name, onActivity, true);
     }, { once: true });
     const treeOpen = new Set();
+    let autopilotDraft = null;
+    const treeIcon = (symbol, label, action) => {
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'interface-tree-icon';
+        button.textContent = symbol; button.title = label; button.setAttribute('aria-label', label); button.addEventListener('click', action); return button;
+    };
+    const manualFolderLabel = folderId => {
+        const groups = { collection_main: 'MAIN', collection_events: 'EVENTS', collection_resources: 'RESOURCES', collection_exchange: 'EXCHANGE', collection_other: 'OTHER' };
+        const fallback = folderId === 'collect_all' ? I18N('NAV_COLLECT_ALL') : folderId.startsWith('sequence_') ? I18N('SCRIPT_SEQUENCE_NAME') : I18N(`SCRIPT_COLLECT_GROUP_${groups[folderId] ?? 'OTHER'}`);
+        return menuTree.folderName(folderId, i18n.language, fallback);
+    };
     const showSection = id => {
         const section = menuSections.find(item => item.id === id);
         if (!section) return;
@@ -1957,8 +2031,6 @@
             const blessing = settingInput(I18N('VALKYRIES_BLESSING'), 'checkbox', valkyriesBlessing);
             const ttl = settingInput(I18N('MESSAGE_TTL'), 'number', messageLog.ttl);
             const limit = settingInput(I18N('MESSAGE_LIMIT'), 'number', currentLog.limit, 1);
-            const autoEnabled = settingInput(I18N('AUTOPILOT_ENABLED'), 'checkbox', pilot.options.enabled);
-            const idle = settingInput(I18N('AUTOPILOT_IDLE_MINUTES'), 'number', pilot.options.idleMinutes, 5);
             const battles = document.createElement('h3');
             battles.textContent = I18N('SETTINGS_BATTLES');
             panelBody.append(battles);
@@ -1972,22 +2044,89 @@
                 currentLog.setLimit(limit.value);
                 userStorage.set('messageLimit', String(currentLog.limit));
                 userStorage.set('battle:dungeonAvoidDeaths', String(dungeonAvoidDeaths.checked));
-                pilot.configure({ ...pilot.options, enabled: autoEnabled.checked, idleMinutes: Number(idle.value) });
                 returnToMenu();
             };
-        } else if (id === 'autopilot') {
-            const description = document.createElement('p');
-            description.textContent = I18N('AUTOPILOT_DESCRIPTION');
-            panelBody.append(description);
-            const enabled = settingInput(I18N('AUTOPILOT_ENABLED'), 'checkbox', pilot.options.enabled);
-            const idle = settingInput(I18N('AUTOPILOT_IDLE_MINUTES'), 'number', pilot.options.idleMinutes, 5);
+        } else if (id === 'autopilot' || id === 'startup') {
+            let enabled, idle;
+            if (id === 'autopilot') {
+                autopilotDraft ??= { ...pilot.options, intervals: { ...pilot.options.intervals } };
+                const description = document.createElement('p');
+                description.textContent = I18N('AUTOPILOT_DESCRIPTION'); panelBody.append(description);
+                enabled = settingInput(I18N('AUTOPILOT_ENABLED'), 'checkbox', autopilotDraft.enabled);
+                idle = settingInput(I18N('AUTOPILOT_IDLE_MINUTES'), 'number', autopilotDraft.idleMinutes, 5);
+                enabled.addEventListener('change', () => { autopilotDraft.enabled = enabled.checked; });
+                idle.addEventListener('input', () => { autopilotDraft.idleMinutes = Number(idle.value); });
+                cancelPanel = () => { autopilotDraft = null; returnToMenu(); };
+            }
             const inputs = {};
-            for (const section of Object.keys(automation.definitions).filter(section => !automation.definitions[section].endsSequence && !automation.collectionSources.some(([, child]) => child === section)))
-                inputs[section] = settingInput(`${I18N(`NAV_${section}`)}: ${I18N('AUTOPILOT_INTERVAL')}`, 'number',
-                    pilot.interval(section) / 60000, 1);
+            const select = document.createElement('select');
+            const existing = new Set(references.list(id).filter(entry => !entry.folder).map(entry => entry.section));
+            const addOptions = (nodes, depth = 0) => { for (const node of nodes) {
+                if (node.children) {
+                    const option = document.createElement('option'); option.value = `folder:${node.id}`; option.textContent = `${'　'.repeat(depth)}▸ ${manualFolderLabel(node.id)}`; select.append(option);
+                    addOptions(node.children, depth + 1);
+                } else {
+                    const section = menuTree.scripts.get(node.id); if (!section || existing.has(section)) continue;
+                    const option = document.createElement('option'); option.value = section; option.textContent = `${'　'.repeat(depth)}${I18N(`NAV_${section}`)}`; select.append(option);
+                }
+            } };
+            addOptions(menuTree.find('scripts')?.children ?? []);
+            const add = document.createElement('button'); add.type = 'button'; add.textContent = I18N('SCRIPT_ADD_REFERENCE');
+            add.addEventListener('click', () => { if (select.value) {
+                if (select.value.startsWith('folder:')) for (const folder of references.addTree(id, select.value.slice(7)) || []) treeOpen.add(folder);
+                else references.add(id, select.value);
+                showSection(id);
+            } });
+            const addFolder = document.createElement('button'); addFolder.type = 'button'; addFolder.textContent = I18N('SCRIPT_ADD_FOLDER');
+            addFolder.addEventListener('click', () => { const name = prompt(I18N('SCRIPT_ADD_FOLDER'), I18N('SCRIPT_SEQUENCE_NAME')); if (name?.trim()) { references.addFolder(id, name.trim()); showSection(id); } });
+            if (select.options.length) panelBody.append(select, add);
+            panelBody.append(addFolder);
+            const list = document.createElement('ul'); list.className = 'interface-script-list';
+            let dragged = null;
+            const referenceItems = references.ordered(id);
+            for (const entry of referenceItems) {
+                let ancestor = entry.parent, hidden = false; const checked = new Set();
+                while (ancestor && !checked.has(ancestor)) { checked.add(ancestor); if (!treeOpen.has(ancestor)) hidden = true; ancestor = referenceItems.find(value => value.id === ancestor)?.parent; }
+                if (hidden) continue;
+                const item = document.createElement('li'); item.className = 'interface-sequence-item'; item.draggable = true; item.dataset.referenceId = entry.id;
+                let depth = 0, parent = entry.parent; const ancestors = new Set();
+                while (parent && !ancestors.has(parent)) { ancestors.add(parent); depth++; parent = referenceItems.find(value => value.id === parent)?.parent; }
+                item.style.marginLeft = `${Math.min(depth, 8) * 18}px`;
+                item.addEventListener('dragstart', event => { if (event.target.closest('button, input, select')) { event.preventDefault(); return; } dragged = entry.id; event.dataTransfer.setData('text/plain', entry.id); });
+                item.addEventListener('dragover', event => { if (dragged) event.preventDefault(); });
+                item.addEventListener('drop', event => { if (dragged) { event.preventDefault(); references.move(id, dragged, entry.id); showSection(id); dragged = null; } });
+                const folderName = entry.names?.[i18n.language] || (entry.sourceId ? manualFolderLabel(entry.sourceId) : '') || entry.name || I18N(entry.nameKey || 'SCRIPT_SEQUENCE_NAME');
+                const name = document.createElement('span'); name.className = 'interface-script-name'; name.textContent = entry.folder ? folderName : I18N(`NAV_${entry.section}`); item.append(name);
+                if (id === 'autopilot' && !entry.folder) {
+                    const input = document.createElement('input'); input.type = 'number'; input.min = '1'; input.step = '1'; input.value = autopilotDraft.intervals[entry.id] ?? 5; input.title = I18N('AUTOPILOT_INTERVAL');
+                    input.addEventListener('input', () => { autopilotDraft.intervals[entry.id] = Math.max(1, Number(input.value) || 5); });
+                    inputs[entry.id] = input; item.append(input);
+                }
+                if (entry.folder) {
+                    item.append(treeIcon(treeOpen.has(entry.id) ? '▾' : '▸', I18N('SCRIPT_CONFIGURE'), () => { if (treeOpen.has(entry.id)) treeOpen.delete(entry.id); else treeOpen.add(entry.id); showSection(id); }));
+                    item.append(treeIcon('+', I18N('SCRIPT_ADD_FOLDER'), () => { const child = references.addFolder(id, I18N('SCRIPT_SEQUENCE_NAME'), entry.id); treeOpen.add(entry.id); treeOpen.add(child); showSection(id); }));
+                    item.append(treeIcon('✎', I18N('SCRIPT_RENAME_FOLDER'), () => { const value = prompt(I18N('SCRIPT_RENAME_FOLDER'), folderName); if (value !== null) { references.renameFolder(id, entry.id, i18n.language, value); showSection(id); } }));
+                    item.append(treeIcon('×', I18N('SCRIPT_REMOVE_FOLDER'), () => { references.remove(id, entry.id); showSection(id); }));
+                } else {
+                    const config = document.createElement('button'); config.type = 'button'; config.textContent = I18N('SCRIPT_CONFIGURE');
+                    config.addEventListener('click', () => showScriptSettings(entry.section, entry, id));
+                    if (Object.keys(automation.definitions[entry.section].fields).length) item.append(config);
+                    item.append(treeIcon('×', I18N('SCRIPT_REMOVE_REFERENCE'), () => { references.remove(id, entry.id); showSection(id); }));
+                }
+                list.append(item);
+            }
+            list.addEventListener('dragover', event => { if (dragged && event.target === list) event.preventDefault(); });
+            list.addEventListener('drop', event => { if (dragged && event.target === list) {
+                event.preventDefault(); const items = references.list(id), item = items.find(value => value.id === dragged);
+                if (item) { delete item.parent; references.save(id, items); showSection(id); } dragged = null;
+            } });
+            panelBody.append(list);
             savePanel = () => {
-                pilot.configure({ enabled: enabled.checked, idleMinutes: Number(idle.value),
-                    intervals: Object.fromEntries(Object.entries(inputs).map(([section, input]) => [section, Number(input.value)])) });
+                if (id === 'autopilot') {
+                    pilot.configure({ enabled: enabled.checked, idleMinutes: Number(idle.value),
+                        intervals: { ...autopilotDraft.intervals, ...Object.fromEntries(Object.entries(inputs).map(([key, input]) => [key, Number(input.value)])) } });
+                    autopilotDraft = null;
+                }
                 returnToMenu();
             };
         } else if (id === 'scripts') {
@@ -1998,7 +2137,8 @@
             cancelPanel = () => { if (sequenceRunning) pilot.stop(); returnToMenu(); };
             const list = document.createElement('ul');
             list.className = 'interface-script-list';
-            const groups = { collection_main: 'MAIN', collection_events: 'EVENTS', collection_resources: 'RESOURCES', collection_exchange: 'EXCHANGE', collection_other: 'OTHER' };
+            const addFolder = document.createElement('button'); addFolder.type = 'button'; addFolder.textContent = I18N('SCRIPT_ADD_FOLDER');
+            addFolder.addEventListener('click', () => { const folder = menuTree.addFolder(); treeOpen.add(folder); showSection('scripts'); }); panelBody.append(addFolder);
             let dragging = null;
             const render = (node, parent) => {
                 const item = document.createElement('li');
@@ -2028,7 +2168,8 @@
                 check.addEventListener('change', () => menuTree.setEnabled(node.id, check.checked));
                 check.id = `interfaceEnabled_${node.id}`;
                 const label = document.createElement('label'); label.htmlFor = check.id; label.className = 'interface-script-name';
-                label.textContent = I18N(section ? `NAV_${section}` : `SCRIPT_COLLECT_GROUP_${groups[node.id] ?? 'OTHER'}`);
+                const defaultName = node.id.startsWith('sequence_') ? I18N('SCRIPT_SEQUENCE_NAME') : manualFolderLabel(node.id);
+                label.textContent = node.children ? manualFolderLabel(node.id) : I18N(`NAV_${section}`);
                 const status = document.createElement('span'); status.className = 'interface-script-status';
                 if (section) { status.dataset.interfaceStatus = section; status.textContent = scriptReports.has(section) ? ` (${scriptReports.get(section)})` : ''; }
                 label.append(status);
@@ -2036,11 +2177,13 @@
                 const children = document.createElement('ul'); children.className = 'interface-script-list interface-tree-children';
                 if (node.children) {
                     children.hidden = !treeOpen.has(node.id);
-                    const toggle = document.createElement('button'); toggle.type = 'button';
-                    toggle.className = 'interface-menu-action menu__help-support-button'; toggle.textContent = I18N('SCRIPT_CONFIGURE');
+                    actions.classList.add('interface-tree-tools');
+                    const toggle = treeIcon(children.hidden ? '▸' : '▾', I18N('SCRIPT_CONFIGURE'), () => { children.hidden = !children.hidden; toggle.textContent = children.hidden ? '▸' : '▾'; if (children.hidden) treeOpen.delete(node.id); else treeOpen.add(node.id); toggle.setAttribute('aria-expanded', String(!children.hidden)); });
                     toggle.setAttribute('aria-expanded', String(!children.hidden));
-                    toggle.addEventListener('click', () => { children.hidden = !children.hidden; if (children.hidden) treeOpen.delete(node.id); else treeOpen.add(node.id); toggle.setAttribute('aria-expanded', String(!children.hidden)); });
                     actions.append(toggle);
+                    actions.append(treeIcon('+', I18N('SCRIPT_ADD_FOLDER'), () => { const child = menuTree.addFolder(node.id); if (child) { treeOpen.add(node.id); treeOpen.add(child); showSection('scripts'); } }));
+                    actions.append(treeIcon('✎', I18N('SCRIPT_RENAME_FOLDER'), () => { const name = prompt(I18N('SCRIPT_RENAME_FOLDER'), menuTree.folderName(node.id, i18n.language, defaultName)); if (name !== null) { menuTree.renameFolder(node.id, i18n.language, name); showSection('scripts'); } }));
+                    actions.append(treeIcon('×', I18N('SCRIPT_REMOVE_FOLDER'), () => { menuTree.removeFolder(node.id); showSection('scripts'); }));
                 } else if (section && Object.keys(automation.definitions[section].fields).length) {
                     const config = document.createElement('button'); config.type = 'button'; config.className = 'interface-menu-action menu__help-support-button';
                     config.textContent = I18N('SCRIPT_CONFIGURE'); config.addEventListener('click', () => showScriptSettings(section)); actions.append(config);
@@ -2054,9 +2197,7 @@
                     });
                     actions.append(run);
                 } else if (node.children) {
-                    const run = document.createElement('button'); run.type = 'button'; run.className = 'interface-menu-action menu__help-support-button';
-                    run.textContent = I18N('SCRIPT_RUN_CONFIGURED');
-                    run.addEventListener('click', () => void runSequence(menuTree.sequence(node.id, { atomicCollect: true, ignoreRootEnabled: true })));
+                    const run = treeIcon('▶', I18N('SCRIPT_RUN_CONFIGURED'), () => void runSequence(menuTree.sequence(node.id, { atomicCollect: true, ignoreRootEnabled: true })));
                     actions.append(run);
                 }
                 item.append(check, label, actions);

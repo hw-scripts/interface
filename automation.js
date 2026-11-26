@@ -148,27 +148,34 @@ class InterfaceGameApi {
             .map(shift => ((value >>> shift) & 255).toString(16).padStart(2, '0')).join('')).join('');
     }
 
-    call(name, args = {}) {
-        const execute = () => this.send(name, args);
+    call(name, args = {}, context = {}) {
+        const execute = () => this.send(name, args, context);
         const result = this.pending.then(execute);
         this.pending = result.catch(() => {});
         return result;
     }
 
-    async send(name, args) {
+    async send(name, args, context = {}) {
         if (!this.headers || !this.url) throw new Error('SCRIPT_API_NOT_READY');
         const body = JSON.stringify({ calls: [{ name, args, ident: 'body',
-            context: { actionTs: Math.floor(performance.now()) } }] });
+            context: { actionTs: Math.floor(performance.now()), ...context } }] });
         const headers = { ...this.headers, 'x-request-id': String(++this.requestId) };
         let signature = `${headers['x-request-id']}:${headers['x-auth-token']}:${headers['x-auth-session-id']}:${body}:LIBRARY-VERSION=1UNIQUE-SESSION-ID=${headers['x-env-unique-session-id']}`;
         if (headers['x-env-unique-session-uuid']) signature += `UNIQUE-SESSION-UUID=${headers['x-env-unique-session-uuid']}`;
         headers['x-auth-signature'] = InterfaceGameApi.md5(signature);
         return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
+            const fail = (failure, response = null) => {
+                failure.rpcMethod = name;
+                failure.rpcRequest = JSON.parse(body);
+                failure.rpcResponse = response;
+                failure.httpStatus = xhr.status;
+                reject(failure);
+            };
             this.original.open.call(xhr, 'POST', this.url, true);
             xhr.responseType = 'json';
             xhr.timeout = 30000;
-            xhr.onerror = xhr.ontimeout = () => reject(new Error('SCRIPT_NETWORK_ERROR'));
+            xhr.onerror = xhr.ontimeout = () => fail(new Error('SCRIPT_NETWORK_ERROR'));
             xhr.onload = () => {
                 const response = xhr.response;
                 const result = response?.results?.find(item => item.ident === 'body');
@@ -176,7 +183,7 @@ class InterfaceGameApi {
                 if (xhr.status !== 200 || error || !result?.result || !('response' in result.result)) {
                     const failure = new Error(error?.description || error?.name || 'SCRIPT_API_ERROR');
                     if (error?.name) failure.rpcErrorName = error.name;
-                    reject(failure);
+                    fail(failure, response);
                 } else resolve(result.result.response);
             };
             for (const [key, value] of Object.entries(headers)) this.original.setRequestHeader.call(xhr, key, value);
@@ -188,8 +195,9 @@ class InterfaceGameApi {
 class InterfaceAutomation {
     constructor(game, api, storage, battleCalculator = new InterfaceBattleCalculator(game)) {
         this.game = game;
+        this.mutationRevision = 0;
         this.battleCalculator = battleCalculator;
-        this.api = { call: async (name, args) => {
+        this.api = { call: async (name, args, context) => {
             if (this.running?.stopped) throw new Error('SCRIPT_STOPPED');
             // Expedition and inventory changes synchronize with the canvas.
             // Other mutations lock before sending: a lost response can still
@@ -197,13 +205,17 @@ class InterfaceAutomation {
             const readOnly = new Set(['userGetInfo', 'expeditionGet', 'dailyBonusGetInfo',
                 'mailGetAll', 'questGetAll', 'battlePass_getInfo', 'battlePass_getSpecial',
                 'bossGetAll', 'heroGetAll', 'pet_getAll', 'teamGetAll', 'teamGetFavor', 'inventoryGet',
-                'powerTournament_getState', 'saleShowcase_rewardInfo', 'newYearGiftGet', 'adventure_getInfo', 'adventureSolo_getInfo', 'clanRaid_getInfo', 'titanArenaGetStatus', 'towerGetInfo', 'dungeonGetInfo', 'clanGetInfo', 'titanGetAll', 'specialOffer_getAll', 'offerGetAll', 'shopGetAll', 'subscriptionGetInfo', 'zeppelinGiftGet', 'adventure_raidGetInfo']);
+                'powerTournament_getState', 'saleShowcase_rewardInfo', 'newYearGiftGet', 'adventure_getInfo', 'adventureSolo_getInfo', 'clanRaid_getInfo', 'titanArenaGetStatus', 'towerGetInfo', 'dungeonGetInfo', 'clanGetInfo', 'clanGetAvailableDailyGifts', 'titanGetAll', 'specialOffer_getAll', 'offerGetAll', 'shopGetAll', 'subscriptionGetInfo', 'zeppelinGiftGet', 'adventure_raidGetInfo']);
             const synchronized = new Set(['expeditionFarm', 'expeditionSendHeroes', 'artifactChestOpen']);
             if (!readOnly.has(name) && !synchronized.has(name)) {
                 this.requiresReload = true;
                 this.onRequiresReload?.();
             }
-            const response = await api.call(name, args);
+            let response;
+            try { response = await api.call(name, args, context); }
+            catch (error) { if (error && typeof error === 'object' && !error.rpcMethod) error.rpcMethod = name; throw error; }
+            if (!readOnly.has(name) && response != null && response !== false && response?.success !== false &&
+                (!Array.isArray(response) || response.length > 0)) this.mutationRevision++;
             if (name === 'userGetInfo') this.userInfo = response;
             if (name === 'expeditionGet') {
                 for (const expedition of Object.values(response ?? {})) {
@@ -220,7 +232,7 @@ class InterfaceAutomation {
             ['includeHeroArtifacts', 'HERO_ARTIFACT_CHESTS', false], ['includeTitanArtifacts', 'TITAN_ARTIFACT_CHESTS', false],
             ['includeTitanSummons', 'TITAN_SUMMONS', false], ['includePetEggs', 'PET_EGGS', false], ['includeAscension', 'ASCENSION_FREE', false],
             ['includeHeroSouls', 'HERO_SOUL_EXCHANGE', false], ['includeTitanSouls', 'TITAN_SOUL_EXCHANGE', false],
-            ['includeOfferGifts', 'OFFER_GIFTS', true], ['includeStageOffers', 'FREE_OFFER_STAGES', true],
+            ['includeCommunityGifts', 'COMMUNITY_GIFTS', false], ['includeOfferGifts', 'OFFER_GIFTS', true], ['includeStageOffers', 'FREE_OFFER_STAGES', true],
             ['includeBattlePass', 'BATTLE_PASS_REWARDS', true], ['includeSubscription', 'SUBSCRIPTION_GIFT', true],
             ['includeZeppelin', 'ZEPPELIN_GIFT', true], ['includeGrandCoins', 'GRAND_ARENA_COINS', true],
             ['includeSoulAtrium', 'SOUL_ATRIUM_REFILL', true], ['includeInventoryBoxes', 'INVENTORY_BOXES', false],
@@ -230,13 +242,6 @@ class InterfaceAutomation {
             DAILY_BONUS: {
                 fields: {},
                 run: (settings, report, token) => this.dailyBonus(token)
-            },
-            COLLECT_ALL: {
-                fields: { includeRewards: true, includeMail: true, includeHeroArtifacts: false,
-                    includeTitanArtifacts: false, includeTitanSummons: false, includePetEggs: false, includeAscension: false,
-                    includeHeroSouls: false, includeTitanSouls: false, includeOfferGifts: false, includeStageOffers: false, includeBattlePass: false,
-                    includeSubscription: false, includeZeppelin: false, includeGrandCoins: false, includeSoulAtrium: false, includeInventoryBoxes: false, includeNewYearGifts: false, includePowerTournament: true },
-                run: (settings, report, token) => this.collectAll(settings, report, token)
             },
             QUEST_REWARDS: {
                 fields: { collectDailyBonus: true, collectGuildPrestige: true, collectDailyOffers: true, collectQuests: true },
@@ -264,6 +269,8 @@ class InterfaceAutomation {
             BUY_GOLD_SHOPS: { fields: {}, run: (s, r, t) => this.buyGoldShops(r, t) },
             HERO_SOUL_EXCHANGE: { fields: {}, run: (s, r, t) => this.exchangeSoulStones('hero', r, t) },
             TITAN_SOUL_EXCHANGE: { fields: {}, run: (s, r, t) => this.exchangeSoulStones('titan', r, t) },
+            COMMUNITY_GIFTS: { fields: {}, run: (s, r, t) => this.communityGifts(r, t) },
+            SEND_GUILD_GIFTS: { fields: {}, run: (s, r, t) => this.sendGuildGifts(r, t) },
             OFFER_GIFTS: { fields: {}, run: (s, r, t, c) => this.offerGifts(r, t, c) },
             SUBSCRIPTION_GIFT: { fields: {}, run: (s, r, t, c) => this.dailyFreeGift('subscription', r, t, c) },
             ZEPPELIN_GIFT: { fields: {}, run: (s, r, t, c) => this.dailyFreeGift('zeppelin', r, t, c) },
@@ -305,6 +312,7 @@ class InterfaceAutomation {
                 fields: {},
                 endsSequence: true,
                 run: (settings, report, token) => {
+                    if (!this.mutationRevision) return 'SCRIPT_NOTHING_TO_COLLECT';
                     if (!token.stopped) window.location.reload();
                 }
             }
@@ -350,7 +358,7 @@ class InterfaceAutomation {
         this.storage.set(`script:${section}`, JSON.stringify({ ...this.settings(section), ...settings }));
     }
 
-    async run(section, report) {
+    async run(section, report, overrideSettings = null) {
         if (this.running) throw new Error('SCRIPT_ALREADY_RUNNING');
         const token = { stopped: false, section };
         this.running = token;
@@ -358,7 +366,7 @@ class InterfaceAutomation {
         this.lastResult = null;
         this.rewardFailures = [];
         try {
-            let outcome = await this.definitions[section].run(this.settings(section), report, token);
+            let outcome = await this.definitions[section].run(overrideSettings ? { ...this.settings(section), ...overrideSettings } : this.settings(section), report, token);
             if (this.rewardFailures.length && !token.stopped) outcome = 'SCRIPT_REWARD_ERRORS';
             this.lastResult = { completed: !token.stopped && [undefined, 'SCRIPT_DONE',
                 'SCRIPT_DAILY_BONUS_ALREADY_COLLECTED', 'SCRIPT_DAILY_BONUS_COLLECTED', 'SCRIPT_NOTHING_TO_COLLECT'].includes(outcome),
@@ -474,7 +482,7 @@ class InterfaceAutomation {
             if (/(^|[:\\])(NotAvailable|Already)$/.test(String(error?.rpcErrorName ?? '')) || /^Undefined call [A-Za-z0-9_]+\(\)$/.test(message)) return 'SCRIPT_NOTHING_TO_COLLECT';
             this.rewardFailures?.push({ section, error });
             console.warn('Reward source failed:', section, error);
-            report('SCRIPT_REWARD_SOURCE_FAILED', `${section}: ${message || 'SCRIPT_API_ERROR'}`);
+            report('SCRIPT_REWARD_SOURCE_FAILED', `${section}: ${message || 'SCRIPT_API_ERROR'}`, { error });
             return 'SCRIPT_NOTHING_TO_COLLECT';
         }
     }
@@ -501,7 +509,7 @@ class InterfaceAutomation {
                         ...(result?.farmedPrestigeLevelsPaid ?? []).map(id => `paid:${id}`)];
                     for (const level of levels) if (!claimedPrestige.has(level)) { claimedPrestige.add(level); advanced = true; }
                 } catch (error) {
-                    if (error?.message !== 'Level reward not available' && !/(^|[:\\])NotAvailable$/.test(String(error?.rpcErrorName ?? ''))) { this.rewardFailures?.push({ section: 'CLAN_PRESTIGE', error }); console.warn('Reward source failed:', 'CLAN_PRESTIGE', error); report('SCRIPT_REWARD_SOURCE_FAILED', `CLAN_PRESTIGE: ${error?.message ?? 'SCRIPT_API_ERROR'}`); }
+                    if (error?.message !== 'Level reward not available' && !/(^|[:\\])NotAvailable$/.test(String(error?.rpcErrorName ?? ''))) { this.rewardFailures?.push({ section: 'CLAN_PRESTIGE', error }); console.warn('Reward source failed:', 'CLAN_PRESTIGE', error); report('SCRIPT_REWARD_SOURCE_FAILED', `CLAN_PRESTIGE: ${error?.message ?? 'SCRIPT_API_ERROR'}`, { error }); }
                 }
             }
             if (token.stopped) return;
@@ -514,7 +522,7 @@ class InterfaceAutomation {
                         await this.api.call('specialOffer_farmReward', { offerId: offer.id });
                         advanced = true;
                     } catch (error) {
-                        if (error?.message !== 'Reward has been farmed' && !/(^|[:\\])(NotAvailable|Already)$/.test(String(error?.rpcErrorName ?? ''))) { this.rewardFailures?.push({ section: 'DAILY_OFFERS', error }); console.warn('Reward source failed:', 'DAILY_OFFERS', error); report('SCRIPT_REWARD_SOURCE_FAILED', `DAILY_OFFERS: ${error?.message ?? 'SCRIPT_API_ERROR'}`); }
+                        if (error?.message !== 'Reward has been farmed' && !/(^|[:\\])(NotAvailable|Already)$/.test(String(error?.rpcErrorName ?? ''))) { this.rewardFailures?.push({ section: 'DAILY_OFFERS', error }); console.warn('Reward source failed:', 'DAILY_OFFERS', error); report('SCRIPT_REWARD_SOURCE_FAILED', `DAILY_OFFERS: ${error?.message ?? 'SCRIPT_API_ERROR'}`, { error }); }
                     }
                     claimedOffers.add(String(offer.id));
                 }
@@ -551,30 +559,6 @@ class InterfaceAutomation {
         const byName = new Map(this.collectionSources.map(source => [source[1], source]));
         const order = [...new Set([...(Array.isArray(saved) ? saved : []), ...byName.keys()])];
         return order.filter(name => byName.has(name)).map(name => byName.get(name));
-    }
-
-    async collectAll(settings, report, token) {
-        const context = { letters: new Set() };
-        const sources = this.menuTree
-            ? this.menuTree.sequence('collect_all', { ignoreRootEnabled: true }).map(section => {
-                const original = this.collectionSources.find(([, child]) => child === section);
-                return [original?.[0] ?? null, section, original?.[2] ?? false];
-            }) : this.orderedCollectionSources();
-        const selected = option => this.menuTree ? true : settings[option];
-        let collected = false, firstPass = true, advanced;
-        do {
-            advanced = false;
-            for (const [option, section, repeat] of sources) {
-                if (token.stopped) return;
-                if (!selected(option) || !firstPass && !repeat) continue;
-                const result = await this.availableRewardSource(section,
-                    () => this.definitions[section].run(this.settings(section), report, token, context), report);
-                if (token.stopped) return;
-                if (result !== 'SCRIPT_NOTHING_TO_COLLECT') { advanced = true; collected = true; }
-            }
-            firstPass = false;
-        } while (advanced && !token.stopped && sources.some(([option,,repeat]) => repeat && selected(option)));
-        if (!collected && !token.stopped) return 'SCRIPT_NOTHING_TO_COLLECT';
     }
 
     async powerTournamentRewards(report, token, context = {}) {
@@ -842,6 +826,61 @@ class InterfaceAutomation {
             }
         }
         if (!count) return 'SCRIPT_NOTHING_TO_COLLECT';
+    }
+
+    async sendGuildGifts(report, token) {
+        const available = await this.api.call('clanGetAvailableDailyGifts');
+        if (token.stopped) return;
+        if (!Array.isArray(available?.giftUids)) throw new Error('SCRIPT_API_ERROR');
+        if (!available.giftUids.length) return 'SCRIPT_NOTHING_TO_COLLECT';
+        const sent = await this.api.call('clanSendDailyGifts');
+        if (!Array.isArray(sent)) throw new Error('SCRIPT_API_ERROR');
+        if (!sent.length) return 'SCRIPT_NOTHING_TO_COLLECT';
+        report('SCRIPT_GUILD_GIFTS_SENT', sent.length);
+    }
+
+    async communityGifts(report, token) {
+        if (!this.communityRequest) throw new Error('SCRIPT_API_NOT_READY');
+        const result = await this.communityRequest('https://community.hero-wars.com/api/posts/published?page=1');
+        if (token.stopped) return;
+        const posts = result?.data;
+        if (!Array.isArray(posts)) throw new Error('SCRIPT_API_ERROR');
+        let processed;
+        try { processed = JSON.parse(this.storage.get('communityBonusGiftIds') || '[]'); } catch { processed = []; }
+        const done = new Set(Array.isArray(processed) ? processed.map(String) : []);
+        const candidates = [];
+        for (const post of posts) for (const block of post.attributes?.body ?? []) {
+            const doc = new DOMParser().parseFromString(String(block?.data?.text ?? ''), 'text/html');
+            for (const link of doc.querySelectorAll('a[href]')) {
+                try {
+                    const url = new URL(link.href);
+                    if (url.protocol === 'https:' && (url.searchParams.has('gift_id') ||
+                        (url.hostname === 'herowars.me' && /bonus|gift|energy|claim|free box/i.test(doc.body.textContent || '')))) candidates.push(url);
+                } catch { /* Ignore malformed links. */ }
+            }
+        }
+        let claimed = 0, attempted = 0;
+        const seen = new Set();
+        for (const url of candidates) {
+            if (token.stopped || attempted >= 10) break;
+            let id = url.searchParams.get('gift_id');
+            if (!id && url.hostname === 'herowars.me') {
+                try {
+                    const resolved = await this.communityRequest(url.href, { includeFinalUrl: true });
+                    id = new URL(resolved.finalUrl).searchParams.get('gift_id');
+                } catch (error) { console.warn('Unable to resolve Community bonus link', error); continue; }
+            }
+            if (token.stopped) break;
+            if (!id || done.has(id) || seen.has(id)) continue;
+            seen.add(id);
+            attempted++;
+            await this.api.call('registration', { user: { referrer: {} }, giftId: id },
+                { cookie: window?.NXAppInfo?.session_id || null });
+            done.add(id);
+            this.storage.set('communityBonusGiftIds', JSON.stringify([...done].slice(-200)));
+            report('SCRIPT_COMMUNITY_GIFTS_COLLECTED', ++claimed);
+        }
+        if (!claimed && !token.stopped) return 'SCRIPT_NOTHING_TO_COLLECT';
     }
 
     async offerGifts(report, token, context = {}) {
@@ -1267,10 +1306,12 @@ class InterfaceMenuTree {
         Object.assign(this, { automation, storage });
         this.menu = new Set(menuSections.map(section => section.id));
         this.scripts = new Map(Object.keys(automation.definitions).map(section => [section.toLowerCase(), section]));
+        try { this.removedFolders = new Set(JSON.parse(storage.get('removedMenuFolders:v1') || '[]')); } catch { this.removedFolders = new Set(); }
         this.folders = new Set(['scripts', 'navigation', 'collect_all', 'collection_main', 'collection_events', 'collection_resources', 'collection_exchange', 'collection_other']);
+        for (const id of this.removedFolders) this.folders.delete(id);
         const categories = {
             collection_main: ['QUEST_REWARDS', 'MAIL', 'GRAND_ARENA_COINS', 'SOUL_ATRIUM_REFILL'],
-            collection_events: ['OFFER_GIFTS', 'FREE_OFFER_STAGES', 'BATTLE_PASS_REWARDS', 'SUBSCRIPTION_GIFT', 'ZEPPELIN_GIFT', 'NEW_YEAR_GIFTS', 'POWER_TOURNAMENT_REWARDS'],
+            collection_events: ['COMMUNITY_GIFTS', 'OFFER_GIFTS', 'FREE_OFFER_STAGES', 'BATTLE_PASS_REWARDS', 'SUBSCRIPTION_GIFT', 'ZEPPELIN_GIFT', 'NEW_YEAR_GIFTS', 'POWER_TOURNAMENT_REWARDS'],
             collection_resources: ['HERO_ARTIFACT_CHESTS', 'TITAN_ARTIFACT_CHESTS', 'TITAN_SUMMONS', 'PET_EGGS', 'ASCENSION_FREE', 'INVENTORY_BOXES'],
             collection_exchange: ['HERO_SOUL_EXCHANGE', 'TITAN_SOUL_EXCHANGE'],
             collection_other: []
@@ -1280,8 +1321,8 @@ class InterfaceMenuTree {
             .filter(section => automation.definitions[section]);
         const read = key => { try { return JSON.parse(storage.get(key)); } catch { return null; } };
         const oldScriptOrder = read('scriptOrder:scripts');
-        const ordered = [...new Set([...(Array.isArray(oldScriptOrder) ? oldScriptOrder : []), ...available])]
-            .filter(section => available.includes(section) && !sourceIds.has(section));
+        const ordered = [...new Set([...(Array.isArray(oldScriptOrder) ? oldScriptOrder : []), ...available, 'COLLECT_ALL'])]
+            .filter(section => (available.includes(section) || section === 'COLLECT_ALL') && !sourceIds.has(section));
         const sourceOrder = automation.orderedCollectionSources().map(([, section]) => section);
         const oldNavigationOrder = read('scriptOrder:navigation');
         const navAvailable = navigationSections.filter(section => !automation.definitions[section]);
@@ -1298,8 +1339,13 @@ class InterfaceMenuTree {
             ? { id, children: ordered.map(section => section === 'COLLECT_ALL' ? collection : { id: section.toLowerCase() }) }
             : id === 'navigation' ? { id, children: navOrder.map(section => ({ id: `navigation_${section.toLowerCase()}` })) } : { id });
         const saved = read('menuTree:v1');
+        if (storage.get('collectionFolderMigration:v1') !== 'done') {
+            const legacy = read('script:COLLECT_ALL') || {};
+            if (typeof legacy.enabled === 'boolean') storage.set('menuFolder:collect_all', String(legacy.enabled));
+            storage.set('collectionFolderMigration:v1', 'done');
+        }
         if (!Array.isArray(saved)) {
-            const options = automation.settings('COLLECT_ALL');
+            const options = read('script:COLLECT_ALL') || { includeRewards: true, includeMail: true, includePowerTournament: true };
             for (const [option, section] of automation.collectionSources)
                 automation.save(section, { enabled: options[option] === true });
         }
@@ -1314,18 +1360,23 @@ class InterfaceMenuTree {
         };
         register(this.defaults);
         const read = nodes => (Array.isArray(nodes) ? nodes : []).flatMap(node => {
-            if (!node || !known.has(node.id) || seen.has(node.id)) return [];
+            if (!node || (!known.has(node.id) && !/^sequence_[a-z0-9-]+$/.test(node.id)) || seen.has(node.id)) return [];
+            if (this.removedFolders.has(node.id)) return [];
             seen.add(node.id);
             const item = { id: node.id };
+            if (/^sequence_[a-z0-9-]+$/.test(node.id)) this.folders.add(node.id);
             if (this.folders.has(node.id)) item.children = read(node.children);
             return [item];
         });
         const result = read(Array.isArray(saved) ? saved : this.defaults);
         const find = (nodes, id) => { for (const node of nodes) { if (node.id === id) return node; const found = find(node.children ?? [], id); if (found) return found; } };
         const addMissing = nodes => { for (const node of nodes) {
-            if (!seen.has(node.id)) {
+            if (!seen.has(node.id) && !this.removedFolders.has(node.id)) {
                 const parent = defaults.get(node.id), destination = parent && find(result, parent);
-                (destination?.children ?? result).push(this.folders.has(node.id) ? { id: node.id, children: [] } : { id: node.id });
+                const target = destination?.children ?? (parent && this.removedFolders.has(parent) ? find(result, 'scripts')?.children : null) ?? result;
+                const item = this.folders.has(node.id) ? { id: node.id, children: [] } : { id: node.id };
+                if (node.id === 'startup' && !parent) target.splice(Math.max(0, target.findIndex(value => value.id === 'settings') + 1), 0, item);
+                else target.push(item);
                 seen.add(node.id);
             }
             addMissing(node.children ?? []);
@@ -1335,6 +1386,40 @@ class InterfaceMenuTree {
     }
 
     save() { this.storage.set('menuTree:v1', JSON.stringify(this.nodes)); }
+    addFolder(parent = 'scripts') {
+        const destination = this.find(parent);
+        if (!destination || !this.folders.has(parent)) return null;
+        const id = `sequence_${crypto.randomUUID()}`;
+        const number = Math.max(0, ...Object.values(this.folderNumbers()).map(Number)) + 1;
+        const numbers = this.folderNumbers(); numbers[id] = number;
+        this.storage.set('sequenceNumbers:v1', JSON.stringify(numbers));
+        this.folders.add(id); destination.children.push({ id, children: [] }); this.save();
+        return id;
+    }
+    folderNumbers() { try { return JSON.parse(this.storage.get('sequenceNumbers:v1')) || {}; } catch { return {}; } }
+    folderName(id, language, defaultName) {
+        let names; try { names = JSON.parse(this.storage.get('sequenceNames:v1')) || {}; } catch { names = {}; }
+        return names[id]?.[language] || (/^sequence_/.test(id) ? `${defaultName} ${this.folderNumbers()[id] || 1}` : defaultName);
+    }
+    renameFolder(id, language, name) {
+        let names; try { names = JSON.parse(this.storage.get('sequenceNames:v1')) || {}; } catch { names = {}; }
+        (names[id] ??= {})[language] = name.trim(); this.storage.set('sequenceNames:v1', JSON.stringify(names));
+    }
+    removeFolder(id) {
+        if (!this.folders.has(id) || id === 'scripts' || id === 'navigation') return false;
+        const findParent = nodes => { for (const node of nodes) { const index = node.children?.findIndex(child => child.id === id) ?? -1; if (index >= 0) return [node.children, index]; const result = findParent(node.children ?? []); if (result) return result; } };
+        const found = findParent(this.nodes); if (!found) return false;
+        const [siblings, index] = found, [folder] = siblings.splice(index, 1);
+        const root = this.find('scripts').children;
+        const unpack = children => { for (const child of children) {
+            if (child.children && this.folders.has(child.id)) { const nested = child.children; child.children = []; root.push(child); unpack(nested); }
+            else root.push(child);
+        } };
+        unpack(folder.children); this.folders.delete(id);
+        if (!/^sequence_/.test(id)) this.removedFolders.add(id);
+        this.storage.set('removedMenuFolders:v1', JSON.stringify([...this.removedFolders]));
+        this.save(); return true;
+    }
     find(id, nodes = this.nodes) {
         for (const node of nodes) { if (node.id === id) return node; const found = this.find(id, node.children ?? []); if (found) return found; }
     }
@@ -1369,12 +1454,139 @@ class InterfaceMenuTree {
         const visit = (node, isRoot = false) => {
             if ((!isRoot || !ignoreRootEnabled) && !this.enabled(node.id)) return;
             const section = this.scripts.get(node.id);
-            if (section && (!isRoot || node.id !== 'collect_all')) {
-                if (node.id !== 'collect_all' || atomicCollect) { result.push(section); return; }
-            }
+            if (section) { result.push(section); return; }
             for (const child of node.children ?? []) visit(child);
         };
         if (root) visit(root, true);
         return result;
+    }
+}
+
+// References retain their own settings and identity, independent of the source script.
+class InterfaceScriptReferences {
+    constructor(automation, storage) {
+        this.automation = automation; this.storage = storage;
+        for (const kind of ['startup', 'autopilot']) {
+            let raw; try { raw = JSON.parse(storage.get(`scriptReferences:${kind}:v1`) || '[]'); } catch { raw = []; }
+            if (Array.isArray(raw) && raw.some(item => item?.section === 'COLLECT_ALL')) {
+                storage.set(`scriptReferences:${kind}:beforeCollectionMigration:v1`, JSON.stringify(raw));
+                let options; try { options = JSON.parse(storage.get('autopilotSettings') || '{}'); } catch { options = {}; }
+                options.intervals ??= {};
+                const explicit = new Set(raw.filter(item => item?.section && item.section !== 'COLLECT_ALL').map(item => item.section));
+                const migrated = [];
+                for (const entry of raw) {
+                    if (entry?.section !== 'COLLECT_ALL') { migrated.push(entry); continue; }
+                    migrated.push({ id: entry.id, folder: true, sourceId: 'collect_all', nameKey: 'NAV_COLLECT_ALL', ...(entry.parent ? { parent: entry.parent } : {}) });
+                    const collection = Array.isArray(entry.settings?._collection) ? entry.settings._collection.filter(item => entry.settings[item.option] === true)
+                        : (automation.menuTree?.sequence('collect_all', { ignoreRootEnabled: true }) || []).map(section => ({ section, settings: automation.settings(section) }));
+                    for (const item of collection) {
+                        if (!automation.definitions[item.section] || explicit.has(item.section)) continue;
+                        explicit.add(item.section);
+                        const { enabled, ...settings } = item.settings || automation.settings(item.section);
+                        const id = crypto.randomUUID();
+                        migrated.push({ id, section: item.section, settings, parent: entry.id });
+                        if (kind === 'autopilot' && options.intervals[entry.id] != null) options.intervals[id] = options.intervals[entry.id];
+                    }
+                }
+                storage.set(`scriptReferences:${kind}:v1`, JSON.stringify(migrated));
+                if (kind === 'autopilot') storage.set('autopilotSettings', JSON.stringify(options));
+            }
+            const items = this.list(kind), seen = new Set();
+            const unique = items.filter(item => item.folder || (!seen.has(item.section) && seen.add(item.section)));
+            if (unique.length !== items.length) {
+                if (storage.get(`scriptReferences:${kind}:duplicates:v1`) === null)
+                    storage.set(`scriptReferences:${kind}:duplicates:v1`, JSON.stringify(items));
+                this.save(kind, unique);
+            }
+        }
+        let progress; try { progress = JSON.parse(storage.get('autopilotProgress') || '{}'); } catch { progress = {}; }
+        if (Array.isArray(progress.pending?.sections) && progress.pending.sections.some(item => item === 'COLLECT_ALL' || item?.section === 'COLLECT_ALL')) {
+            storage.set('autopilotProgress:beforeCollectionMigration:v1', JSON.stringify(progress));
+            const kind = progress.pending.mode === 'startup' ? 'startup' : 'autopilot';
+            const entries = this.entries(kind);
+            progress.pending.sections = progress.pending.sections.flatMap(item => {
+                if (item !== 'COLLECT_ALL' && item?.section !== 'COLLECT_ALL') return [item];
+                if (typeof item === 'object') {
+                    const descendants = new Set([item.id]); let changed;
+                    const all = this.list(kind);
+                    do { changed = false; for (const value of all) if (descendants.has(value.parent) && !descendants.has(value.id)) { descendants.add(value.id); changed = true; } } while (changed);
+                    return entries.filter(value => descendants.has(value.id));
+                }
+                return this.automation.menuTree?.sequence('collect_all', { ignoreRootEnabled: true }) || [];
+            });
+            storage.set('autopilotProgress', JSON.stringify(progress));
+        }
+    }
+    list(kind) {
+        try {
+            const saved = JSON.parse(this.storage.get(`scriptReferences:${kind}:v1`) || '[]');
+            return Array.isArray(saved) ? saved.filter(item => item && typeof item.id === 'string' && (item.folder === true || this.automation.definitions[item.section] && item.settings && typeof item.settings === 'object')) : [];
+        } catch { return []; }
+    }
+    save(kind, items) { this.storage.set(`scriptReferences:${kind}:v1`, JSON.stringify(items)); }
+    ordered(kind) {
+        const items = this.list(kind), result = [], seen = new Set();
+        const visit = parent => { for (const item of items.filter(value => (value.parent || null) === parent)) {
+            if (seen.has(item.id)) continue; seen.add(item.id); result.push(item); if (item.folder) visit(item.id);
+        } };
+        visit(null); for (const item of items) if (!seen.has(item.id)) result.push(item);
+        return result;
+    }
+    entries(kind) { return this.ordered(kind).filter(item => !item.folder); }
+    addFolder(kind, name, parent = null) { const items = this.list(kind), id = crypto.randomUUID(); items.push({ id, folder: true, name, ...(parent ? { parent } : {}) }); this.save(kind, items); return id; }
+    renameFolder(kind, id, language, name) { const items = this.list(kind), folder = items.find(item => item.id === id && item.folder); if (folder) { (folder.names ??= {})[language] = name.trim(); this.save(kind, items); } }
+    add(kind, section) {
+        const items = this.list(kind);
+        if (!this.automation.definitions[section] || items.some(item => !item.folder && item.section === section)) return null;
+        const { enabled, ...settings } = this.automation.settings(section);
+        const item = { id: crypto.randomUUID(), section, settings }; items.push(item); this.save(kind, items); return item;
+    }
+    addTree(kind, folderId) {
+        const tree = this.automation.menuTree, root = tree?.find(folderId);
+        if (!root?.children || !tree.folders.has(folderId)) return null;
+        const items = this.list(kind), opened = [];
+        const place = (entry, parent) => {
+            const index = items.indexOf(entry); if (index >= 0) items.splice(index, 1);
+            if (parent) entry.parent = parent; else delete entry.parent;
+            items.push(entry);
+        };
+        const copy = (node, parent = null) => {
+            if (node.children) {
+                let folder = items.find(item => item.folder && item.sourceId === node.id);
+                if (!folder) folder = { id: crypto.randomUUID(), folder: true, sourceId: node.id };
+                place(folder, parent); opened.push(folder.id);
+                for (const child of node.children) copy(child, folder.id);
+                return folder;
+            }
+            const section = tree.scripts.get(node.id);
+            if (!section || !this.automation.definitions[section]) return null;
+            let entry = items.find(item => !item.folder && item.section === section);
+            if (!entry) { const { enabled, ...settings } = this.automation.settings(section); entry = { id: crypto.randomUUID(), section, settings }; }
+            place(entry, parent); return entry;
+        };
+        copy(root); this.save(kind, items); return opened;
+    }
+    update(kind, id, settings) {
+        const items = this.list(kind), item = items.find(value => value.id === id);
+        if (item) { item.settings = { ...item.settings, ...settings }; this.save(kind, items); }
+    }
+    remove(kind, id) {
+        const items = this.list(kind), descendants = new Set([id]);
+        let changed; do { changed = false; for (const item of items) if (item.parent && descendants.has(item.parent) && !descendants.has(item.id)) { descendants.add(item.id); changed = true; } } while (changed);
+        for (const item of items) if (descendants.has(item.id)) delete item.parent;
+        this.save(kind, items.filter(item => item.id !== id));
+    }
+    move(kind, id, target) {
+        const items = this.list(kind), from = items.findIndex(item => item.id === id), to = items.findIndex(item => item.id === target);
+        if (from < 0 || to < 0 || from === to) return;
+        const targetItem = items[to], item = items[from];
+        if (targetItem.folder) {
+            let parent = targetItem; while (parent) { if (parent.id === item.id) return; parent = items.find(value => value.id === parent.parent); }
+            item.parent = targetItem.id;
+        } else {
+            item.parent = targetItem.parent;
+            items.splice(from, 1); items.splice(items.indexOf(targetItem), 0, item);
+        }
+        this.save(kind, items);
     }
 }

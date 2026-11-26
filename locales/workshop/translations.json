@@ -3240,9 +3240,9 @@
         "ru": "Общие настройки"
     },
     "MENU_SCRIPTS": {
-        "en": "Scripts",
-        "uk": "Скрипти",
-        "ru": "Скрипты"
+        "en": "Scripts (manual start)",
+        "uk": "Скрипти (ручний старт)",
+        "ru": "Скрипты (ручной запуск)"
     },
     "MENU_SEQUENCE": {
         "en": "Create a sequence",
@@ -3566,5 +3566,29 @@
         "en": "Save log",
         "uk": "Зберегти лог",
         "ru": "Сохранить лог"
+    },
+    "NAV_COMMUNITY_GIFTS": {
+        "uk": "Подарунки Community",
+        "en": "Community gifts",
+        "ru": "Подарки Community"
+    },
+    "SCRIPT_OPTION_INCLUDECOMMUNITYGIFTS": {
+        "uk": "Збирати подарунки Community",
+        "en": "Collect Community gifts",
+        "ru": "Собирать подарки Community"
+    },
+    "MENU_STARTUP": {"en":"Run at startup", "uk":"Виконати при старті", "ru":"Выполнить при запуске"},
+    "SCRIPT_ADD_REFERENCE": {"en":"Add script", "uk":"Додати скрипт", "ru":"Добавить скрипт"},
+    "SCRIPT_REMOVE_REFERENCE": {"en":"Remove", "uk":"Видалити", "ru":"Удалить"},
+    "SCRIPT_ADD_FOLDER": {"en":"Add folder", "uk":"Додати папку", "ru":"Добавить папку"},
+    "SCRIPT_RENAME_FOLDER": {"en":"Rename", "uk":"Перейменувати", "ru":"Переименовать"},
+    "SCRIPT_REMOVE_FOLDER": {"en":"Delete folder", "uk":"Видалити папку", "ru":"Удалить папку"},
+    "SCRIPT_SEQUENCE_NAME": {"en":"Group", "uk":"Група", "ru":"Группа"},
+    "NAV_SEND_GUILD_GIFTS": {"en":"Send guild gifts", "uk":"Відправити подарунки", "ru":"Отправить подарки"},
+    "SCRIPT_GUILD_GIFTS_SENT": {"en":"Guild gifts sent", "uk":"Подарунків відправлено", "ru":"Подарков отправлено"},
+    "SCRIPT_COMMUNITY_GIFTS_COLLECTED": {
+        "uk": "Отримано подарунків Community",
+        "en": "Community gifts collected",
+        "ru": "Получено подарков Community"
     }
 }

@@ -9,17 +9,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         Promise.resolve()
             .then(() => {
                 const [url, options] = args;
-                return fetch(url, { ...options, method });
+                const { includeFinalUrl, ...fetchOptions } = options || {};
+                return fetch(url, { ...fetchOptions, method }).then(response => ({ response, includeFinalUrl }));
             })
-            .then(async response => {
+            .then(async ({ response, includeFinalUrl }) => {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const contentType = (response.headers.get('content-type') || '')
                     .split(';')[0].trim().toLowerCase();
                 const text = await response.text();
-                if (!text) return {};
-                return contentType === 'application/json' || contentType.endsWith('+json')
+                const data = !text ? {} : contentType === 'application/json' || contentType.endsWith('+json')
                     ? JSON.parse(text)
                     : text;
+                return includeFinalUrl ? { data, finalUrl: response.url } : data;
             })
             .then(data => sendResponse({ requestId, data, error: null }))
             .catch(error => sendResponse({ requestId, data: null, error: error.message }));

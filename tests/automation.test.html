@@ -32,6 +32,165 @@
         } };
         return { engine: new InterfaceAutomation(game, api, storage), calls, storage };
     };
+    await test('manual folders and independent startup and autopilot references persist', async () => {
+        const { engine, storage } = fixture();
+        const sections = [{id:'settings'}, {id:'startup'}, {id:'scripts'}, {id:'autopilot'}];
+        const tree = engine.menuTree = new InterfaceMenuTree(engine, storage, sections, []);
+        const allBefore = new Set(tree.scripts.values());
+        const folder = tree.addFolder();
+        tree.renameFolder(folder, 'uk', 'Моя папка');
+        assert(tree.move('tower', folder));
+        const restored = new InterfaceMenuTree(engine, storage, sections, []);
+        assert(restored.find(folder).children.some(item => item.id === 'tower'));
+        equal(restored.folderName(folder, 'uk', 'Послідовність'), 'Моя папка');
+        equal(restored.folderName(folder, 'en', 'Group'), 'Group 1');
+        const nested = restored.addFolder();
+        assert(restored.move('boss', nested) && restored.move(nested, folder));
+        assert(restored.removeFolder(folder));
+        assert(restored.find('scripts').children.some(item => item.id === 'tower'));
+        assert(restored.find('scripts').children.some(item => item.id === 'boss'));
+        assert(restored.find('scripts').children.some(item => item.id === nested));
+        equal([...restored.scripts.values()], [...allBefore]);
+        engine.menuTree = restored;
+        const refs = new InterfaceScriptReferences(engine, storage);
+        const startup = refs.add('startup', 'TOWER'), auto = refs.add('autopilot', 'TOWER');
+        refs.update('startup', startup.id, { battles: false });
+        assert(refs.entries('startup')[0].settings.battles === false);
+        assert(refs.entries('autopilot')[0].settings.battles === true && engine.settings('TOWER').battles === true);
+        refs.addFolder('startup', 'group');
+        const group = refs.list('startup').find(item => item.folder);
+        refs.move('startup', startup.id, group.id);
+        assert(refs.entries('startup')[0].parent === group.id);
+        refs.remove('startup', group.id);
+        assert(!refs.entries('startup')[0].parent && engine.definitions.TOWER);
+        refs.remove('startup', startup.id);
+        assert(!refs.entries('startup').length && refs.entries('autopilot').length === 1);
+        let actual;
+        engine.definitions.TOWER.run = async settings => { actual = settings.battles; };
+        await engine.run('TOWER', () => {}, { battles: false });
+        assert(actual === false && engine.settings('TOWER').battles === true);
+        assert(!engine.definitions.COLLECT_ALL);
+    });
+    await test('autopilot references run with independent checkpoints and startup ignores checkpoints', async () => {
+        const { engine, storage } = fixture();
+        const refs = new InterfaceScriptReferences(engine, storage);
+        const a = refs.add('autopilot', 'TOWER'), b = refs.add('autopilot', 'BOSS');
+        equal(refs.add('autopilot', 'TOWER'), null);
+        assert(refs.add('startup', 'TOWER'));
+        refs.update('autopilot', b.id, { battles: false });
+        const calls = [];
+        const pilot = new InterfaceAutopilot(engine, storage, { execute: async entry => { calls.push(entry.id); return true; }, sections: () => refs.entries('autopilot'), now: () => 100000, setTimer: () => 0, clearTimer: () => {} });
+        await pilot.run(refs.entries('autopilot'), 'auto');
+        equal(calls, [a.id, b.id]);
+        await pilot.run(refs.entries('autopilot'), 'auto');
+        equal(calls, [a.id, b.id]);
+        await pilot.run(refs.entries('autopilot'), 'startup');
+        equal(calls, [a.id, b.id, a.id, b.id]);
+        pilot.dispose();
+    });
+    await test('duplicate saved references keep first and archive existing settings', () => {
+        const { engine, storage } = fixture();
+        const original = [{ id: 'a', section: 'TOWER', settings: { battles: true } }, { id: 'b', section: 'TOWER', settings: { battles: false } }];
+        storage.set('scriptReferences:startup:v1', JSON.stringify(original));
+        const refs = new InterfaceScriptReferences(engine, storage);
+        equal(refs.entries('startup').map(item => item.id), ['a']);
+        equal(JSON.parse(storage.get('scriptReferences:startup:duplicates:v1')), original);
+        refs.remove('startup', 'a');
+        assert(refs.add('startup', 'TOWER'));
+    });
+    await test('copying a manual folder moves existing references into source order without changing settings', () => {
+        const { engine, storage } = fixture();
+        const tree = engine.menuTree = new InterfaceMenuTree(engine, storage, [{ id: 'scripts' }], []);
+        const folder = tree.addFolder(), nested = tree.addFolder(folder);
+        assert(tree.move('tower', folder) && tree.move('boss', nested) && tree.move('expeditions', folder));
+        assert(tree.move(nested, 'tower', 'after'));
+        const refs = new InterfaceScriptReferences(engine, storage);
+        const old = refs.add('startup', 'BOSS'); refs.update('startup', old.id, { raid: false });
+        refs.add('startup', 'DAILY_BONUS');
+        const opened = refs.addTree('startup', folder);
+        assert(opened.length === 2);
+        let entries = refs.entries('startup');
+        equal(entries.map(item => item.section), ['DAILY_BONUS', 'TOWER', 'BOSS', 'EXPEDITIONS']);
+        const boss = entries.find(item => item.section === 'BOSS');
+        assert(boss.id === old.id && boss.settings.raid === false && boss.parent === opened[1]);
+        assert(refs.list('startup').find(item => item.id === opened[1]).parent === opened[0]);
+        refs.addTree('startup', folder);
+        entries = refs.entries('startup');
+        equal(entries.map(item => item.section), ['DAILY_BONUS', 'TOWER', 'BOSS', 'EXPEDITIONS']);
+        assert(refs.list('startup').filter(item => item.folder && item.sourceId === folder).length === 1);
+        refs.addTree('autopilot', folder);
+        equal(refs.entries('autopilot').map(item => item.section), ['TOWER', 'BOSS', 'EXPEDITIONS']);
+        assert(refs.entries('autopilot').find(item => item.section === 'BOSS').settings.raid === true);
+        const restored = new InterfaceScriptReferences(engine, storage);
+        assert(restored.entries('startup').find(item => item.section === 'BOSS').settings.raid === false);
+    });
+    await test('legacy collection migrates to an ordinary removable folder and reference entries', async () => {
+        const { engine, storage } = fixture();
+        storage.set('script:COLLECT_ALL', JSON.stringify({ enabled: true, includeMail: true, includeRewards: true }));
+        const tree = engine.menuTree = new InterfaceMenuTree(engine, storage, [{ id: 'scripts' }], []);
+        assert(tree.find('collect_all') && !engine.definitions.COLLECT_ALL && tree.enabled('collect_all'));
+        const original = [{ id: 'collect-ref', section: 'COLLECT_ALL', settings: { includeMail: true, includeRewards: true,
+            _collection: [{ option: 'includeMail', section: 'MAIL', settings: { enabled: true } },
+                { option: 'includeRewards', section: 'QUEST_REWARDS', settings: { enabled: true, collectQuests: false } }] } },
+            { id: 'explicit', section: 'MAIL', settings: {} }];
+        storage.set('scriptReferences:autopilot:v1', JSON.stringify(original));
+        storage.set('autopilotSettings', JSON.stringify({ intervals: { 'collect-ref': 19 } }));
+        storage.set('autopilotProgress', JSON.stringify({ pending: { mode: 'auto', sections: [original[0]] } }));
+        const refs = new InterfaceScriptReferences(engine, storage);
+        equal(refs.entries('autopilot').map(item => item.section), ['QUEST_REWARDS', 'MAIL']);
+        assert(refs.entries('autopilot')[0].settings.collectQuests === false);
+        equal(JSON.parse(storage.get('scriptReferences:autopilot:beforeCollectionMigration:v1')), original);
+        equal(JSON.parse(storage.get('autopilotSettings')).intervals[refs.entries('autopilot')[0].id], 19);
+        equal(JSON.parse(storage.get('autopilotProgress')).pending.sections.map(item => item.section), ['QUEST_REWARDS']);
+        const nested = tree.addFolder('collect_all'); assert(nested && tree.find(nested));
+        tree.renameFolder('collect_all', 'uk', 'Збір');
+        equal(tree.folderName('collect_all', 'uk', 'Default'), 'Збір');
+        assert(tree.removeFolder('collect_all'));
+        assert(tree.find('scripts').children.some(item => item.id === 'mail'));
+        const restored = new InterfaceMenuTree(engine, storage, [{ id: 'scripts' }], []);
+        assert(!restored.find('collect_all') && restored.find('mail') && restored.find('quest_rewards'));
+        assert(!refs.add('autopilot', 'MAIL'));
+    });
+    await test('guild gifts send only when recipients are available and respect stop', async () => {
+        const f = fixture({ clanGetAvailableDailyGifts: { giftUids: ['1', '2'] }, clanSendDailyGifts: ['1', '2'] });
+        const reports = [];
+        await f.engine.run('SEND_GUILD_GIFTS', (key, value) => reports.push([key, value]));
+        equal(f.calls.map(call => call.name), ['clanGetAvailableDailyGifts', 'clanSendDailyGifts']);
+        assert(reports.some(([key, count]) => key === 'SCRIPT_GUILD_GIFTS_SENT' && count === 2));
+        const empty = fixture({ clanGetAvailableDailyGifts: { giftUids: [] } });
+        await empty.engine.run('SEND_GUILD_GIFTS', () => {});
+        equal(empty.calls.length, 1);
+        const stopped = fixture({ clanGetAvailableDailyGifts: () => { stopped.engine.stop(); return { giftUids: ['1'] }; } });
+        await stopped.engine.run('SEND_GUILD_GIFTS', () => {});
+        equal(stopped.calls.length, 1);
+        const invalid = fixture({ clanGetAvailableDailyGifts: {} });
+        let failed = false; try { await invalid.engine.run('SEND_GUILD_GIFTS', () => {}); } catch { failed = true; }
+        assert(failed && invalid.calls.length === 1);
+    });
+    await test('Community gifts resolve links, save per account and stop between claims', async () => {
+        const f = fixture({ registration: {} });
+        const links = '<a href="https://www.hero-wars.com/?gift_id=first">gift</a>' +
+            '<a href="https://herowars.me/bonus">bonus</a>' +
+            '<a href="https://www.hero-wars.com/?gift_id=first">gift</a>';
+        f.engine.communityRequest = async (url, options) => options
+            ? { finalUrl: 'https://www.hero-wars.com/?gift_id=second' }
+            : { data: [{ attributes: { body: [{ data: { text: links } }] } }] };
+        await f.engine.run('COMMUNITY_GIFTS', () => {});
+        equal(f.calls.filter(c => c.name === 'registration').map(c => c.args.giftId), ['first', 'second']);
+        equal(JSON.parse(f.storage.get('communityBonusGiftIds')), ['first', 'second']);
+        await f.engine.run('COMMUNITY_GIFTS', () => {});
+        equal(f.calls.length, 2);
+        const stopped = fixture({ registration: () => { stopped.engine.stop(); return {}; } });
+        stopped.engine.communityRequest = f.engine.communityRequest;
+        await stopped.engine.run('COMMUNITY_GIFTS', () => {});
+        equal(stopped.calls.length, 1);
+        equal(JSON.parse(stopped.storage.get('communityBonusGiftIds')), ['first']);
+        const failing = fixture({ registration: () => { throw new Error('network failed'); } });
+        failing.engine.communityRequest = f.engine.communityRequest;
+        let failed = false;
+        try { await failing.engine.run('COMMUNITY_GIFTS', () => {}); } catch { failed = true; }
+        assert(failed && !failing.storage.get('communityBonusGiftIds'));
+    });
     await test('canvas lock starts before mutations, survives failures and ignores reads', async () => {
         const { engine } = fixture({ mailFarm: () => { throw new Error('lost response'); } });
         let locked = false;
@@ -176,6 +335,7 @@
         const start = source.indexOf('    class CompactExecutionLog {');
         const end = source.indexOf("    const interfaceSidebar = document.getElementById('interfaceSidebar');", start);
         const CompactExecutionLog = new Function(source.slice(start, end) + ';return CompactExecutionLog;')();
+        assert(CompactExecutionLog.diagnostic({ value: 'x'.repeat(200) }, 40).includes('[truncated]'));
         const values = new Map(), storage = {get: key => values.get(key) ?? null, set: (key, value) => values.set(key, value)};
         const log = new CompactExecutionLog(storage, 1500, 500), id = Symbol();
         log.start('TOWER', 'Tower');
@@ -205,11 +365,14 @@
         const failing = new CompactExecutionLog({get: () => null, set: () => { throw new Error('quota'); }});
         failing.start('TOWER', 'Tower'); failing.write('TOWER', 'RUN', 'still running'); assert(failing.text().includes('still running'));
     });
-    await test('restart reloads the page without API calls and terminates a sequence', async () => {
+    await test('restart reloads only after a change and terminates a sequence', async () => {
         const source = await (await fetch('../automation.js')).text();
         let reloads = 0;
         const Engine = new Function('window', source + ';return InterfaceAutomation;')({ location: { reload: () => reloads++ } });
         const engine = new Engine({}, { call: () => { throw new Error('Unexpected API call'); } }, { get: () => null, set() {} });
+        await engine.run('RESTART', () => {});
+        equal(reloads, 0);
+        engine.mutationRevision++;
         await engine.run('RESTART', () => {});
         equal(reloads, 1);
         assert(engine.definitions.RESTART.endsSequence);
@@ -218,7 +381,7 @@
     });
     const pilotFixture = (names = ['A', 'B']) => {
         let clock = 1000000;
-        const { engine, storage, calls } = fixture();
+        const { engine, storage, calls } = fixture({ mutation: { success: true } });
         const executed = [];
         engine.definitions = Object.fromEntries(names.map(name => [name, { fields: {}, run: async () => { executed.push(name); } }]));
         for (const name of names) engine.save(name, { enabled: true });
@@ -268,6 +431,7 @@
     });
     await test('sequence checkpoints survive reload and skip restart before continuing remaining scripts', async () => {
         const f = pilotFixture(['A', 'RESTART', 'B']);
+        f.engine.definitions.A.run = async () => { f.executed.push('A'); await f.engine.api.call('mutation'); };
         f.engine.definitions.RESTART.endsSequence = true;
         f.engine.definitions.RESTART.run = async () => {
             const progress = JSON.parse(f.storage.get('autopilotProgress'));
@@ -276,6 +440,7 @@
         };
         await f.pilot.run(['A', 'RESTART', 'B']);
         equal(f.executed, ['A', 'RESTART']);
+        f.engine.mutationRevision = 0; // A real page reload creates a new engine.
         const resumed = new InterfaceAutopilot(f.engine, f.storage, f.dependencies);
         await resumed.tick();
         equal(f.executed, ['A', 'RESTART', 'B']);
@@ -284,6 +449,39 @@
         f.advance(300001);
         await resumed.run(['A', 'RESTART', 'B']);
         equal(f.executed, ['A', 'RESTART', 'B', 'A', 'RESTART']);
+    });
+    await test('reload in every tree requires a successful mutation since page load', async () => {
+        for (const mode of ['startup', 'auto', 'manual_explicit']) {
+            const check = pilotFixture(['A', 'RESTART']);
+            check.engine.definitions.RESTART.endsSequence = true;
+            await check.pilot.run(['A', 'RESTART'], mode);
+            equal(check.executed, ['A']);
+            check.engine.definitions.A.run = async () => { check.executed.push('changed'); await check.engine.api.call('mutation'); };
+            check.pilot.state.completed = {};
+            await check.pilot.run(['A', 'RESTART'], mode);
+            equal(check.executed, ['A', 'changed', 'RESTART']);
+        }
+        const f = pilotFixture(['A', 'RESTART', 'B']);
+        f.engine.definitions.RESTART.endsSequence = true;
+        f.engine.definitions.A.run = async () => { f.executed.push('A'); await f.engine.api.call('userGetInfo'); };
+        await f.pilot.run(['A', 'RESTART', 'B'], 'startup');
+        equal(f.executed, ['A', 'B']);
+        f.executed.length = 0;
+        f.engine.definitions.A.run = async () => { f.executed.push('A'); await f.engine.api.call('mutation'); };
+        await f.pilot.run(['A', 'RESTART', 'B'], 'startup');
+        equal(f.executed, ['A', 'RESTART']);
+        assert(f.pilot.state.pending?.sections[0] === 'B');
+        const g = pilotFixture(['A', 'RESTART']);
+        g.engine.definitions.RESTART.endsSequence = true;
+        await g.engine.api.call('mutation');
+        await g.pilot.run(['A', 'RESTART'], 'startup');
+        equal(g.executed, ['A', 'RESTART']);
+        const h = fixture({ expeditionFarm: { success: true }, mailFarm: [], questFarm: () => { throw new Error('failed'); } });
+        await h.engine.api.call('expeditionFarm');
+        equal(h.engine.mutationRevision, 1);
+        await h.engine.api.call('mailFarm');
+        try { await h.engine.api.call('questFarm'); } catch {}
+        equal(h.engine.mutationRevision, 1);
     });
     await test('fresh page starts a new idle period even when stored activity is old', async () => {
         const f=pilotFixture();f.pilot.configure({enabled:true,idleMinutes:5});f.pilot.save();
@@ -295,6 +493,7 @@
     });
     await test('autopilot resumes its own reload without idle wait but real activity cancels it', async () => {
         const f = pilotFixture(['A', 'RESTART', 'B']);
+        f.engine.definitions.A.run = async () => { f.executed.push('A'); await f.engine.api.call('mutation'); };
         f.pilot.configure({ enabled: true, idleMinutes: 5 });
         f.engine.definitions.RESTART.endsSequence = true;
         await f.pilot.run(['A', 'RESTART', 'B'], 'auto');
@@ -302,14 +501,15 @@
         const resumed = new InterfaceAutopilot(f.engine, f.storage, f.dependencies);
         await resumed.tick();
         equal(f.executed, ['A', 'RESTART', 'B']);
-        const g = pilotFixture(['RESTART', 'B']);
+        const g = pilotFixture(['A', 'RESTART', 'B']);
+        g.engine.definitions.A.run = async () => { g.executed.push('A'); await g.engine.api.call('mutation'); };
         g.pilot.configure({ enabled: true, idleMinutes: 5 });
         g.engine.definitions.RESTART.endsSequence = true;
-        await g.pilot.run(['RESTART', 'B'], 'auto');
+        await g.pilot.run(['A', 'RESTART', 'B'], 'auto');
         const interrupted = new InterfaceAutopilot(g.engine, g.storage, g.dependencies);
         interrupted.activity();
         await interrupted.tick();
-        equal(g.executed, ['RESTART']);
+        equal(g.executed, ['A', 'RESTART']);
         assert(!interrupted.state.pending);
     });
     await test('autopilot uses the nearest day, expedition or configured time boundary', async () => {
@@ -452,6 +652,7 @@
                 send(body) {
                     sent.push({ headers: this.headers, body });
                     const call = JSON.parse(body).calls[0];
+                    if (call.name === 'offline') { this.status = 0; queueMicrotask(() => this.onerror()); return; }
                     this.status = 200;
                     this.response = call.name === 'fail' ? { error: { description: 'expected failure' } }
                         : { results: [{ ident: 'body', result: { response: call.name } }] };
@@ -464,14 +665,21 @@
                 'X-Env-Unique-Session-Id': 'unique', 'X-Env-Unique-Session-Uuid': 'uuid'
             } } });
             const first = api.call('one');
-            const failure = api.call('fail').catch(error => error.message);
+            const failure = api.call('fail', { id: 42 }, { cookie: 'private-session' }).catch(error => error);
             const third = api.call('three');
-            equal(await Promise.all([first, failure, third]), ['one', 'expected failure', 'three']);
+            const [one, failed, three] = await Promise.all([first, failure, third]);
+            equal([one, failed.message, three], ['one', 'expected failure', 'three']);
+            equal(failed.rpcRequest.calls[0].args, { id: 42 });
+            equal(failed.rpcResponse, { error: { description: 'expected failure' } });
+            assert(failed.rpcMethod === 'fail' && failed.httpStatus === 200);
             equal(sent.map(item => item.headers['x-request-id']), ['9', '10', '11']);
             for (const request of sent) {
                 const signature = `${request.headers['x-request-id']}:test:session:${request.body}:LIBRARY-VERSION=1UNIQUE-SESSION-ID=uniqueUNIQUE-SESSION-UUID=uuid`;
                 equal(request.headers['x-auth-signature'], InterfaceGameApi.md5(signature));
             }
+            const offline = await api.call('offline', { id: 7 }).catch(error => error);
+            equal(offline.rpcRequest.calls[0].args, { id: 7 });
+            equal(offline.rpcResponse, null);
         } finally { window.XMLHttpRequest = NativeXHR; }
     });
     await test('settings persist per script', () => {
@@ -927,7 +1135,7 @@
         const source = await (await fetch('../interface.js')).text();
         const dictionary = await (await fetch('../locales/en.json')).json();
         const I18N = key => dictionary[key] || key;
-        const menuSections = [{ id: 'settings', title: 'MENU_GENERAL_SETTINGS' },
+        const menuSections = [{ id: 'settings', title: 'MENU_GENERAL_SETTINGS' }, { id: 'startup', title: 'MENU_STARTUP' },
             { id: 'scripts', title: 'MENU_SCRIPTS' }, { id: 'navigation', title: 'MENU_NAVIGATION' },
             { id: 'autopilot', title: 'MENU_AUTOPILOT' }];
         const manifest = { name: 'Interface', version: 'test', homepage_url: 'https://example.com' };
@@ -954,7 +1162,7 @@
         const pilot = new Function('automation', 'I18N', 'i18n', 'menuSections', 'gameNavigationSections', 'navigateToGameSection',
             'userStorage', 'MessageLog', 'currentLog', 'valkyriesBlessing', 'gameApi', 'theGame', 'memoryStorage', source.slice(start, end) + ';return pilot;')(
             engine, I18N, { translations: dictionary }, menuSections, ['EXPEDITIONS', 'TOWER', 'BOSS', 'CHAT'],
-            section => navigated.push(section), storage, MessageLog, currentLog, false, {}, {}, { memoryStorage: { user: { info: {} } } });
+            section => navigated.push(section), storage, MessageLog, currentLog, false, {}, {}, { memoryStorage: { user: { info: { name: 'HeroName' } } } });
         const sidebar = root.querySelector('#interfaceSidebar');
         const panel = root.querySelector('#interfacePanel');
         const main = sidebar.querySelector('.interface-menu-actions');
@@ -967,13 +1175,13 @@
         open('settings');
         assert(main.hidden && !panel.hidden);
         const numbers = () => panel.querySelectorAll('input[type="number"]');
-        equal([...numbers()].map(input => input.value), ['0', '20', '5']);
+        equal([...numbers()].map(input => input.value), ['0', '20']);
         numbers()[0].value = '30';
         numbers()[1].value = '2';
         cancel();
         equal(storage.get('messageTTL'), null);
         open('settings');
-        equal([...numbers()].map(input => input.value), ['0', '20', '5']);
+        equal([...numbers()].map(input => input.value), ['0', '20']);
         const dungeonDeath = [...panel.querySelectorAll('label')].find(label => label.textContent.includes(I18N('SETTING_DUNGEON_AVOID_DEATHS')))?.querySelector('input');
         assert(dungeonDeath?.checked);
         dungeonDeath.checked = false;
@@ -987,6 +1195,34 @@
         [...panel.querySelectorAll('label')].find(label => label.textContent.includes(I18N('SETTING_DUNGEON_AVOID_DEATHS'))).querySelector('input').checked = true;
         accept();
         assert(!main.hidden && panel.hidden);
+        open('startup');
+        const startupSelect = panel.querySelector('select'); startupSelect.value = 'TOWER';
+        [...panel.querySelectorAll('button')].find(button => button.textContent === I18N('SCRIPT_ADD_REFERENCE')).click();
+        let startupEntry = panel.querySelector('[data-reference-id]'); assert(startupEntry);
+        assert(![...panel.querySelector('select').options].some(option => option.value === 'TOWER'));
+        [...startupEntry.querySelectorAll('button')].find(button => button.textContent === I18N('SCRIPT_CONFIGURE')).click();
+        panel.querySelector('input[type=checkbox]').checked = false;
+        accept();
+        const savedStartup = JSON.parse(storage.get('scriptReferences:startup:v1'));
+        assert(savedStartup.length === 1 && savedStartup[0].settings.buyBuffs === false && engine.settings('TOWER').buyBuffs === true);
+        startupEntry = panel.querySelector('[data-reference-id]');
+        startupEntry.querySelector('[aria-label="' + I18N('SCRIPT_REMOVE_REFERENCE') + '"]').click();
+        assert(JSON.parse(storage.get('scriptReferences:startup:v1')).length === 0 && engine.definitions.TOWER);
+        assert([...panel.querySelector('select').options].some(option => option.value === 'TOWER'));
+        const sourceFolder = engine.menuTree.addFolder(); engine.menuTree.move('tower', sourceFolder);
+        open('startup');
+        const sourceChoice = panel.querySelector('select');
+        assert([...sourceChoice.options].some(option => option.value === `folder:${sourceFolder}`));
+        sourceChoice.value = `folder:${sourceFolder}`;
+        [...panel.querySelectorAll('button')].find(button => button.textContent === I18N('SCRIPT_ADD_REFERENCE')).click();
+        assert(JSON.parse(storage.get('scriptReferences:startup:v1')).some(item => item.section === 'TOWER'));
+        assert(![...panel.querySelector('select').options].some(option => option.value === 'TOWER'));
+        for (const entry of JSON.parse(storage.get('scriptReferences:startup:v1'))) {
+            const element = panel.querySelector(`[data-reference-id="${entry.id}"]`);
+            element?.querySelector('[aria-label="' + I18N(entry.folder ? 'SCRIPT_REMOVE_FOLDER' : 'SCRIPT_REMOVE_REFERENCE') + '"]')?.click();
+        }
+        engine.menuTree.removeFolder(sourceFolder);
+        accept();
         open('scripts');
         assert(!log.hidden);
         const tree = engine.menuTree;
@@ -1026,6 +1262,17 @@
         pilot.state.completed={};
         await pilot.run(tree.sequence('scripts', { atomicCollect:true }));
         equal(order, ['DAILY_BONUS','BOSS']);
+        engine.definitions.BOSS.run = async (settings, report) => {
+            report('SCRIPT_RUNNING');
+            report('SCRIPT_RESOURCE_OPENED', 3);
+            const error = new Error('specific failure');
+            error.rpcMethod = 'bossGetAll';
+            error.rpcRequest = { calls: [{ name: 'bossGetAll', args: { id: 42 }, context: { cookie: 'secret-cookie' } }] };
+            error.rpcResponse = { error: { code: 123, token: 'secret-token' } };
+            report('SCRIPT_REWARD_SOURCE_FAILED', 'boss: specific failure', { error });
+        };
+        pilot.state.completed = {};
+        await pilot.run(['BOSS']);
         const button = panel.querySelector('[data-interface-log-save]');
         assert(button && !button.hidden);
         const oldCreate = URL.createObjectURL, oldClick = HTMLAnchorElement.prototype.click;
@@ -1034,9 +1281,13 @@
             URL.createObjectURL = blob => { savedBlob = blob; return 'blob:test'; };
             HTMLAnchorElement.prototype.click = function() { savedName = this.download; };
             button.click();
-            assert(savedName.startsWith('interface-log-') && savedName.endsWith('.txt'));
+            assert(savedName.startsWith('HeroName-') && savedName.endsWith('.txt'));
             const savedText = await savedBlob.text();
             assert(savedText.includes(I18N('NAV_DAILY_BONUS')) && savedText.includes(I18N('NAV_BOSS')));
+            assert(savedText.includes('specific failure') && savedText.includes('RPC: bossGetAll'));
+            assert(savedText.includes('Request:') && savedText.includes('Response:') && savedText.includes('"id": 42') && savedText.includes('"code": 123'));
+            assert(savedText.includes('secret-cookie') && savedText.includes('secret-token'));
+            assert(!savedText.includes(I18N('SCRIPT_RUNNING')));
         } finally { URL.createObjectURL = oldCreate; HTMLAnchorElement.prototype.click = oldClick; }
         const row = section => panel.querySelector(`[data-script="${section}"]`);
         // Scrollable content stays below the panel header.
@@ -1085,7 +1336,7 @@
         const {engine,storage}=fixture();
         storage.set('scriptOrder:scripts', JSON.stringify(['BOSS','COLLECT_ALL','DAILY_BONUS']));
         storage.set('collectAllOrder', JSON.stringify(['MAIL','QUEST_REWARDS']));
-        engine.save('COLLECT_ALL', {enabled:true,includeMail:false,includeRewards:true});
+        storage.set('script:COLLECT_ALL', JSON.stringify({enabled:true,includeMail:false,includeRewards:true}));
         engine.save('MAIL',{enabled:true}); engine.save('QUEST_REWARDS',{enabled:false});
         const menu=[{id:'settings'},{id:'scripts'},{id:'navigation'},{id:'autopilot'}];
         const tree=new InterfaceMenuTree(engine,storage,menu,[]);
@@ -1099,22 +1350,6 @@
         const restored=new InterfaceMenuTree(engine,storage,menu,[]);
         assert(restored.find('collect_all').children.some(node=>node.id==='boss'));
         assert(!restored.find('scripts').children.some(node=>node.id==='boss'));
-    });
-    await test('collection follows the current tree and ignores disabled folders', async () => {
-        const {engine,storage}=fixture();
-        const tree=engine.menuTree=new InterfaceMenuTree(engine,storage,[{id:'scripts'}],[]);
-        for (const [option,section] of engine.collectionSources) tree.setEnabled(section.toLowerCase(),false);
-        const calls=[];
-        engine.definitions.MAIL.run=async()=>{calls.push('MAIL');return 'SCRIPT_NOTHING_TO_COLLECT';};
-        engine.definitions.DAILY_BONUS.run=async()=>{calls.push('DAILY_BONUS');return 'SCRIPT_NOTHING_TO_COLLECT';};
-        tree.setEnabled('mail',true); tree.setEnabled('daily_bonus',true);
-        assert(tree.move('daily_bonus','collection_main'));
-        await engine.collectAll(engine.settings('COLLECT_ALL'),()=>{},{stopped:false});
-        equal(calls,['MAIL','DAILY_BONUS']);
-        calls.length=0;tree.setEnabled('collection_main',false);
-        await engine.collectAll(engine.settings('COLLECT_ALL'),()=>{},{stopped:false});
-        equal(calls,[]);
-        assert(tree.enabled('mail') && tree.enabled('daily_bonus'));
     });
     await test('all rewards continue after already collected offers and collect unlocked guild quests', async () => {
         let reads = 0;
@@ -1194,31 +1429,6 @@
         const failed = fixture({ inventoryGet: {consumable: {45: 1}}, artifactChestOpen: () => { throw new Error('network failed'); } });
         let rejected = false; try { await failed.engine.run('HERO_ARTIFACT_CHESTS', () => {}); } catch { rejected = true; }
         assert(rejected, 'unrelated errors must propagate');
-    });
-    await test('collect all uses selected scripts with their settings and repeats unlocked mail', async () => {
-        let opened = 0, questClaimed = false, letterClaimed = false;
-        const { engine, calls } = fixture({
-            inventoryGet: () => ({ consumable: { 55: 50 - opened } }),
-            titanArtifactChestOpen: args => { opened += args.amount; },
-            questGetAll: () => opened && !questClaimed ? [{id: 1, state: 2, reward: {gold: 1}}] : [],
-            quest_farmNonClan: () => { questClaimed = true; },
-            mailGetAll: () => ({letters: questClaimed && !letterClaimed ? [{id: 1, reward: {gold: 1}}] : []}),
-            mailFarm: () => { letterClaimed = true; }
-        });
-        engine.save('TITAN_ARTIFACT_CHESTS', {limit: 1});
-        engine.save('QUEST_REWARDS', {collectDailyBonus:false, collectGuildPrestige:false, collectDailyOffers:false});
-        engine.save('COLLECT_ALL', {includeTitanArtifacts:true});
-        await engine.run('COLLECT_ALL', () => {});
-        equal(calls.filter(c => c.name === 'titanArtifactChestOpen').map(c => c.args), [{free:true, amount:1}]);
-        assert(questClaimed && letterClaimed, 'mail unlocked by quest must be collected');
-        assert(!calls.some(c => ['pet_chestOpen','titanUseSummonCircle','artifactChestOpen'].includes(c.name)));
-    });
-    await test('collect all respects selection and stop', async () => {
-        const f = fixture({ inventoryGet: {consumable:{90:25}}, pet_chestOpen: () => f.engine.stop() });
-        f.engine.save('COLLECT_ALL', {includeRewards:false, includeMail:false, includePetEggs:true});
-        await f.engine.run('COLLECT_ALL', () => {});
-        equal(f.calls.filter(c => c.name === 'pet_chestOpen').map(c => c.args.amount), [10]);
-        assert(!f.calls.some(c => ['questGetAll','mailGetAll'].includes(c.name)));
     });
     await test('soul exchanges use one game batch only for six-star units', async () => {
         for (const [section, type, units, getUnits, rpc, coin] of [
@@ -1328,15 +1538,6 @@
         const reports=[];await f.engine.run('QUEST_REWARDS',key=>reports.push(key));assert(f.engine.lastResult.completed);
         assert(reports.includes('SCRIPT_NOTHING_TO_COLLECT'));assert(!reports.includes('SCRIPT_REWARD_ERRORS'));
     });
-    await test('collection records arbitrary source errors and continues later sources without false success', async () => {
-        const f=fixture();let next=0;
-        f.engine.definitions.HERO_ARTIFACT_CHESTS.run=async()=>{throw new Error('network failed');};
-        f.engine.definitions.TITAN_ARTIFACT_CHESTS.run=async()=>{next++;};
-        f.engine.save('COLLECT_ALL',{includeRewards:false,includeMail:false,includeHeroArtifacts:true,includeTitanArtifacts:true});
-        const reports=[];await f.engine.run('COLLECT_ALL',(key,detail)=>reports.push([key,detail]));
-        equal(next,1);assert(reports.some(([key,detail])=>key==='SCRIPT_REWARD_SOURCE_FAILED'&&detail.includes('network failed')));
-        assert(reports.some(([key])=>key==='SCRIPT_REWARD_ERRORS'));assert(!f.engine.lastResult.completed);
-    });
     await test('failed quest batch falls back to individual quests', async () => {
         const quests=[{id:1,state:2,reward:{gold:1}},{id:2,state:2,reward:{gold:1}}];
         const f=fixture({questGetAll:quests,quest_farmNonClan:args=>{if(args.questIds.includes(1))throw new Error('bad quest');return {};}});
@@ -1352,15 +1553,6 @@
         const reports=[];await f.engine.run('QUEST_REWARDS',(key,detail)=>reports.push([key,detail]));
         equal(f.calls.filter(c=>c.name==='questFarm').map(c=>c.args.questId),[20000182,20000185]);
         assert(reports.some(([key])=>key==='SCRIPT_REWARD_ERRORS'));assert(!f.engine.lastResult.completed);
-    });
-    await test('collect all skips unavailable New Year API but still gathers other rewards', async () => {
-        const f=fixture({newYearGiftGet:()=>{throw new Error('Undefined call newYearGiftGet()');},mailGetAll:{letters:[]},questGetAll:[]});
-        let ran=false;f.engine.definitions.MAIL.run=async()=>{ran=true;return 'SCRIPT_NOTHING_TO_COLLECT';};
-        f.engine.save('COLLECT_ALL',{includeNewYearGifts:true,includeMail:true,includeRewards:false});
-        const reports=[];await f.engine.run('COLLECT_ALL',key=>reports.push(key));
-        assert(ran);assert(reports.includes('SCRIPT_NEW_YEAR_UNAVAILABLE'));assert(f.engine.lastResult.completed);
-        const g=fixture({newYearGiftGet:()=>{throw new Error('network failed');}});
-        let failed=false;try{await g.engine.run('NEW_YEAR_GIFTS',()=>{});}catch(e){failed=e.message==='network failed';}assert(failed);
     });
     await test('new year gifts open only unopened unique gifts and honor cancellation', async () => {
         const f=fixture({newYearGiftGet:{gifts:[{id:1,opened:0},{id:2,opened:1},{id:1,opened:0},{id:3,opened:0}]}});
@@ -1517,63 +1709,6 @@
             const stopped=fixture({[info]:()=>{stopped.engine.stop();return value;}});
             await stopped.engine.run(section,()=>{});assert(!stopped.calls.some(c=>c.name===rpc));
         }
-    });
-    await test('collection parent is the only sequence switch for its child scripts', async () => {
-        const f=fixture(), runs=[];
-        f.engine.definitions.MAIL.run=async()=>{runs.push('MAIL');};
-        f.engine.definitions.COLLECT_ALL.run=async()=>{runs.push('COLLECT_ALL');};
-        f.engine.save('MAIL',{enabled:true});f.engine.save('COLLECT_ALL',{enabled:false});
-        const pilot=new InterfaceAutopilot(f.engine,f.storage,{execute:async section=>{await f.engine.run(section,()=>{});return f.engine.lastResult.completed;},
-            sections:()=>['MAIL','COLLECT_ALL'],now:()=>1000,setTimer:()=>0,clearTimer:()=>{}});
-        await pilot.run(['MAIL','COLLECT_ALL']);equal(runs,[]);
-        f.engine.save('COLLECT_ALL',{enabled:true});await pilot.run(['MAIL','COLLECT_ALL']);equal(runs,['COLLECT_ALL']);
-        await f.engine.run('MAIL',()=>{});equal(runs,['COLLECT_ALL','MAIL']);
-    });
-    await test('collection uses account order and updates its autopilot fingerprint', async () => {
-        const f=fixture(), calls=[];
-        const settings=Object.fromEntries(f.engine.collectionSources.map(([option])=>[option,false]));
-        Object.assign(settings,{includeRewards:true,includeMail:true,includeHeroArtifacts:true});f.engine.save('COLLECT_ALL',settings);
-        for(const name of ['QUEST_REWARDS','MAIL','HERO_ARTIFACT_CHESTS'])f.engine.definitions[name].run=async()=>{calls.push(name);return 'SCRIPT_NOTHING_TO_COLLECT';};
-        const pilot=new InterfaceAutopilot(f.engine,f.storage,{now:()=>1000,setTimer:()=>0,clearTimer:()=>{}});
-        const before=pilot.fingerprint('COLLECT_ALL');
-        f.storage.set('collectAllOrder',JSON.stringify(['HERO_ARTIFACT_CHESTS','MAIL','QUEST_REWARDS','MAIL','UNKNOWN']));
-        assert(pilot.fingerprint('COLLECT_ALL')!==before);
-        await f.engine.run('COLLECT_ALL',()=>{});equal(calls,['HERO_ARTIFACT_CHESTS','MAIL','QUEST_REWARDS']);
-        const restored=new InterfaceAutomation({}, {}, f.storage);equal(restored.orderedCollectionSources().slice(0,3).map(s=>s[1]),['HERO_ARTIFACT_CHESTS','MAIL','QUEST_REWARDS']);
-    });
-    await test('collect all follows displayed child order and only repeats reward sources', async () => {
-        const f=fixture(), calls=[];
-        const settings=Object.fromEntries(f.engine.collectionSources.map(([option])=>[option,false]));
-        Object.assign(settings,{includeRewards:true,includeMail:true,includeHeroArtifacts:true});f.engine.save('COLLECT_ALL',settings);
-        for(const name of ['QUEST_REWARDS','MAIL','HERO_ARTIFACT_CHESTS']) f.engine.definitions[name].run=async()=>{calls.push(name);return 'SCRIPT_NOTHING_TO_COLLECT';};
-        await f.engine.run('COLLECT_ALL',()=>{});equal(calls,['QUEST_REWARDS','MAIL','HERO_ARTIFACT_CHESTS']);
-    });
-    await test('collect all revisits offers unlocked by rewards without claiming twice', async () => {
-        let questClaimed=false, offerClaimed=false;
-        const f=fixture({questGetAll:()=>questClaimed?[]:[{id:1,state:2,reward:{gold:1}}],
-            quest_farmNonClan:()=>{questClaimed=true;},
-            offerGetAll:()=>questClaimed?[{id:7,type:'reward',reward:{gold:1}}]:[],
-            offerFarmReward:()=>{offerClaimed=true;}});
-        f.engine.save('QUEST_REWARDS',{collectDailyBonus:false,collectGuildPrestige:false,collectDailyOffers:false});
-        f.engine.save('COLLECT_ALL',{includeMail:false,includeOfferGifts:true});
-        await f.engine.run('COLLECT_ALL',()=>{});
-        assert(questClaimed && offerClaimed);
-        equal(f.calls.filter(c=>c.name==='offerFarmReward').length,1);
-    });
-    await test('collect-all autopilot fingerprint follows selected child settings', () => {
-        const f = fixture();
-        const pilot = new InterfaceAutopilot(f.engine, f.storage, {now:()=>1000,setTimer:()=>0,clearTimer:()=>{}});
-        const before = pilot.fingerprint('COLLECT_ALL');
-        f.engine.save('TITAN_ARTIFACT_CHESTS', {limit:1});
-        equal(pilot.fingerprint('COLLECT_ALL'), before);
-        f.engine.save('COLLECT_ALL', {includeTitanArtifacts:true});
-        const selected = pilot.fingerprint('COLLECT_ALL');
-        f.engine.save('TITAN_ARTIFACT_CHESTS', {limit:2});
-        assert(pilot.fingerprint('COLLECT_ALL') !== selected);
-        const changed = pilot.fingerprint('COLLECT_ALL');
-        f.engine.save('TITAN_ARTIFACT_CHESTS', {enabled:true});
-        equal(pilot.fingerprint('COLLECT_ALL'), changed);
-        pilot.dispose();
     });
     await test('adventure raids use highest available adventure and stop between portals', async () => {
         const f=fixture({userGetInfo:{refillable:[{id:45,amount:3}]},adventure_raidGetInfo:{raid:{2:true,11:true,12:false}}});

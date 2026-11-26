@@ -647,7 +647,7 @@
     "SETTINGS_BATTLES":  "Бої",
     "SETTINGS_ADDITIONAL":  "Додатково",
     "MENU_GENERAL_SETTINGS":  "Загальні налаштування",
-    "MENU_SCRIPTS":  "Скрипти",
+    "MENU_SCRIPTS":  "Скрипти (ручний старт)",
     "MENU_SEQUENCE":  "Зробити послідовність",
     "MENU_FARM_HEROES":  "Фармити героїв",
     "MENU_AUTOPILOT":  "Автопілот",
@@ -722,5 +722,17 @@
     "SCRIPT_COLLECT_ORDER_VIEW": "Порядок виконання",
     "SCRIPT_COLLECT_GROUP_VIEW": "Групи",
     "SCRIPT_COLLECT_GROUP_HINT": "Числа показують порядок виконання. Для зміни порядку між групами відкрийте «Порядок виконання».",
-    "MESSAGE_LOG_SAVE":  "Зберегти лог"
+    "MESSAGE_LOG_SAVE":  "Зберегти лог",
+    "NAV_COMMUNITY_GIFTS":  "Подарунки Community",
+    "SCRIPT_OPTION_INCLUDECOMMUNITYGIFTS":  "Збирати подарунки Community",
+    "SCRIPT_COMMUNITY_GIFTS_COLLECTED":  "Отримано подарунків Community",
+    "MENU_STARTUP": "Виконати при старті",
+    "SCRIPT_ADD_REFERENCE": "Додати скрипт",
+    "SCRIPT_REMOVE_REFERENCE": "Видалити",
+    "SCRIPT_ADD_FOLDER": "Додати папку",
+    "SCRIPT_RENAME_FOLDER": "Перейменувати",
+    "SCRIPT_REMOVE_FOLDER": "Видалити папку",
+    "SCRIPT_SEQUENCE_NAME": "Група",
+    "NAV_SEND_GUILD_GIFTS": "Відправити подарунки",
+    "SCRIPT_GUILD_GIFTS_SENT": "Подарунків відправлено"
 }

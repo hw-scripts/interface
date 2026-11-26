@@ -37,39 +37,30 @@ class InterfaceAutopilot {
     }
 
     fingerprint(section) {
+        if (typeof section === 'object') return JSON.stringify({ section: section.section, settings: section.settings });
         const { enabled, ...settings } = this.automation.settings(section);
-        if (section !== 'COLLECT_ALL') return JSON.stringify(settings);
-        if (this.automation.menuTree) {
-            const order = this.automation.menuTree.sequence('collect_all', { ignoreRootEnabled: true });
-            return JSON.stringify({ order, dependencies: order.map(child => [child, this.automation.settings(child)]) });
-        }
-        const children = this.automation.orderedCollectionSources?.() ?? this.automation.collectionSources ?? [];
-        const dependencies = {};
-        for (const [option, child] of children) {
-            if (!settings[option]) continue;
-            const { enabled: ignored, ...values } = this.automation.settings(child);
-            dependencies[child] = values;
-        }
-        return JSON.stringify({ settings, order: children.filter(([option]) => settings[option]).map(([, child]) => child), dependencies });
+        return JSON.stringify(settings);
     }
 
     due(section) {
-        const entry = this.state.completed[section];
+        const entry = this.state.completed[typeof section === 'object' ? section.id : section];
         return !entry || entry.settings !== this.fingerprint(section) || entry.until <= this.now();
     }
 
-    interval(section) { return Math.max(1, Number(this.options.intervals[section]) || 5) * 60000; }
+    interval(section) { return Math.max(1, Number(this.options.intervals[typeof section === 'object' ? section.id : section]) || 5) * 60000; }
 
     checkpoint(section, settings = this.fingerprint(section)) {
+        const key = typeof section === 'object' ? section.id : section;
+        const script = typeof section === 'object' ? section.section : section;
         const now = this.now();
         const info = { ...this.userInfo(), ...this.automation.userInfo };
         const boundaries = [info.nextDayTs, info.nextServerDayTs]
             .map(value => Number(value) * 1000).filter(time => time > now);
-        const daily = ['DAILY_BONUS', 'TOWER', 'BOSS', 'CLAN_DUNGEON'].includes(section);
+        const daily = ['DAILY_BONUS', 'TOWER', 'BOSS', 'CLAN_DUNGEON'].includes(script);
         if (!daily || !boundaries.length) boundaries.push(now + this.interval(section));
         boundaries.push(...(this.automation.lastResult?.boundaries ?? []).filter(time => time > now));
-        this.state.completed[section] = { settings,
-            until: Math.min(...boundaries), finished: now, revision: (this.state.completed[section]?.revision ?? 0) + 1 };
+        this.state.completed[key] = { settings,
+            until: Math.min(...boundaries), finished: now, revision: (this.state.completed[key]?.revision ?? 0) + 1 };
         this.save();
     }
 
@@ -92,7 +83,7 @@ class InterfaceAutopilot {
 
     restartSignature(sections, index) {
         return JSON.stringify(sections.slice(0, index).map(section =>
-            [section, this.state.completed[section]?.revision ?? 0, this.fingerprint(section)]));
+            [section, this.state.completed[typeof section === 'object' ? section.id : section]?.revision ?? 0, this.fingerprint(section)]));
     }
 
     async run(sections, mode = 'manual') {
@@ -105,15 +96,16 @@ class InterfaceAutopilot {
         try {
             for (let index = 0; index < sections.length && !this.stopped; index++) {
                 const section = sections[index];
-                const definition = this.automation.definitions[section];
-                if (!definition || !this.automation.menuTree && this.automation.collectionSources?.some(([, child]) => child === section)) continue;
-                if (!this.automation.settings(section).enabled) continue;
+                const script = typeof section === 'object' ? section.section : section;
+                const definition = this.automation.definitions[script];
+                if (!definition) continue;
+                if (typeof section !== 'object' && !this.automation.settings(script).enabled) continue;
                 if (definition.endsSequence) {
+                    if (!this.automation.mutationRevision) continue;
                     const signature = this.restartSignature(sections, index);
-                    if (this.state.restartSignature === signature) continue;
                     // Write the continuation before reload; no code after reload is required for recovery.
                     this.state.restartSignature = signature;
-                    this.state.pending = { sections: sections.slice(index + 1), mode, internalReload: mode === 'auto' };
+                    this.state.pending = { sections: sections.slice(index + 1), mode, internalReload: mode === 'auto' || mode === 'startup' };
                     this.save();
                     try {
                         if (!await this.execute(section)) {
@@ -129,7 +121,7 @@ class InterfaceAutopilot {
                     }
                     return;
                 }
-                if (!this.due(section)) continue;
+                if (mode !== 'startup' && mode !== 'manual_explicit' && !this.due(section)) continue;
                 const settings = this.fingerprint(section);
                 let succeeded = false;
                 try { succeeded = await this.execute(section); }
@@ -163,11 +155,11 @@ class InterfaceAutopilot {
 
     async tick() {
         if (this.running) return;
-        if (!this.options.enabled && this.state.pending?.mode !== 'manual') return;
+        if (!this.options.enabled && !['manual', 'manual_explicit', 'startup'].includes(this.state.pending?.mode)) return;
         if (!this.ready() || this.automation.running) { this.arm(1000); return; }
         const idleAt = this.state.lastActivity + this.options.idleMinutes * 60000;
         const pending = this.state.pending;
-        if (pending?.mode !== 'manual' && !(pending?.mode === 'auto' && pending?.internalReload) && this.now() < idleAt) { this.arm(idleAt - this.now()); return; }
+        if (!['manual', 'manual_explicit', 'startup'].includes(pending?.mode) && !(pending?.mode === 'auto' && pending?.internalReload) && this.now() < idleAt) { this.arm(idleAt - this.now()); return; }
         if (pending) {
             delete this.state.pending;
             this.save();
@@ -176,8 +168,8 @@ class InterfaceAutopilot {
             return;
         }
         const sections = this.sections();
-        const next = sections.filter(section => !this.automation.definitions[section]?.endsSequence)
-            .map(section => this.due(section) ? this.now() : this.state.completed[section].until);
+        const next = sections.filter(section => !this.automation.definitions[typeof section === 'object' ? section.section : section]?.endsSequence)
+            .map(section => this.due(section) ? this.now() : this.state.completed[typeof section === 'object' ? section.id : section].until);
         const wake = Math.max(Math.min(...next), this.retryAt ?? 0);
         if (wake > this.now()) { this.arm(Number.isFinite(wake) ? wake - this.now() : 60000); return; }
         await this.run(sections, 'auto');
