@@ -3539,8 +3539,8 @@
         "uk": "Переможний бій турніру не знайдено",
         "ru": "Победный бой турнира не найден"
     },
-    "NAV_TITAN_ARENA_REWARDS": {"en": "Titan tournament rewards", "uk": "???????? ??????? ??????", "ru": "??????? ??????? ??????"},
-    "SCRIPT_TITAN_ARENA_REWARDS_COLLECTED": {"en": "Titan tournament rewards collected", "uk": "??????? ??????? ??????? ??????", "ru": "??????? ?????? ??????? ??????"},
+    "NAV_TITAN_ARENA_REWARDS": {"en": "Titan tournament rewards", "uk": "Нагороди Турніру стихій", "ru": "Награды Турнира стихий"},
+    "SCRIPT_TITAN_ARENA_REWARDS_COLLECTED": {"en": "Titan tournament rewards collected", "uk": "Зібрано нагород Турніру стихій", "ru": "Собрано наград Турнира стихий"},
     "NAV_POWER_TOURNAMENT_REWARDS": {"en": "Power tournament rewards", "uk": "Нагороди турніру сили", "ru": "Награды турнира силы"},
     "SCRIPT_OPTION_INCLUDEPOWERTOURNAMENT": {"en": "Collect power tournament rewards", "uk": "Збирати нагороди турніру сили", "ru": "Собирать награды турнира силы"},
     "SCRIPT_POWER_TOURNAMENT_COLLECTED": {"en": "Power tournament rewards collected", "uk": "Зібрано нагород турніру сили", "ru": "Собрано наград турнира силы"},
